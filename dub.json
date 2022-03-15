@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Luca Bernardi"
+	],
+	"copyright": "Copyright © 2022, Luca Bernardi",
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "imagegenerator"
+}
