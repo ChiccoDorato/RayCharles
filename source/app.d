@@ -1,22 +1,13 @@
-module app;
-
 import std.stdio;
-import std.conv; // Conversion into different types
-import std.math; 
+import std.conv;
+import std.math;
 
-
-
-bool areClose(float a, float b, float epsilon=1e-5){
-
-return abs(a-b)<epsilon;
+bool areClose(float x, float y, float epsilon=1e-5){
+	return abs(x-y) < epsilon;
 }
 
-
-
-
-
 struct color{
-	float r=0, g=0, b=0;
+	float r=0.0, g=0.0, b=0.0;
 
 	color opBinary(string op)(color rhs){
 		static if(op == "+" || op == "-" || op == "*"){
@@ -33,81 +24,27 @@ struct color{
 		mixin ("return color(r"~op~"alfa, g"~op~"alfa, b"~op~"alfa);");
 	}
 
-	bool colorAreClose(color y){
-
-	return areClose(r, y.r) && areClose(g, y.g) && areClose(b, y.b);
+	void stampa(){
+		writeln("(", r, ", ", g, ", ", b, ")");
 	}
 
-
-
-
-unittest{
-		HDRImage img = new HDRImage(7,4);
-// Unittests
-		// Check that valid/invalid coordinates are properly flagged
-		assert (img.validCoordinates(img, 0, 0)); 
-		assert (img.validCoordinates(img, 6, 3));
-		assert (! img.validCoordinates(img, -1, 0));
-		assert (! img.validCoordinates(img, 0, -1));
-		assert (! img.validCoordinates(img, 7, 0));
-		assert (! img.validCoordinates(img, 0, 4));
-
-		// Check that indices in the array are calculated correctly:
-		// this kind of test would have been harder to write
-		// in the old implementation
-		assert (img.pixel_offset(img, 3, 2) == 17);
-	
-	// Test 1
-
-		color col = {1.0, 2.0, 3.0};
-		assert (col.colorAreClose(color(0.999999, 2.0, 3.0)) );
-
-		assert (!col.colorAreClose(color(3.0, 4.0, 5.0)));
-		assert (!col.colorAreClose(color(0.99, 2.0, 3.0)));
-	// Test 2
-
-		color col1 = {1.0, 2.0, 3.0};  
-		color col2 = {5.0, 7.0, 9.0};  
-
-		assert ((col1 + col2).colorAreClose(color(6.0, 9.0, 12.0)));
-		assert ((col1 - col2).colorAreClose(color(-4.0, -5.0, -6.0)));
-		assert ((col1 * col2).colorAreClose(color(5.0, 14.0, 27.0)));
-
-		color prod_col = color(1.0, 2.0, 3.0) * 2.0;
-
-		assert (prod_col.colorAreClose(color(2.0, 4.0, 6.0)));
-		
-		assert ((col1*2).colorAreClose(color(2.0, 4.0, 6.0)));
-		assert ((2*col1).colorAreClose(color(2.0, 4.0, 6.0)));
-
-
-	// Test 3
-
-			void test_image_creation(){
-				HDRImage img = new HDRImage(7,4);
-
-				assert (img.width == 7);
-				assert (img.height == 4);
-			}
-		test_image_creation();
-
-			void test_coordinates(){
-				HDRImage img = new HDRImage(7,4);
-
-				assert (img.validCoordinates(img, 0, 0));
-				assert (img.validCoordinates(img, 6, 3));
-				assert (!img.validCoordinates(img, -1, 0));
-				assert (!img.validCoordinates(img, 0, -1));
-				assert (!img.validCoordinates(img, 7, 0));
-				assert (!img.validCoordinates(img, 0, 4));
-			}
-		test_coordinates();
-
+	bool colorAreClose(color c){
+		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
+	unittest{
+		color c1 = {1.0, 2.0, 3.0}, c2 = {5.0, 7.0, 9.0};
+
+		assert (c1.colorAreClose(color(0.999999,2.0,3.0)));
+
+		assert ((c1+c2).colorAreClose(color(6.0, 9.0, 12.0)));
+		assert ((c1-c2).colorAreClose(color(-4.0, -5.0, -6.0)));
+		assert ((c1*c2).colorAreClose(color(5.0, 14.0, 27.0)));
+
+		assert ((c1*2.0).colorAreClose(color(2.0, 4.0, 6.0)));
+		assert ((3.0*c1).colorAreClose(color(3.0, 6.0, 9.0)));
+	}
 }
-
-/////////////////////////////////////////////////////////////////////////////
 
 class HDRImage{
 	int width, height;
@@ -119,33 +56,39 @@ class HDRImage{
 		pixels.length = width*height;
 	}
 
-// Nuova implementazione
-
 	bool validCoordinates(int x, int y){
-		return (x >= 0 && x < this.width && 
-				y >= 0 && y < this.height);
+		return x>=0 && x<width && y>=0 && y<height;
 	}
 
 	int pixelOffset(int x, int y){
-		return y * width + x;
+		return y*width + x;
 	}
 
 	color getPixel(int x, int y){
-    assert (validCoordinates(x, y));
-    return pixels[pixelOffset(x, y)];
+		assert (validCoordinates(x, y));
+		return pixels[pixelOffset(x, y)];
 	}
 
-	void setPixel(int x, int y, color new_color){
-    assert (validCoordinates(x, y));
-    pixels[pixelOffset(x, y)] = new_color;
+	void setPixel(int x, int y, color c){
+		assert (validCoordinates(x, y));
+		pixels[pixelOffset(x, y)] = c;
 	}
-	
+
+    unittest{
+        HDRImage img = new HDRImage(7,4);
+
+		assert (img.validCoordinates(0, 0)); 
+		assert (img.validCoordinates(6, 3));
+		assert (! img.validCoordinates(-1, 0));
+		assert (! img.validCoordinates(0, -1));
+		assert (! img.validCoordinates(7, 0));
+		assert (! img.validCoordinates(0, 4));
+
+		assert (img.pixelOffset(3, 2) == 17);
+    }
 }
 
-///////////////////////////////////////////////////////////////////////////////////
-// Main
-
-void main(string[] args)    
+void main(string[] args)
 {
 	if(args.length != 3){
 		writeln("Passare le dimensioni dell'immagine");
@@ -156,24 +99,13 @@ void main(string[] args)
 	int h = to!int(args[2]);
 	HDRImage image = new HDRImage(w,h);
 
-
-
-
-	color b = {100,100,100};	// Creo colore b
+	color c1 = {70,10,80};
+	color c2 = {20,100,33};
+	c1.stampa();
+	c2.stampa();
+	write("C1*2: ");
+	(c1*2).stampa();
 	
-	image.setPixel(0, 0, b); 		// Setto il pixel in posizione 0y+0 del colore b
-	color a = image.getPixel(0,0);	// Prendo il pixel in posixione 0y+0, lo assegno ad a 
-
-	writeln("a", a); 
-
-	
-	color c1 = {1.0, 1.0, 1.0};
-	color c2 = {2.0, 2.0, 2.0};
-
-
-assert ((c1 + c2) == color(3.0, 3.0, 3.0)); // Modificando un valore si ha un Assert Error
-	writeln("La somma funziona!");
-assert ((2 * c1) == color(2.0, 2.0, 2.0));	// Modificando un valore si ha un Assert Error
-	writeln("Il prodotto per scalare funziona!");
-
+	color c3 = {3e-6, 0, 0};
+	writeln(c1.colorAreClose(c1+c3));
 }
