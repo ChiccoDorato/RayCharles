@@ -55,7 +55,7 @@ unittest{
 		// Check that indices in the array are calculated correctly:
 		// this kind of test would have been harder to write
 		// in the old implementation
-		assert (img.pixel_offset(img, 3, 2) == 17);
+		assert (img.pixelOffset(img, 3, 2) == 17);
 	
 	// Test 1
 
@@ -94,12 +94,12 @@ unittest{
 			void test_coordinates(){
 				HDRImage img = new HDRImage(7,4);
 
-				assert (img.validCoordinates(img, 0, 0));
-				assert (img.validCoordinates(img, 6, 3));
-				assert (!img.validCoordinates(img, -1, 0));
-				assert (!img.validCoordinates(img, 0, -1));
-				assert (!img.validCoordinates(img, 7, 0));
-				assert (!img.validCoordinates(img, 0, 4));
+				assert (img.validCoordinates(0, 0));
+				assert (img.validCoordinates(6, 3));
+				assert (!img.validCoordinates(-1, 0));
+				assert (!img.validCoordinates(0, -1));
+				assert (!img.validCoordinates(7, 0));
+				assert (!img.validCoordinates(0, 4));
 			}
 		test_coordinates();
 
