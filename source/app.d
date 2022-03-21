@@ -1,6 +1,9 @@
 import std.stdio;
 import std.conv;
 import std.math;
+import std.array;
+import std.system;
+import std.format;
 
 bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
@@ -24,9 +27,16 @@ struct color{
 		mixin ("return color(r"~op~"alfa, g"~op~"alfa, b"~op~"alfa);");
 	}
 
-	void stampa(){
-		writeln("(", r, ", ", g, ", ", b, ")");
-	}
+	void toString(color)(ref color writer, const ref FormatSpec!char f) const
+       if (isOutputRange!(color, char)){
+           put(writer, "(");
+           formatValue(writer, r, f);
+           put(writer, ", ");
+           formatValue(writer, g, f);
+           put(writer, ", ");
+           formatValue(writer, b, f);
+           put(writer, ")");
+         }
 
 	bool colorAreClose(color c){
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
@@ -74,7 +84,27 @@ class HDRImage{
 		pixels[pixelOffset(x, y)] = c;
 	}
 
-    unittest{
+	void writePFM(Endian endianness = Endian.littleEndian){
+		auto pfm = appender!string();
+		float endiannessStr;
+		if(endianness == Endian.littleEndian){
+			endiannessStr = -1.0;
+		} 
+		else{
+			endiannessStr = 1.0;
+		}
+		pfm.put("PF\n"~to!string(width)~" "~to!string(height)~"\n"~to!string(endiannessStr)~"\n");
+
+		for(int i=height-1; i>-1; i--){
+			for(int j=0; j<width; j++){
+				color col = getPixel(j, i);
+				//pfm.put(toString!(col, FormatSpec!char f)); 
+			}
+		}		
+	}
+///////////////////////// Unit test
+    
+	unittest{
         HDRImage img = new HDRImage(7,4);
 
 		assert (img.validCoordinates(0, 0)); 
@@ -88,8 +118,10 @@ class HDRImage{
     }
 }
 
+
 void main(string[] args)
 {
+	
 	if(args.length != 3){
 		writeln("Passare le dimensioni dell'immagine");
 		return;
@@ -101,11 +133,11 @@ void main(string[] args)
 
 	color c1 = {70,10,80};
 	color c2 = {20,100,33};
-	c1.stampa();
-	c2.stampa();
-	write("C1*2: ");
-	(c1*2).stampa();
 	
 	color c3 = {3e-6, 0, 0};
 	writeln(c1.colorAreClose(c1+c3));
+
+	const ref FormatSpec!char f;
+	c1.toString(c1, f);
+	
 }
