@@ -1,6 +1,11 @@
 import std.stdio;
 import std.conv;
 import std.math;
+import std.array;
+import std.system;
+import std.format;
+import std.utf;
+import std.algorithm;
 
 bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
@@ -24,8 +29,8 @@ struct color{
 		mixin ("return color(r"~op~"alfa, g"~op~"alfa, b"~op~"alfa);");
 	}
 
-	void stampa(){
-		writeln("(", r, ", ", g, ", ", b, ")");
+	string colorToString(){
+		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
 	}
 
 	bool colorAreClose(color c){
@@ -56,6 +61,10 @@ class HDRImage{
 		pixels.length = width*height;
 	}
 
+	/*this(file){
+
+	}*/
+
 	bool validCoordinates(int x, int y){
 		return x>=0 && x<width && y>=0 && y<height;
 	}
@@ -74,7 +83,34 @@ class HDRImage{
 		pixels[pixelOffset(x, y)] = c;
 	}
 
-    unittest{
+	void writePFM(Endian endianness = Endian.littleEndian){
+		Appender!string pfm = appender!string;
+		float endiannessStr;
+		if(endianness == Endian.littleEndian){
+			endiannessStr = -1.0;
+		} 
+		else{
+			endiannessStr = 1.0;
+		}
+		pfm.put(toUTF32!string("PF\n"~to!string(width)~" "~to!string(height)~"\n"~to!string(endiannessStr)~"\n"));
+
+		color col;
+		for(int i=height-1; i>-1; i--){
+			for(int j=0; j<width; j++){
+				col = getPixel(j, i);
+				pfm.put(toUTF32!string(to!string(col.r)));
+				pfm.put(toUTF32!string(to!string(col.g)));
+				pfm.put(toUTF32!string(to!string(col.b)));
+			}
+		}
+		writeln(pfm[]);
+	}
+	/*unittest{
+		assert(toUTF8!string(11) == [0b00001011]);
+		assert(to!string(12.375).toUTF32.equal([0b01000001010001100000000000000000]));
+		}*/
+    
+	unittest{
         HDRImage img = new HDRImage(7,4);
 
 		assert (img.validCoordinates(0, 0)); 
@@ -88,8 +124,10 @@ class HDRImage{
     }
 }
 
+
 void main(string[] args)
 {
+	
 	if(args.length != 3){
 		writeln("Passare le dimensioni dell'immagine");
 		return;
@@ -101,11 +139,12 @@ void main(string[] args)
 
 	color c1 = {70,10,80};
 	color c2 = {20,100,33};
-	c1.stampa();
-	c2.stampa();
-	write("C1*2: ");
-	(c1*2).stampa();
 	
 	color c3 = {3e-6, 0, 0};
 	writeln(c1.colorAreClose(c1+c3));
+
+	image.setPixel(to!int(w/2),0,c1);
+	image.setPixel(to!int(w/2),1,c2);
+	image.setPixel(0,to!int(h-1),c3);
+	image.writePFM();
 }
