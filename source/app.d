@@ -3,9 +3,7 @@ import std.conv;
 import std.math;
 import std.array;
 import std.system;
-import std.format;
-import std.utf;
-import std.algorithm;
+import std.bitmanip;
 
 bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
@@ -33,21 +31,21 @@ struct color{
 		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
 	}
 
-	bool colorAreClose(color c){
+	bool colorIsClose(color c){
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
 	unittest{
 		color c1 = {1.0, 2.0, 3.0}, c2 = {5.0, 7.0, 9.0};
 
-		assert (c1.colorAreClose(color(0.999999,2.0,3.0)));
+		assert (c1.colorIsClose(color(0.999999,2.0,3.0)));
 
-		assert ((c1+c2).colorAreClose(color(6.0, 9.0, 12.0)));
-		assert ((c1-c2).colorAreClose(color(-4.0, -5.0, -6.0)));
-		assert ((c1*c2).colorAreClose(color(5.0, 14.0, 27.0)));
+		assert ((c1+c2).colorIsClose(color(6.0, 9.0, 12.0)));
+		assert ((c1-c2).colorIsClose(color(-4.0, -5.0, -6.0)));
+		assert ((c1*c2).colorIsClose(color(5.0, 14.0, 27.0)));
 
-		assert ((c1*2.0).colorAreClose(color(2.0, 4.0, 6.0)));
-		assert ((3.0*c1).colorAreClose(color(3.0, 6.0, 9.0)));
+		assert ((c1*2.0).colorIsClose(color(2.0, 4.0, 6.0)));
+		assert ((3.0*c1).colorIsClose(color(3.0, 6.0, 9.0)));
 	}
 }
 
@@ -61,9 +59,11 @@ class HDRImage{
 		pixels.length = width*height;
 	}
 
-	/*this(file){
-
-	}*/
+	this(ubyte[] stream){
+		if(stream[0..3] != [80,70,10]){
+			// throw exception
+		}
+	}
 
 	bool validCoordinates(int x, int y){
 		return x>=0 && x<width && y>=0 && y<height;
@@ -84,31 +84,34 @@ class HDRImage{
 	}
 
 	void writePFM(Endian endianness = Endian.littleEndian){
-		Appender!string pfm = appender!string;
 		float endiannessStr;
-		if(endianness == Endian.littleEndian){
-			endiannessStr = -1.0;
+		if(endianness == Endian.bigEndian){
+			endiannessStr = 1.0;
 		} 
 		else{
-			endiannessStr = 1.0;
+			endiannessStr = -1.0;
 		}
-		pfm.put(toUTF32!string("PF\n"~to!string(width)~" "~to!string(height)~"\n"~to!string(endiannessStr)~"\n"));
+
+		Appender!(ubyte[]) pfm = appender!(ubyte[]);
+		pfm.put(cast(ubyte[])("PF\n"~to!string(width)~" "~to!string(height)~"\n"~to!string(endiannessStr)~"\n"));
 
 		color col;
 		for(int i=height-1; i>-1; i--){
 			for(int j=0; j<width; j++){
 				col = getPixel(j, i);
-				pfm.put(toUTF32!string(to!string(col.r)));
-				pfm.put(toUTF32!string(to!string(col.g)));
-				pfm.put(toUTF32!string(to!string(col.b)));
+				if(endianness == Endian.bigEndian){
+					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.r));
+					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.g));
+					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.b));
+				}
+				else{
+					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.r));
+					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.g));
+					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.b));
+				}
 			}
 		}
-		writeln(pfm[]);
 	}
-	/*unittest{
-		assert(toUTF8!string(11) == [0b00001011]);
-		assert(to!string(12.375).toUTF32.equal([0b01000001010001100000000000000000]));
-		}*/
     
 	unittest{
         HDRImage img = new HDRImage(7,4);
@@ -137,14 +140,12 @@ void main(string[] args)
 	int h = to!int(args[2]);
 	HDRImage image = new HDRImage(w,h);
 
-	color c1 = {70,10,80};
-	color c2 = {20,100,33};
-	
-	color c3 = {3e-6, 0, 0};
-	writeln(c1.colorAreClose(c1+c3));
+	color c1 = {0,10,2};
+	color c2 = {-2,0,1};
+	color c3 = {12.3, 0, 0};
 
-	image.setPixel(to!int(w/2),0,c1);
-	image.setPixel(to!int(w/2),1,c2);
-	image.setPixel(0,to!int(h-1),c3);
+	image.setPixel(1,0,c1);
+	image.setPixel(1,1,c2);
+	image.setPixel(0,1,c3);
 	image.writePFM();
 }
