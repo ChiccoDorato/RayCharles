@@ -4,9 +4,14 @@ import std.math;
 import std.array;
 import std.system;
 import std.bitmanip;
+import std.algorithm;
 
 bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
+}
+
+float clamp(float x){
+	return x/(1.0+x);
 }
 
 struct color{
@@ -35,6 +40,10 @@ struct color{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
+	float luminosity(){
+		return (max(r, g, b) + min(r, g, b)) / 2.0;
+	}
+
 	unittest{
 		color c1 = {1.0, 2.0, 3.0}, c2 = {5.0, 7.0, 9.0};
 
@@ -46,6 +55,10 @@ struct color{
 
 		assert ((c1*2.0).colorIsClose(color(2.0, 4.0, 6.0)));
 		assert ((3.0*c1).colorIsClose(color(3.0, 6.0, 9.0)));
+		
+		color c3 = {9.0, 5.0, 7.0};
+		assert(areClose(2.0, c1.luminosity()));
+		assert(areClose(7.0, c3.luminosity()));
 	}
 }
 
@@ -111,26 +124,81 @@ class HDRImage{
 				}
 			}
 		}
+		writeln(pfm[]); 
 	}
-    
+
+	float averageLuminosity(float delta=1e-10){
+		float lumSum = 0.0;
+        foreach(p; pixels[]){
+            lumSum += log10(delta+p.luminosity());
+		}
+        return pow(10, lumSum/pixels.length);
+	}
+
+	void normalizeImage(float factor, float luminosity){
+		if(!(luminosity>0) && !(luminosity<0) && luminosity!=0){
+			luminosity = averageLuminosity();
+			//luminosity ?? averageLuminosity(); // Tipi opzionali not found yet
+		}
+		for(int i=0; i<pixels.length; i++){
+			pixels[i] = pixels[i]*(factor/luminosity);
+		}
+	}
+	
+	void clampImage(){
+		for(int i=0; i<pixels.length; i++){
+			pixels[i].r = clamp(pixels[i].r);
+			pixels[i].g = clamp(pixels[i].g);
+			pixels[i].b = clamp(pixels[i].b);
+		}
+	}
+
 	unittest{
         HDRImage img = new HDRImage(7,4);
 
 		assert (img.validCoordinates(0, 0)); 
 		assert (img.validCoordinates(6, 3));
-		assert (! img.validCoordinates(-1, 0));
-		assert (! img.validCoordinates(0, -1));
-		assert (! img.validCoordinates(7, 0));
-		assert (! img.validCoordinates(0, 4));
+		assert (!img.validCoordinates(-1, 0));
+		assert (!img.validCoordinates(0, -1));
+		assert (!img.validCoordinates(7, 0));
+		assert (!img.validCoordinates(0, 4));
 
 		assert (img.pixelOffset(3, 2) == 17);
     }
+
+	unittest{
+		HDRImage img = new HDRImage(2,1);
+		color c1 = {5.0, 10.0, 15.0}, c2 = {500.0, 1000.0, 1500.0};
+		img.setPixel(0, 0, c1);
+		img.setPixel(1, 0, c2);
+		
+		writeln(img.averageLuminosity(0.0));
+		assert(areClose(100.0, img.averageLuminosity(0.0)));
+		
+		color c3 = {0.5e2, 1.0e2, 1.5e2}, c4 = {0.5e4, 1.0e4, 1.5e4};
+		img.normalizeImage(1000.0, 100.0);
+		assert(img.getPixel(0, 0).colorIsClose(c3));
+		assert(img.getPixel(1, 0).colorIsClose(c4));
+	}
+
+	unittest{
+		HDRImage img = new HDRImage(2,1);
+		
+		color c1 = {0.5e1, 1.0e1, 1.5e1}, c2 = {0.5e3, 1.0e3, 1.5e3};
+		img.setPixel(0, 0, c1);
+		img.setPixel(1, 0, c2);
+		img.clampImage();
+		
+		// Check RGB boundaries
+		foreach(pixel; img.pixels){
+			assert(pixel.r >= 0 && pixel.r <= 1);
+			assert(pixel.g >= 0 && pixel.g <= 1);
+			assert(pixel.b >= 0 && pixel.b <= 1);
+		}
+	}
 }
 
-
-void main(string[] args)
-{
-	
+void main(string[] args){ 
 	if(args.length != 3){
 		writeln("Passare le dimensioni dell'immagine");
 		return;
@@ -144,8 +212,11 @@ void main(string[] args)
 	color c2 = {-2,0,1};
 	color c3 = {12.3, 0, 0};
 
-	image.setPixel(1,0,c1);
-	image.setPixel(1,1,c2);
-	image.setPixel(0,1,c3);
+	image.setPixel(1, 0, c1);
+	image.setPixel(1, 1, c2);
+	image.setPixel(0, 1, c3);
 	image.writePFM();
+
+	float lum, fac=1.0;
+	image.normalizeImage(fac, lum);
 }
