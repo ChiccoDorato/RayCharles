@@ -2,6 +2,7 @@ import std.stdio;
 import std.conv;
 import std.math;
 import std.array;
+import std.string;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
@@ -73,8 +74,102 @@ class HDRImage{
 	}
 
 	this(ubyte[] stream){
+		if(stream.length < 8){
+			throw new Exception(format("Invalid file: header too short."));
+		}
+
 		if(stream[0..3] != [80,70,10]){
-			// throw exception
+			throw new Exception(format("Invalid magic: %s.", stream[0..3]));
+		}
+
+		uint firstDigitWidth = 3;
+		if(stream[3] < 49 && stream[3] > 57){
+			throw new Exception(format("Invalid width: %s is not a positive digit.", stream[3]));
+		}
+		uint i = 4;
+		while(stream[i] != 32){
+			if(stream[i] < 48 && stream[i] > 57){
+				throw new Exception(format("Invalid width: %s. First digit must be positive.", stream[i]));
+			}
+			++i;
+		}
+		uint lastDigitWidth = i-1;
+
+		++i; // incremento perché i è sullo spazio
+
+		uint firstDigitHeight = i;
+		if(stream[i] < 49 && stream[i] > 57){
+			throw new Exception(format("Invalid height: %s. First digit must be positive.", stream[i]));
+		}
+		++i;
+		while(stream[i] != 10){
+			if(stream[i] < 48 && stream[i] > 57){
+				throw new Exception(format("Invalid height: %s is not a digit.", stream[i]));
+			}
+			++i;
+		}
+		uint lastDigitHeight = i-1;
+		
+		to!int(to!string(stream[firstDigitHeight..lastDigitHeight+1]));
+
+		++i; // incremento perché i è sullo \n
+
+		bool endiannessLittle;
+		if(stream[i] == 45){
+			endiannessLittle = true;
+			++i;
+		}
+		bool dot;
+		do{
+			if(stream[i] == 46){
+				if(dot == false){
+					dot = true;
+					++i;
+				}
+				else{
+					throw new Exception(format("Invalid endianness: multiple dots."));
+				}
+			}
+			if(stream[i] < 48 && stream[i] > 57){
+				throw new Exception(format("Invalid endianness: %s is not a digit.", stream[i]));
+			}
+			++i;	
+		}while(stream[i] != 10);
+
+		string w = "";
+		for(uint j=firstDigitWidth; j<lastDigitWidth+1; j++){
+			w ~= to!string(stream[j]);
+		}
+		width = to!int(w);
+
+		string h = "";
+		for(uint j=firstDigitHeight; j<lastDigitHeight+1; j++){
+			h ~= to!string(stream[j]);
+		}
+		height = to!int(h);
+
+		if(12*width*height != stream.length-i+1){
+			throw new Exception(format("Expected %s pixels", width*height));
+		}
+
+		++i; // incremento perché i è sullo \n
+
+		if(endiannessLittle){
+			for(uint j=0; j<width*height; j++){
+				reverse(stream[i..i+12]);
+				pixels[j].b = *cast(float*)(&stream[i]);
+				pixels[j].g = *cast(float*)(&stream[i+4]);
+				pixels[j].r = *cast(float*)(&stream[i+8]);
+				i += 12;
+			}
+		}
+		else{
+			for(uint j=0; j<width*height; j++){
+				pixels[j].r = *cast(float*)(&stream[i]);
+				pixels[j].g = *cast(float*)(&stream[i+4]);
+				pixels[j].b = *cast(float*)(&stream[i+8]);
+				i += 12;
+			}
 		}
 	}
 
@@ -124,7 +219,7 @@ class HDRImage{
 				}
 			}
 		}
-		writeln(pfm[]); 
+		writeln(pfm); 
 	}
 
 	float averageLuminosity(float delta=1e-10){
