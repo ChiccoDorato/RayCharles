@@ -1,8 +1,12 @@
 import std.stdio;
 import std.conv;
 import std.math;
+import std.file;
+//import std.exception;
+import core.exception;
 import std.array;
 import std.string;
+import std.range;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
@@ -13,6 +17,78 @@ bool areClose(float x, float y, float epsilon=1e-5){
 
 float clamp(float x){
 	return x/(1.0+x);
+}
+
+ubyte[] readLine(ubyte[] stream, uint startingPosition)
+in(startingPosition < stream.length, "Range error when reading a line."){
+	ubyte[] line;
+
+	for(uint i=startingPosition; i<stream.length; i++){
+		line ~= stream[i];
+		if(stream[i] == 10) break;
+	}
+
+	return line;
+}
+
+int[2] parseImgSize(ubyte[] imgSize){
+	ubyte[][] dimensions = imgSize.split(10);
+	if(dimensions.length != 2){
+		throw new core.exception.RangeError("Invalid number of dimensions.");
+	}
+
+	string widthArray;
+	for(uint j=0; j<dimensions[][0].length; j++){
+		widthArray ~= to!string(dimensions[0][j]);
+	}
+
+	string heightArray;
+	for(uint j=0; j<dimensions[][1].length; j++){
+		heightArray ~= to!string(dimensions[1][j]);
+	}
+
+	int w = -1, h = -1;
+	try{
+		w = to!int(widthArray);
+		h = to!int(heightArray);
+		if(w < 0 || h < 0){
+			throw new object.Exception("Invalid width and/or height: they must be non negative.");
+		}
+	}
+	catch(std.conv.ConvException exc){
+		writeln("Invalid width and/or height: they must be int.");
+	}
+	catch(core.exception.RangeError exc){
+		writeln(exc.msg);
+	}
+	catch(object.Exception exc){
+		writeln(exc.msg);
+	}
+
+	return [w, h];
+}
+
+float parseEndiannessLine(ubyte[] endiannessLine){
+	string endiannessArray;
+	for(uint j=0; j<endiannessLine.length; j++){
+		endiannessArray ~= to!string(endiannessLine[j]);
+	}
+
+	float endianness;
+	try{
+		endianness = to!float(endiannessArray);
+		if(areClose(endianness,0,1e-20)){
+			throw new object.Exception("Endianness cannot be too close to zero.");
+		}
+	}
+	catch(std.conv.ConvException exc){
+		writeln("Invalid endianness: it must be a float.");
+	}
+	catch(object.Exception exc){
+		writeln(exc.msg);
+	}
+
+	return endianness;
 }
 
 struct color{
@@ -74,85 +150,7 @@ class HDRImage{
 	}
 
 	this(ubyte[] stream){
-		if(stream.length < 8){
-			throw new Exception(format("Invalid file: header too short."));
-		}
-
-		if(stream[0..3] != [80,70,10]){
-			throw new Exception(format("Invalid magic: %s.", stream[0..3]));
-		}
-
-		uint firstDigitWidth = 3;
-		if(stream[3] < 49 && stream[3] > 57){
-			throw new Exception(format("Invalid width: %s is not a positive digit.", stream[3]));
-		}
-		uint i = 4;
-		while(stream[i] != 32){
-			if(stream[i] < 48 && stream[i] > 57){
-				throw new Exception(format("Invalid width: %s. First digit must be positive.", stream[i]));
-			}
-			++i;
-		}
-		uint lastDigitWidth = i-1;
-
-		++i; // incremento perché i è sullo spazio
-
-		uint firstDigitHeight = i;
-		if(stream[i] < 49 && stream[i] > 57){
-			throw new Exception(format("Invalid height: %s. First digit must be positive.", stream[i]));
-		}
-		++i;
-		while(stream[i] != 10){
-			if(stream[i] < 48 && stream[i] > 57){
-				throw new Exception(format("Invalid height: %s is not a digit.", stream[i]));
-			}
-			++i;
-		}
-		uint lastDigitHeight = i-1;
-		
-		to!int(to!string(stream[firstDigitHeight..lastDigitHeight+1]));
-
-		++i; // incremento perché i è sullo \n
-
-		bool endiannessLittle;
-		if(stream[i] == 45){
-			endiannessLittle = true;
-			++i;
-		}
-		bool dot;
-		do{
-			if(stream[i] == 46){
-				if(dot == false){
-					dot = true;
-					++i;
-				}
-				else{
-					throw new Exception(format("Invalid endianness: multiple dots."));
-				}
-			}
-			if(stream[i] < 48 && stream[i] > 57){
-				throw new Exception(format("Invalid endianness: %s is not a digit.", stream[i]));
-			}
-			++i;	
-		}while(stream[i] != 10);
-
-		string w = "";
-		for(uint j=firstDigitWidth; j<lastDigitWidth+1; j++){
-			w ~= to!string(stream[j]);
-		}
-		width = to!int(w);
-
-		string h = "";
-		for(uint j=firstDigitHeight; j<lastDigitHeight+1; j++){
-			h ~= to!string(stream[j]);
-		}
-		height = to!int(h);
-
-		if(12*width*height != stream.length-i+1){
-			throw new Exception(format("Expected %s pixels", width*height));
-		}
-
-		++i; // incremento perché i è sullo \n
+		/*++i; // incremento perché i è sullo \n
 
 		if(endiannessLittle){
 			for(uint j=0; j<width*height; j++){
@@ -170,6 +168,29 @@ class HDRImage{
 				pixels[j].b = *cast(float*)(&stream[i+8]);
 				i += 12;
 			}
+		}*/
+	}
+
+	this(string fileName){
+		ubyte[] stream = cast(ubyte[])fileName.read;
+		int streamPosition = 0;
+
+		ubyte[] magic = stream.readLine(streamPosition);
+		if(magic != [80,70,10]){
+			throw new Exception(format("Invalid magic: %s.", magic));
+		}
+		streamPosition += magic.length;
+
+		ubyte[] imgSize = stream.readLine(streamPosition);
+		int[2] size = parseImgSize(imgSize);
+		this(size[0], size[1]);
+		streamPosition += imgSize.length;
+
+		ubyte[] endiannessLine = stream.readLine(streamPosition);
+		float endianness = parseEndiannessLine(endiannessLine);
+
+		if(12*width*height != stream.length-streamPosition){
+			throw new Exception(format("Expected %s pixels", width*height));
 		}
 	}
 
@@ -230,10 +251,9 @@ class HDRImage{
         return pow(10, lumSum/pixels.length);
 	}
 
-	void normalizeImage(float factor, float luminosity){
-		if(!(luminosity>0) && !(luminosity<0) && luminosity!=0){
+	void normalizeImage(float factor, float luminosity = NaN(0x3FFFFF)){
+		if(luminosity.isNaN()){
 			luminosity = averageLuminosity();
-			//luminosity ?? averageLuminosity(); // Tipi opzionali not found yet
 		}
 		for(int i=0; i<pixels.length; i++){
 			pixels[i] = pixels[i]*(factor/luminosity);
