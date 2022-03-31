@@ -3,6 +3,9 @@
 		"Luca Bernardi"
 	],
 	"copyright": "Copyright © 2022, Luca Bernardi",
+	"dependencies": {
+		"imageformats": "~>7.0.2"
+	},
 	"description": "A minimal D application.",
 	"license": "proprietary",
 	"name": "imagegenerator"

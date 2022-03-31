@@ -11,6 +11,34 @@ import std.system;
 import std.bitmanip;
 import std.algorithm;
 
+struct parameters{
+	string inputPFMFile, outputPNGFile;
+	float factor = 0.2, gamma = 1.0;
+
+	@disable this();
+
+	this(string[] args){
+		if(args.length != 5){
+			throw new Exception("Usage: executable inputPFMFile factor gamma outputPNGFile");
+		}
+
+		inputPFMFile = args[1];
+		try{
+			factor = to!float(args[2]);
+		}
+		catch(std.conv.ConvException exc){
+			throw new std.conv.ConvException(format("Invalid factor [%s]: it must be a float.", args[2]));
+		}
+		try{
+			gamma = to!float(args[3]);
+		}
+		catch(std.conv.ConvException exc){
+			throw new std.conv.ConvException(format("Invalid gamma %s: it must be a float.", args[3]));
+		}
+		outputPNGFile = args[4];
+	}
+}
+
 bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
 }
@@ -372,24 +400,21 @@ unittest{
 }
 
 void main(string[] args){ 
-	if(args.length != 3){
-		writeln("Passare le dimensioni dell'immagine");
+	parameters* params;
+	try{
+		params = new parameters(args);
+	}
+	catch(Exception exc){
+		writeln("Error! ", exc.msg);
 		return;
 	}
 
-	int w = to!int(args[1]);
-	int h = to!int(args[2]);
-	HDRImage image = new HDRImage(w,h);
+	HDRImage image = new HDRImage(params.inputPFMFile);
+	writeln("File "~params.inputPFMFile~" has been read from disk.");
 
-	color c1 = {0,10,2};
-	color c2 = {-2,0,1};
-	color c3 = {12.3, 0, 0};
+	image.normalizeImage(params.factor);
+	image.clampImage;
 
-	image.setPixel(1, 0, c1);
-	image.setPixel(1, 1, c2);
-	image.setPixel(0, 1, c3);
-	image.writePFM();
-
-	float lum, fac=1.0;
-	image.normalizeImage(fac, lum);
+	// Scrivere LDR: image.writeLDR(params.outputPNGFile,"PNG",params.gamma);
+	writeln("File "~params.outputPNGFile~" has been read from disk.");
 }
