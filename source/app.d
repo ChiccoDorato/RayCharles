@@ -180,16 +180,29 @@ class HDRImage{
 		pixels.length = width*height;
 	}
 
-	this(int w, int h, ubyte[] stream, float endiannessValue){
-		if(12*w*h != stream.length){
-			throw new Exception(format("Expected %s pixels", w*h));
-		}
-		this(w, h);
+	this(ubyte[] stream){
+		int streamPosition = 0;
 
-		if(areClose(endiannessValue,0,1e-20)){
-			throw new object.Exception("Endianness cannot be too close to zero.");
+		ubyte[] magic = stream.readLine(streamPosition);
+		if(magic != [80,70,10]){
+			throw new Exception(format("Invalid magic: %s.", magic));
 		}
-		else if(endiannessValue < 0){
+		streamPosition += magic.length;
+
+		ubyte[] imgSize = stream.readLine(streamPosition);
+		int[2] size = parseImgSize(imgSize);
+		streamPosition += imgSize.length;
+
+		ubyte[] endiannessLine = stream.readLine(streamPosition);
+		float endiannessValue = parseEndiannessLine(endiannessLine);
+		streamPosition += endiannessLine.length;
+
+		if(12*size[0]*size[1] != stream.length-streamPosition){
+			throw new Exception(format("Expected %s pixels", size[0]*size[1]));
+		}
+		this(size[0], size[1]);
+
+		if(endiannessValue < 0){
 			for(auto j=pixels.length-1; j>-1; j--){
 				reverse(stream[j..j+12]);
 				pixels[j].b = *cast(float*)(&stream[j-12]);
@@ -208,23 +221,7 @@ class HDRImage{
 
 	this(string fileName){
 		ubyte[] stream = cast(ubyte[])(fileName.read);
-		int streamPosition = 0;
-
-		ubyte[] magic = stream.readLine(streamPosition);
-		if(magic != [80,70,10]){
-			throw new Exception(format("Invalid magic: %s.", magic));
-		}
-		streamPosition += magic.length;
-
-		ubyte[] imgSize = stream.readLine(streamPosition);
-		int[2] size = parseImgSize(imgSize);
-		streamPosition += imgSize.length;
-
-		ubyte[] endiannessLine = stream.readLine(streamPosition);
-		float endiannessValue = parseEndiannessLine(endiannessLine);
-		streamPosition += endiannessLine.length;
-
-		this(size[0], size[1], stream[streamPosition..$], endiannessValue);
+		this(stream);
 	}
 
 	bool validCoordinates(int x, int y){
@@ -245,17 +242,17 @@ class HDRImage{
 		pixels[pixelOffset(x, y)] = c;
 	}
 
-	void writePFM(Endian endianness = Endian.littleEndian){
-		float endiannessStr;
+	ubyte[] writePFM(Endian endianness = Endian.littleEndian){
+		string endiannessStr;
 		if(endianness == Endian.bigEndian){
-			endiannessStr = 1.0;
+			endiannessStr = "1.0";
 		} 
 		else{
-			endiannessStr = -1.0;
+			endiannessStr = "-1.0";
 		}
 
 		Appender!(ubyte[]) pfm = appender!(ubyte[]);
-		pfm.put(cast(ubyte[])("PF\n"~to!string(width)~" "~to!string(height)~"\n"~to!string(endiannessStr)~"\n"));
+		pfm.put(cast(ubyte[])("PF\n"~to!string(width)~" "~to!string(height)~"\n"~endiannessStr~"\n"));
 
 		color col;
 		for(int i=height-1; i>-1; i--){
@@ -273,7 +270,7 @@ class HDRImage{
 				}
 			}
 		}
-		writeln(pfm); 
+		return pfm.data;
 	}
 
 	float averageLuminosity(float delta=1e-10){
@@ -345,6 +342,21 @@ unittest{
 		assert(pixel.b >= 0 && pixel.b <= 1);
 	}
 }
+
+/*unittest{
+	ubyte[] referenceBytes = [
+	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x2d, 0x31, 0x2e, 0x30, 0x0a,
+	0x00, 0x00, 0xc8, 0x42, 0x00, 0x00, 0x48, 0x43, 0x00, 0x00, 0x96, 0x43,
+	0x00, 0x00, 0xc8, 0x43, 0x00, 0x00, 0xfa, 0x43, 0x00, 0x00, 0x16, 0x44,
+	0x00, 0x00, 0x2f, 0x44, 0x00, 0x00, 0x48, 0x44, 0x00, 0x00, 0x61, 0x44,
+	0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0xa0, 0x41, 0x00, 0x00, 0xf0, 0x41,
+	0x00, 0x00, 0x20, 0x42, 0x00, 0x00, 0x48, 0x42, 0x00, 0x00, 0x70, 0x42,
+	0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42];
+	HDRImage img = new HDRImage(referenceBytes);
+	img.setPixel(1,1,color(10,20,30));
+	writeln(img.writePFM);
+	writeln(referenceBytes);
+}*/
 
 unittest{
 	string[2] files = ["reference_le.pfm", "reference_be.pfm"];
