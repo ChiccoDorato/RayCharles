@@ -19,21 +19,24 @@ struct parameters{
 
 	this(string[] args){
 		if(args.length != 5){
-			throw new Exception("Usage: executable inputPFMFile factor gamma outputPNGFile");
+			throw new Exception("USAGE: executable inputPFMFile factor gamma outputPNGFile");
 		}
 
+		if(!args[1].isFile){
+			throw new FileException(format("Invalid input file [%s] ", args[1]));
+		}
 		inputPFMFile = args[1];
 		try{
 			factor = to!float(args[2]);
 		}
 		catch(std.conv.ConvException exc){
-			throw new std.conv.ConvException(format("Invalid factor [%s]: it must be a float.", args[2]));
+			throw new std.conv.ConvException(format("Invalid factor [%s]", args[2]));
 		}
 		try{
 			gamma = to!float(args[3]);
 		}
 		catch(std.conv.ConvException exc){
-			throw new std.conv.ConvException(format("Invalid gamma %s: it must be a float.", args[3]));
+			throw new std.conv.ConvException(format("Invalid gamma [%s]", args[3]));
 		}
 		outputPNGFile = args[4];
 	}
@@ -66,16 +69,16 @@ unittest{
 int[2] parseImgSize(ubyte[] imgSize)
 in{
 	if(imgSize.length == 0){
-		throw new Exception(format("%s is an empty array.", imgSize));
+		throw new Exception(format("%s is an empty array", imgSize));
 	}
 }
 do{
 	ubyte[][] dimensions = imgSize.split(32);
 	if(dimensions.length != 2){
-		throw new Exception("Invalid number of dimensions.");
+		throw new Exception("Invalid number of dimensions");
 	}
 	if(dimensions[][0].length == 0 || dimensions[][1].length == 0){
-		throw new Exception("Invalid number of dimensions.");
+		throw new Exception("Invalid number of dimensions");
 	}
 
 	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException. Va controllato? Temo di sì.
@@ -89,12 +92,12 @@ do{
 		int w = to!int(widthArray);
 		int h = to!int(heightArray);
 		if(w < 0 || h < 0){
-			throw new object.Exception("Invalid width and/or height: they must be non negative.");
+			throw new object.Exception("Invalid width and/or height: negative value");
 		}
 		return [w,h];
 	}
 	catch(std.conv.ConvException exc){
-		throw new std.conv.ConvException("Invalid width and/or height: they must be int.");
+		throw new std.conv.ConvException("Invalid width and/or height: not an integer");
 	}
 }
 
@@ -113,7 +116,7 @@ unittest{
 float parseEndiannessLine(ubyte[] endiannessLine)
 in{
 	if(endiannessLine.length == 0){
-		throw new Exception(format("%s is an empty array.", endiannessLine));
+		throw new Exception(format("%s is an empty array", endiannessLine));
 	}
 }
 do{
@@ -126,12 +129,12 @@ do{
 	try{
 		float endiannessValue = to!float(endiannessArray);
 		if(areClose(endiannessValue,0,1e-20)){
-			throw new object.Exception("Endianness cannot be too close to zero.");
+			throw new object.Exception("Endianness cannot be too close to zero");
 		}
 		return endiannessValue;
 	}
 	catch(std.conv.ConvException exc){
-		throw new std.conv.ConvException("Invalid endianness: it must be a float.");
+		throw new std.conv.ConvException(format("Invalid endianness %s", endiannessArray));
 	}
 }
 
@@ -148,6 +151,25 @@ unittest{
 
 	ubyte[] emptyArray = [];
 	assertThrown!Exception(parseEndiannessLine(emptyArray));
+}
+
+float readFloat(ubyte[] stream, int startingPosition, float endiannessValue)
+in(startingPosition<stream.length-3, format("Less than 4 bytes in %s from index %s", stream, startingPosition))
+in(!areClose(endiannessValue,0,1e-20), "Endianness cannot be too close to zero")
+{
+	uint nativeValue = *cast(uint*)(stream.ptr+startingPosition);
+	if((endian == Endian.littleEndian && endiannessValue > 0) || (endian == Endian.bigEndian && endiannessValue < 0)){
+		nativeValue = nativeValue.swapEndian;
+	}
+	return *cast(float*)(&nativeValue);
+}
+
+unittest{
+	ubyte[] test = [30, 20, 70, 55, 108, 99, 10, 7];
+	ubyte[] check = [55, 70, 20, 30, 7, 10, 99, 108];
+	for(int i=0; i<test.length; i+=4){
+		assert(test.readFloat(i,-1) == check.readFloat(i,1));
+	}
 }
 
 struct color{
@@ -213,7 +235,7 @@ class HDRImage{
 
 		ubyte[] magic = stream.readLine(streamPosition);
 		if(magic != [80,70,10]){
-			throw new Exception(format("Invalid magic: %s.", magic));
+			throw new Exception(format("Invalid magic %s", magic));
 		}
 		streamPosition += magic.length;
 
@@ -230,19 +252,15 @@ class HDRImage{
 		}
 		this(size[0], size[1]);
 
-		if(endiannessValue < 0){
-			for(auto j=pixels.length-1; j>-1; j--){
-				reverse(stream[j..j+12]);
-				pixels[j].b = *cast(float*)(&stream[j-12]);
-				pixels[j].g = *cast(float*)(&stream[j-8]);
-				pixels[j].r = *cast(float*)(&stream[j-4]);
-			}
-		}
-		else{
-			for(auto j=pixels.length-1; j>-1; j--){
-				pixels[j].r = *cast(float*)(&stream[j-12]);
-				pixels[j].g = *cast(float*)(&stream[j-8]);
-				pixels[j].b = *cast(float*)(&stream[j-4]);
+		float red, green, blue;
+		int posPixel;
+		for(int i=0; i<height; i++){
+			for(int j=0; j<width; j++){
+				posPixel = streamPosition+12*pixelOffset(j,height-1-i);
+				red = readFloat(stream, posPixel, endiannessValue);
+				green = readFloat(stream, posPixel+4, endiannessValue);
+				blue = readFloat(stream, posPixel+8, endiannessValue);
+				setPixel(j,i,color(red, green, blue));
 			}
 		}
 	}
@@ -299,6 +317,17 @@ class HDRImage{
 			}
 		}
 		return pfm.data;
+	}
+
+	void writePFMFile(string fileName, Endian endianness = Endian.littleEndian){
+		if(!fileName.endsWith(".pfm")){
+			fileName ~= ".pfm";
+			if(!fileName.exists){
+				writeln("WARNING: file automatically renamed to ", fileName);
+			}
+		}
+		File PFMFile = File(fileName, "w");
+		PFMFile.write(writePFM(endianness));
 	}
 
 	float averageLuminosity(float delta=1e-10){
@@ -371,8 +400,16 @@ unittest{
 	}
 }
 
-/*unittest{
-	ubyte[] referenceBytes = [
+unittest{
+	HDRImage img = new HDRImage(3,2);
+	img.setPixel(0, 0, color(1.0e1, 2.0e1, 3.0e1));
+	img.setPixel(1, 0, color(4.0e1, 5.0e1, 6.0e1));
+	img.setPixel(2, 0, color(7.0e1, 8.0e1, 9.0e1));
+	img.setPixel(0, 1, color(1.0e2, 2.0e2, 3.0e2));
+	img.setPixel(1, 1, color(4.0e2, 5.0e2, 6.0e2));
+	img.setPixel(2, 1, color(7.0e2, 8.0e2, 9.0e2));
+
+	ubyte[] LEreferenceBytes = [
 	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x2d, 0x31, 0x2e, 0x30, 0x0a,
 	0x00, 0x00, 0xc8, 0x42, 0x00, 0x00, 0x48, 0x43, 0x00, 0x00, 0x96, 0x43,
 	0x00, 0x00, 0xc8, 0x43, 0x00, 0x00, 0xfa, 0x43, 0x00, 0x00, 0x16, 0x44,
@@ -380,22 +417,36 @@ unittest{
 	0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0xa0, 0x41, 0x00, 0x00, 0xf0, 0x41,
 	0x00, 0x00, 0x20, 0x42, 0x00, 0x00, 0x48, 0x42, 0x00, 0x00, 0x70, 0x42,
 	0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42];
-	HDRImage img = new HDRImage(referenceBytes);
-	img.setPixel(1,1,color(10,20,30));
-	writeln(img.writePFM);
-	writeln(referenceBytes);
-}*/
+
+	ubyte[] BEreferenceBytes = [
+	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x31, 0x2e, 0x30, 0x0a, 0x42,
+	0xc8, 0x00, 0x00, 0x43, 0x48, 0x00, 0x00, 0x43, 0x96, 0x00, 0x00, 0x43,
+	0xc8, 0x00, 0x00, 0x43, 0xfa, 0x00, 0x00, 0x44, 0x16, 0x00, 0x00, 0x44,
+	0x2f, 0x00, 0x00, 0x44, 0x48, 0x00, 0x00, 0x44, 0x61, 0x00, 0x00, 0x41,
+	0x20, 0x00, 0x00, 0x41, 0xa0, 0x00, 0x00, 0x41, 0xf0, 0x00, 0x00, 0x42,
+	0x20, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x42, 0x70, 0x00, 0x00, 0x42,
+	0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00];
+	
+	assert(img.writePFM == LEreferenceBytes);
+	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
+}
 
 unittest{
 	string[2] files = ["reference_le.pfm", "reference_be.pfm"];
 
 	foreach(string fileName; files){
-		HDRImage img = new HDRImage(files[1]);
+		HDRImage img = new HDRImage(fileName);
 
 		assert(img.width == 3);
 		assert(img.height == 2);
 
-		//assert(img.getPixel(0,0).colorIsClose(color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(0,0).colorIsClose(color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,0).colorIsClose(color(4.0e1, 5.0e1, 6.0e1)));
+        assert(img.getPixel(2,0).colorIsClose(color(7.0e1, 8.0e1, 9.0e1)));
+        assert(img.getPixel(0,1).colorIsClose(color(1.0e2, 2.0e2, 3.0e2)));
+        assert(img.getPixel(0,0).colorIsClose(color(1.0e1, 2.0e1, 3.0e1)));
+        assert(img.getPixel(1,1).colorIsClose(color(4.0e2, 5.0e2, 6.0e2)));
+        assert(img.getPixel(2,1).colorIsClose(color(7.0e2, 8.0e2, 9.0e2)));
 	}
 }
 
@@ -410,11 +461,11 @@ void main(string[] args){
 	}
 
 	HDRImage image = new HDRImage(params.inputPFMFile);
-	writeln("File "~params.inputPFMFile~" has been read from disk.");
+	writeln("File "~params.inputPFMFile~" has been read from disk");
 
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
 	// Scrivere LDR: image.writeLDR(params.outputPNGFile,"PNG",params.gamma);
-	writeln("File "~params.outputPNGFile~" has been read from disk.");
+	writeln("File "~params.outputPNGFile~" has been read from disk");
 }
