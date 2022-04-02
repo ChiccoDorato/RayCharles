@@ -2,7 +2,7 @@ import std.stdio;
 import std.conv;
 import std.math;
 import std.file;
-//import std.exception;
+import std.exception;
 import core.exception;
 import std.array;
 import std.string;
@@ -20,7 +20,10 @@ float clamp(float x){
 }
 
 ubyte[] readLine(ubyte[] stream, uint startingPosition)
-in(startingPosition < stream.length, "Range error when reading a line."){
+in{
+	assert(startingPosition < stream.length, "Range error when reading a line.");
+	} 
+body{
 	ubyte[] line;
 
 	for(uint i=startingPosition; i<stream.length; i++){
@@ -47,25 +50,17 @@ int[2] parseImgSize(ubyte[] imgSize){
 		heightArray ~= to!string(dimensions[1][j]);
 	}
 
-	int w = -1, h = -1;
 	try{
-		w = to!int(widthArray);
-		h = to!int(heightArray);
+	int	w = to!int(widthArray);
+	int	h = to!int(heightArray);
 		if(w < 0 || h < 0){
 			throw new object.Exception("Invalid width and/or height: they must be non negative.");
-		}
+		} // Creare classe con metodo InvalidPFMfile
+		return [w, h];
 	}
 	catch(std.conv.ConvException exc){
-		writeln("Invalid width and/or height: they must be int.");
+		throw new std.conv.ConvException("Invalid width and/or height: they must be int.");
 	}
-	catch(core.exception.RangeError exc){
-		writeln(exc.msg);
-	}
-	catch(object.Exception exc){
-		writeln(exc.msg);
-	}
-
-	return [w, h];
 }
 
 float parseEndiannessLine(ubyte[] endiannessLine){
@@ -74,21 +69,16 @@ float parseEndiannessLine(ubyte[] endiannessLine){
 		endiannessArray ~= to!string(endiannessLine[j]);
 	}
 
-	float endianness;
 	try{
-		endianness = to!float(endiannessArray);
-		if(areClose(endianness,0,1e-20)){
+	float endiannessValue = to!float(endiannessArray);
+		if(areClose(endiannessValue,0,1e-20)){
 			throw new object.Exception("Endianness cannot be too close to zero.");
 		}
+		return endiannessValue;
 	}
 	catch(std.conv.ConvException exc){
-		writeln("Invalid endianness: it must be a float.");
+		throw new std.conv.ConvException("Invalid endianness: it must be a float.");
 	}
-	catch(object.Exception exc){
-		writeln(exc.msg);
-	}
-
-	return endianness;
 }
 
 struct color{
@@ -149,30 +139,31 @@ class HDRImage{
 		pixels.length = width*height;
 	}
 
-	this(ubyte[] stream){
-		/*++i; // incremento perché i è sullo \n
-
-		if(endiannessLittle){
-			for(uint j=0; j<width*height; j++){
-				reverse(stream[i..i+12]);
-				pixels[j].b = *cast(float*)(&stream[i]);
-				pixels[j].g = *cast(float*)(&stream[i+4]);
-				pixels[j].r = *cast(float*)(&stream[i+8]);
-				i += 12;
+	this(ubyte[] stream, float endiannessValue){
+		
+		uint numberOfPixels = width*height;
+		if(areClose(endiannessValue,0,1e-20)){
+			throw new object.Exception("Endianness cannot be too close to zero.");
+		}
+		else if(endiannessValue > 0){
+			for(int j=numberOfPixels; j>=0; j-=12){
+				reverse(stream[j..j+12]);
+				pixels[j/12].b = *cast(float*)(&stream[j-12]);
+				pixels[j/12].g = *cast(float*)(&stream[j-8]);
+				pixels[j/12].r = *cast(float*)(&stream[j-4]);
 			}
 		}
 		else{
-			for(uint j=0; j<width*height; j++){
-				pixels[j].r = *cast(float*)(&stream[i]);
-				pixels[j].g = *cast(float*)(&stream[i+4]);
-				pixels[j].b = *cast(float*)(&stream[i+8]);
-				i += 12;
+			for(int j=numberOfPixels; j>=0; j-=12){
+				pixels[j/12].r = *cast(float*)(&stream[j-12]);
+				pixels[j/12].g = *cast(float*)(&stream[j-8]);
+				pixels[j/12].b = *cast(float*)(&stream[j-4]);
 			}
-		}*/
+		}
 	}
 
 	this(string fileName){
-		ubyte[] stream = cast(ubyte[])fileName.read;
+		ubyte[] stream = cast(ubyte[])(fileName.read);
 		int streamPosition = 0;
 
 		ubyte[] magic = stream.readLine(streamPosition);
@@ -180,18 +171,17 @@ class HDRImage{
 			throw new Exception(format("Invalid magic: %s.", magic));
 		}
 		streamPosition += magic.length;
-
 		ubyte[] imgSize = stream.readLine(streamPosition);
 		int[2] size = parseImgSize(imgSize);
-		this(size[0], size[1]);
+		width = size[0], height = size[1];
 		streamPosition += imgSize.length;
-
 		ubyte[] endiannessLine = stream.readLine(streamPosition);
-		float endianness = parseEndiannessLine(endiannessLine);
+		float endiannessValue = parseEndiannessLine(endiannessLine);
 
 		if(12*width*height != stream.length-streamPosition){
 			throw new Exception(format("Expected %s pixels", width*height));
 		}
+		this(stream[streamPosition..$-1], endiannessValue);
 	}
 
 	bool validCoordinates(int x, int y){
@@ -267,6 +257,7 @@ class HDRImage{
 			pixels[i].b = clamp(pixels[i].b);
 		}
 	}
+}
 
 	unittest{
         HDRImage img = new HDRImage(7,4);
@@ -311,6 +302,27 @@ class HDRImage{
 			assert(pixel.b >= 0 && pixel.b <= 1);
 		}
 	}
+
+	unittest{
+	string[2] files = ["reference_le.pfm","reference_be.pfm"];
+
+	ubyte[] LE_REFERENCE_BYTES = [
+    0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x2d, 0x31, 0x2e, 0x30, 0x0a,
+    0x00, 0x00, 0xc8, 0x42, 0x00, 0x00, 0x48, 0x43, 0x00, 0x00, 0x96, 0x43,
+    0x00, 0x00, 0xc8, 0x43, 0x00, 0x00, 0xfa, 0x43, 0x00, 0x00, 0x16, 0x44,
+    0x00, 0x00, 0x2f, 0x44, 0x00, 0x00, 0x48, 0x44, 0x00, 0x00, 0x61, 0x44,
+    0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0xa0, 0x41, 0x00, 0x00, 0xf0, 0x41,
+    0x00, 0x00, 0x20, 0x42, 0x00, 0x00, 0x48, 0x42, 0x00, 0x00, 0x70, 0x42,
+    0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42];
+
+	ubyte[] BE_REFERENCE_BYTES = [
+    0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x31, 0x2e, 0x30, 0x0a, 0x42,
+    0xc8, 0x00, 0x00, 0x43, 0x48, 0x00, 0x00, 0x43, 0x96, 0x00, 0x00, 0x43,
+    0xc8, 0x00, 0x00, 0x43, 0xfa, 0x00, 0x00, 0x44, 0x16, 0x00, 0x00, 0x44,
+    0x2f, 0x00, 0x00, 0x44, 0x48, 0x00, 0x00, 0x44, 0x61, 0x00, 0x00, 0x41,
+    0x20, 0x00, 0x00, 0x41, 0xa0, 0x00, 0x00, 0x41, 0xf0, 0x00, 0x00, 0x42,
+    0x20, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x42, 0x70, 0x00, 0x00, 0x42,
+    0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00];
 }
 
 void main(string[] args){ 
