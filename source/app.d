@@ -10,12 +10,13 @@ import std.range;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
+import imageformats.png;
+
+import geometry:vec;
 
 struct parameters{
 	string inputPFMFile, outputPNGFile;
 	float factor = 0.2, gamma = 1.0;
-
-	@disable this();
 
 	this(string[] args){
 		if(args.length != 5){
@@ -175,19 +176,16 @@ unittest{
 struct color{
 	float r=0.0, g=0.0, b=0.0;
 
-	color opBinary(string op)(color rhs){
-		static if(op == "+" || op == "-" || op == "*"){
-			mixin ("return color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
-		}
-		else static assert(0, "Operation "~op~" not defined");
+	color opBinary(string op)(color rhs) if(op == "+" || op == "-" || op == "*"){
+		mixin ("return color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
 	}
 
-	color opBinary(string op:"*")(float alfa){
-		mixin ("return color(r"~op~"alfa, g"~op~"alfa, b"~op~"alfa);");
+	color opBinary(string op)(float alfa) if(op == "*"){
+		mixin ("return color(r*alfa, g*alfa, b*alfa);");
 	}
 
-	color opBinaryRight(string op:"*")(float alfa){
-		mixin ("return color(r"~op~"alfa, g"~op~"alfa, b"~op~"alfa);");
+	color opBinaryRight(string op)(float alfa) if(op == "*"){
+		mixin ("return color(alfa*r, alfa*g, alfa*b);");
 	}
 
 	string colorToString(){
@@ -330,6 +328,18 @@ class HDRImage{
 		PFMFile.write(writePFM(endianness));
 	}
 
+	void writePNG(char[] fileName, float gamma = 1.0){
+		ubyte[] data;
+		foreach(color c; pixels){
+			data ~= to!ubyte(round(255*pow(c.r, 1/gamma)));
+			data ~= to!ubyte(round(255*pow(c.g, 1/gamma)));
+			data ~= to!ubyte(round(255*pow(c.b, 1/gamma)));
+		}
+		long zero = 2;
+		long largh = to!long(width), alt = to!long(height);
+		imageformats.png.write_png(fileName, largh, alt, data, zero);
+	}
+
 	float averageLuminosity(float delta=1e-10){
 		float lumSum = 0.0;
         foreach(p; pixels[]){
@@ -466,6 +476,6 @@ void main(string[] args){
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
-	// Scrivere LDR: image.writeLDR(params.outputPNGFile,"PNG",params.gamma);
+	image.writePNG(params.outputPNGFile.dup,params.gamma);
 	writeln("File "~params.outputPNGFile~" has been read from disk");
 }
