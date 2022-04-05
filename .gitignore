@@ -13,3 +13,5 @@ imagegenerator-test-*
 *.o
 *.obj
 *.lst
+*.pfm
+*.png
