@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/imagegenerator
+imagegenerator.so
+imagegenerator.dylib
+imagegenerator.dll
+imagegenerator.a
+imagegenerator.lib
+imagegenerator-test-*
+*.exe
+*.o
+*.obj
+*.lst
