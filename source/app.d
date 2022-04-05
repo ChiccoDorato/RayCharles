@@ -12,6 +12,8 @@ import std.bitmanip;
 import std.algorithm;
 import imageformats.png;
 
+//import geometry:vec;
+
 struct parameters{
 	string inputPFMFile, outputPNGFile;
 	float factor = 0.2, gamma = 1.0;
@@ -252,7 +254,7 @@ class HDRImage{
 		int posPixel;
 		for(int i=0; i<height; i++){
 			for(int j=0; j<width; j++){
-				posPixel = streamPosition+12*pixelOffset(j,height-1-i);
+				posPixel = streamPosition+12*pixelOffset(j, height-1-i);
 				red = readFloat(stream, posPixel, endiannessValue);
 				green = readFloat(stream, posPixel+4, endiannessValue);
 				blue = readFloat(stream, posPixel+8, endiannessValue);
@@ -322,6 +324,7 @@ class HDRImage{
 				writeln("WARNING: file automatically renamed to ", fileName);
 			}
 		}
+
 		File PFMFile = File(fileName, "w");
 		PFMFile.write(writePFM(endianness));
 	}
@@ -333,9 +336,7 @@ class HDRImage{
 			data ~= to!ubyte(round(255*pow(c.g, 1/gamma)));
 			data ~= to!ubyte(round(255*pow(c.b, 1/gamma)));
 		}
-		long zero = 2;
-		long largh = to!long(width), alt = to!long(height);
-		imageformats.png.write_png(fileName, largh, alt, data, zero);
+		imageformats.png.write_png(fileName, width, height, data, 0);
 	}
 
 	float averageLuminosity(float delta=1e-10){
@@ -348,7 +349,7 @@ class HDRImage{
 
 	void normalizeImage(float factor, float luminosity = NaN(0x3FFFFF)){
 		if(luminosity.isNaN()){
-			luminosity = averageLuminosity();
+			luminosity = averageLuminosity(0);
 		}
 		for(int i=0; i<pixels.length; i++){
 			pixels[i] = pixels[i]*(factor/luminosity);
@@ -469,11 +470,11 @@ void main(string[] args){
 	}
 
 	HDRImage image = new HDRImage(params.inputPFMFile);
-	writeln("File "~params.inputPFMFile~" has been read from disk");
+	writeln("File "~params.inputPFMFile~" has been read from disk.");
 
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
 	image.writePNG(params.outputPNGFile.dup,params.gamma);
-	writeln("File "~params.outputPNGFile~" has been read from disk");
+	writeln("File "~params.outputPNGFile~" has been written to disk.");
 }
