@@ -12,7 +12,7 @@ import std.bitmanip;
 import std.algorithm;
 import imageformats.png;
 
-import geometry:vec;
+import geometry;
 
 struct parameters{
 	string inputPFMFile, outputPNGFile;
@@ -177,15 +177,15 @@ struct color{
 	float r=0.0, g=0.0, b=0.0;
 
 	color opBinary(string op)(color rhs) if(op == "+" || op == "-" || op == "*"){
-		mixin ("return color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
+		mixin("return color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
 	}
 
 	color opBinary(string op)(float alfa) if(op == "*"){
-		mixin ("return color(r*alfa, g*alfa, b*alfa);");
+		mixin("return color(r*alfa, g*alfa, b*alfa);");
 	}
 
 	color opBinaryRight(string op)(float alfa) if(op == "*"){
-		mixin ("return color(alfa*r, alfa*g, alfa*b);");
+		mixin("return color(alfa*r, alfa*g, alfa*b);");
 	}
 
 	string colorToString(){
@@ -476,6 +476,16 @@ void main(string[] args){
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
-	image.writePNG(params.outputPNGFile.dup,params.gamma);
+	//image.writePNG(params.outputPNGFile.dup,params.gamma);
 	writeln("File "~params.outputPNGFile~" has been read from disk");
+
+	vec v = {2, 3, 4};
+	normal n = {-1, 0, 1};
+	writeln(norm(v));
+	//mixin("float p = n*v;");
+	vec v2 = {1,1,1};
+	writeln(typeid(v2));
+	float due = 2.0;
+	//writeln(v*due);
+	//writeln(v+v2,"\n",v-v2);
 }
