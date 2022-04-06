@@ -4,6 +4,13 @@ bool areClose(float x, float y, float epsilon=1e-5){
 	return abs(x-y) < epsilon;
 }
 
+mixin template SumDiff(T, Ret) {
+  Ret opBinary(string op)(T rhs) const
+       if (op == "+" || op == "-") {
+      return mixin("Ret(x " ~ op ~ " rhs.x, y " ~ op ~ "rhs.y, z " ~ op ~ " rhs.z);");
+      }
+}
+
 struct vec{
     float x, y, z;
 
@@ -50,6 +57,8 @@ struct vec{
 
 struct point{
     float x, y, z;
+    mixin SumDiff!(vec, point);
+    mixin SumDiff!(point, vec);
 }
 
 struct normal{
