@@ -479,13 +479,8 @@ void main(string[] args){
 	//image.writePNG(params.outputPNGFile.dup,params.gamma);
 	writeln("File "~params.outputPNGFile~" has been read from disk");
 
-	vec v = {2, 3, 4};
-	normal n = {-1, 0, 1};
-	writeln(norm(v));
-	//mixin("float p = n*v;");
-	vec v2 = {1,1,1};
-	writeln(typeid(v2));
-	float due = 2.0;
-	//writeln(v*due);
-	//writeln(v+v2,"\n",v-v2);
+	point p1 = {0, 1, 2}, p2 = {1, 1, 2};
+	normal n1 = {3, 4, -1}, n2 = {3.000009, 4, -1};
+	vec v1 = {-2, 0, 5}, v2 = {-2-1e-7, 2e-8, 5};
+	writeln(n1.toString, "\n", v1);
 }
