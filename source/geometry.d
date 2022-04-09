@@ -1,9 +1,11 @@
-import std.conv;
-import std.array;
-import std.math;
+import std.conv:to;
+import std.array:split;
+import std.math:abs,sqrt;
 
 mixin template toString(T){
-    string toString()(){
+    string toString()()
+    in(T.tupleof.length == 3, "toString accepts xyz types only.")
+    {
         string[] typePath = to!string(typeid(T)).split(".");
         return typePath[$-1]~"(x="~to!string(x)~", y="~to!string(y)~", z="~to!string(z)~")";
     }
@@ -14,7 +16,9 @@ bool areClose(float x, float y, float epsilon=1e-5){
 }
 
 mixin template xyzIsClose(T){
-    bool xyzIsClose(T)(T v){
+    bool xyzIsClose(T)(T v)
+    in(T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
+    {
         return areClose(x, v.x) && areClose(y, v.y) && areClose(z, v.z);
     }
 }
@@ -26,7 +30,9 @@ mixin template xyzIsClose(T){
 }*/
 
 mixin template neg(R){
-    R opUnary(string op)() if(op == "-"){
+    R opUnary(string op)() if(op == "-")
+    in(R.tupleof.length == 3, "neg accepts xyz types only.")
+    {
         return R(-x, -y, -z);
     }
 }
@@ -38,7 +44,9 @@ mixin template neg(R){
 }*/
 
 mixin template rightMul(R){
-    R opBinaryRight(string op)(float alfa) if(op == "*"){
+    R opBinaryRight(string op)(float alfa) if(op == "*")
+    in(R.tupleof.length == 3, "rightMul accepts xyz types only.")
+    {
         return R(alfa*x, alfa*y, alfa*z);
     }
 }
@@ -56,25 +64,33 @@ mixin template rightMul(R){
 }*/
 
 mixin template squaredNorm(T){
-    float squaredNorm()(){
+    float squaredNorm()()
+    in(T.tupleof.length == 3, "squaredNorm accepts xyz types only.")
+    {
         return x*x + y*y + z*z;
     }
 }
 
 mixin template norm(T){
-    float norm()(){
+    float norm()()
+    in(T.tupleof.length == 3, "norm accepts xyz types only.")
+    {
         return sqrt(squaredNorm());
     }
 }
 
 mixin template normalize(R){
-    R normalize()(){
+    R normalize()()
+    in(R.tupleof.length == 3, "normalize accepts xyz types only.")
+    {
         return 1/norm()*this;
     }
 }
 
 mixin template convert(T, R){
-    R convert(){
+    R convert()
+    in(T.tupleof.length == 3 && R.tupleof.length == 3, "convert accepts xyz types only.")
+    {
         return R(x, y, z);
     }
 }
@@ -172,8 +188,6 @@ struct normal{
     mixin norm!normal;
     mixin normalize!normal;
 }
-
-
 
 unittest{
     vec a = {1.0, 2.0, 3.0}, b = {4.0, 6.0, 8.0};

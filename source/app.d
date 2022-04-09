@@ -10,8 +10,8 @@ import std.range;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
-import imageformats.png;
 
+import imageformats.png;
 import geometry;
 
 struct parameters{
@@ -476,11 +476,6 @@ void main(string[] args){
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
-	//image.writePNG(params.outputPNGFile.dup,params.gamma);
-	writeln("File "~params.outputPNGFile~" has been read from disk");
-
-	point p1 = {0, 1, 2}, p2 = {1, 1, 2};
-	normal n1 = {3, 4, -1}, n2 = {3.000009, 4, -1};
-	vec v1 = {-2, 0, 5}, v2 = {-2-1e-7, 2e-8, 5};
-	writeln(n1.toString, "\n", v1);
+	image.writePNG(params.outputPNGFile.dup,params.gamma);
+	writeln("File "~params.outputPNGFile~" has been written to disk");
 }
