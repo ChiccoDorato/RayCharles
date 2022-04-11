@@ -10,7 +10,10 @@ import std.range;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
+<<<<<<< HEAD
+=======
 
+>>>>>>> 3f6b1536afe6a07aed3328dc1f747400d5c6ef67
 import imageformats.png;
 import geometry;
 
@@ -460,6 +463,7 @@ unittest{
 	}
 }
 
+/*
 void main(string[] args){ 
 	parameters* params;
 	try{
@@ -476,7 +480,58 @@ void main(string[] args){
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
+<<<<<<< HEAD
+	//image.writePNG(params.outputPNGFile.dup,params.gamma);
+	writeln("File "~params.outputPNGFile~" has been read from disk");	
+}*/
+
+
+void main(){
+
+	/*
+	vec v = {2, 3, 4};
+	normal n = {-1, 0, 1};
+	writeln(norm(v));
+	//mixin("float p = n*v;");
+	vec v2 = {1,1,1};
+	writeln(typeid(v2));
+	float due = 2.0;
+	//writeln(v*due);
+	//writeln(v+v2,"\n",v-v2);
+
+	point p = {1.2, 5, 6};
+	point pp = {2,3,4}; 
+	vec vabbe = {6,7,8};
+
+	string b = toString(p);
+	writeln(b);
+	// point -+ vec = point
+	//pp = p-vabbe;
+	//writeln(pp);
+	//pp = p + vabbe;
+	//writeln(pp);
+
+	// point - point = vec
+	vec kaka;
+	kaka = pp - p;
+	writeln(kaka);
+
+	//pp = p - vabbe;
+
+	//writeln(typeid(p+vabbe));
+	//writeln(p+vabbe);
+	*/
+
+   point p1 = {1,2,3}, p2 = {5,6,7};
+   vec v1 = p1-p2;
+
+   vec v2 = {2,-1,0};
+   point p3 = p1+v2;
+
+	writeln(v1, " ", p3);
+=======
 	image.writePNG(params.outputPNGFile.dup,params.gamma);
 	//image.writePFMFile(params.outputPNGFile);
 	writeln("File "~params.outputPNGFile~" has been written to disk");
+>>>>>>> 3f6b1536afe6a07aed3328dc1f747400d5c6ef67
 }

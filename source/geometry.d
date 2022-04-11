@@ -23,12 +23,6 @@ mixin template xyzIsClose(T){
     }
 }
 
-/*mixin template sumDiff(T, R){
-    R opBinary(string op)(T rhs) if(op == "+" || op == "-"){
-        return mixin("R(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
-    }
-}*/
-
 mixin template neg(R){
     R opUnary(string op)() if(op == "-")
     in(R.tupleof.length == 3, "neg accepts xyz types only.")
@@ -37,12 +31,6 @@ mixin template neg(R){
     }
 }
 
-/*mixin template mul(R){
-    R opBinary(string op)(float alfa) if(op == "*"){
-        return R(x*alfa, y*alfa, z*alfa);
-    }
-}*/
-
 mixin template rightMul(R){
     R opBinaryRight(string op)(float alfa) if(op == "*")
     in(R.tupleof.length == 3, "rightMul accepts xyz types only.")
@@ -50,18 +38,6 @@ mixin template rightMul(R){
         return R(alfa*x, alfa*y, alfa*z);
     }
 }
-
-/*mixin template dot(T){
-    float opBinary(string op)(T rhs) if(op == "*"){
-        return x*rhs.x + y*rhs.y + z*rhs.z;
-    }
-}*/
-
-/*mixin template cross(T, R){
-    R opBinary(string op)(T rhs) if(op == "^"){
-        return mixin("R(y*rhs.z-z*rhs.y, z*rhs.x-x*rhs.z, x*rhs.y-y*rhs.x)");
-    }
-}*/
 
 mixin template squaredNorm(T){
     float squaredNorm()()
@@ -95,24 +71,74 @@ mixin template convert(T, R){
     }
 }
 
+/*mixin template sumDiff(T, R) {
+  R opBinary(string op)(T rhs) const
+       if (op == "+" || op == "-") {
+      return mixin("R(x " ~ op ~ " rhs.x, y " ~ op ~ "rhs.y, z " ~ op ~ " rhs.z)");
+      }
+}
+mixin template sum(T, R) {
+  R opBinary(string op)(T rhs) const
+       if (op == "+"){
+      return R(x+rhs.x, y+rhs.y, z+rhs.z);
+      //return mixin("R(x " ~ op ~ " rhs.x, y " ~ op ~ "rhs.y, z " ~ op ~ " rhs.z)");
+      }
+}
+
+mixin template diff(T, R) {
+  R opBinary(string op)(T rhs) const
+       if (op == "-") {
+       return R(x - rhs.x, y - rhs.y, z - rhs.z);
+       //return mixin("R(x " ~ op ~ " rhs.x, y " ~ op ~ "rhs.y, z " ~ op ~ " rhs.z)");
+      }
+}
+*/
+
+/*mixin template mul(R){
+    R opBinary(string op)(float alfa) if(op == "*"){
+        return R(x*alfa, y*alfa, z*alfa);
+    }
+}*/
+
+/*mixin template dot(T){
+    float opBinary(string op)(T rhs) if(op == "*"){
+        return x*rhs.x + y*rhs.y + z*rhs.z;
+    }
+}*/
+
+/*mixin template cross(T, R){
+    R opBinary(string op)(T rhs) if(op == "^"){
+        return mixin("R(y*rhs.z-z*rhs.y, z*rhs.x-x*rhs.z, x*rhs.y-y*rhs.x)");
+    }
+}*/
+
 struct vec{
     float x, y, z;
 
+    //Method to convert a vec into a string
     mixin toString!vec;
+
+    // Method to confront to vec to see if they are close
     mixin xyzIsClose!vec;
 
     //mixin sumDiff!(vec, vec);
     vec opBinary(string op)(vec rhs) if(op == "+" || op == "-"){
         return mixin("vec(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
-    mixin neg!vec;
-
+    //mixin neg!vec;
+    vec opUnary(string op)() if(op == "-")
+    in(this.tupleof.length == 3, "neg accepts xyz types only.")
+    {
+        return this(-x, -y, -z);
+    }
     //mixin mul!vec;
     vec opBinary(string op)(float alfa) if(op == "*"){
         return vec(x*alfa, y*alfa, z*alfa);
     }
-    mixin rightMul!vec;
-
+    //mixin rightMul!vec;
+    vec opBinaryRight(string op)(float alfa) if(op == "*"){
+        return vec(alfa*x, alfa*y, alfa*z);
+    }
     //mixin dot!vec;
     float opBinary(string op)(vec rhs) if(op == "*"){
         return x*rhs.x + y*rhs.y + z*rhs.z;
@@ -133,8 +159,8 @@ struct vec{
     mixin squaredNorm!vec;
     mixin norm!vec;
     mixin normalize!vec;
-
     mixin convert!(vec, normal);
+    
 }
 
 struct point{
@@ -142,22 +168,23 @@ struct point{
 
     mixin toString!point;
     mixin xyzIsClose!point;
-
+    
     //mixin sumDiff!(point, vec);
     point opBinary(string op)(vec rhs) if(op == "+" || op == "-"){
         return mixin("point(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
+
     vec opBinary(string op)(point rhs) if(op == "-"){
         return vec(x-rhs.x, y-rhs.y, z-rhs.z);
     }
-    mixin neg!point;
 
     //mixin mul!point;
     point opBinary(string op)(float alfa) if(op == "*"){
         return point(x*alfa, y*alfa, z*alfa);
     }
-    mixin rightMul!point;
 
+    mixin neg!point;
+    mixin rightMul!point;
     mixin convert!(point, vec);
 }
 
@@ -166,13 +193,13 @@ struct normal{
 
     mixin toString!normal;
     mixin xyzIsClose!normal;
-    
     mixin neg!normal;
 
     //mixin mul!normal;
     normal opBinary(string op)(float alfa) if(op == "*"){
         return normal(x*alfa, y*alfa, z*alfa);
     }
+    
     mixin rightMul!normal;
 
     //mixin dot!vec;
@@ -222,4 +249,91 @@ unittest{
     assert((p1+v).xyzIsClose(point(5.0, 8.0, 11.0)));
     assert((p1-v).xyzIsClose(point(-3.0, -4.0, -5.0)));
     assert((p2-p1).xyzIsClose(vec(3.0, 4.0, 5.0)));
+}
+
+struct transformation{	
+	float[4][4] m = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]; 
+	float[4][4] invM = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+
+	this(float[4][4] matrix, float[4][4] invMatrix){
+		m = matrix;
+		invM = invMatrix;
+	}
+
+	float[4][4] matProd(float[4][4] m1, float[4][4] m2){
+		float[4][4] mProd = 0;
+		for(int i=0;i<4;i++){
+			for(int j=0;j<4;j++){
+				for(int k=0;k<4;k++){
+					mProd[i][j] += m1[i][k]*m2[k][j];
+				}
+			}
+		}
+		return mProd;
+	}
+
+	bool areCloseMatrix(float[4][4] m1, float[4][4] m2){
+		for(int i=0;i<4;i++){
+			for(int j=0;j<4;j++){
+				if(!areClose(m1[i][j], m2[i][j])){
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	bool isConsistent(){
+		return areCloseMatrix(matProd(m,invM), id4);
+	}
+
+	transformation inverse(){
+		transformation inv = transformation(this.invM, this.m);
+		return inv;
+	}
+
+	transformation opBinary(string op)(transformation rhs) if(op == "*"){
+		return transformation(m.matProd(rhs.m), rhs.invM.matProd(invM));
+	}
+
+	point opBinary(string op)(point rhs) if(op == "*"){
+		point p = point(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2] + m[0][3],
+            rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2] + m[1][3],
+            rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2] + m[2][3]);
+
+		float lambda = rhs.x * m[3][0] + rhs.y * m[3][1] + rhs.z * m[3][2] + m[3][3];
+		if(lambda == 1){
+			return p;
+		}
+		return p*(1/lambda);
+	}
+
+	vec opBinary(string op)(vec rhs) if(op == "*"){
+		vec v = vec(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2],
+            rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2],
+            rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2]);
+	
+
+		float lambda = rhs.x * m[3][0] + rhs.y * m[3][1] + rhs.z * m[3][2] + m[3][3];
+		if(lambda == 1){
+			return v;
+		}
+		return v*(1/lambda);
+
+	}
+}
+
+// Function that creates a translation matrix from a vector
+transformation traslation(vec v){
+	float[4][4] m = [[1.0, 0.0, 0.0, v.x],
+		[0.0, 1.0, 0.0, v.y],
+		[0.0, 0.0, 1.0, v.z],
+		[0.0, 0.0, 0.0, 1.0]];
+	float[4][4] invM = [[1.0, 0.0, 0.0, -v.x],
+		[0.0, 1.0, 0.0, -v.y],
+		[0.0, 0.0, 1.0, -v.z],
+		[0.0, 0.0, 0.0, 1.0]];
+
+	transformation trasl = transformation(m, invM);
+	return trasl;
 }
