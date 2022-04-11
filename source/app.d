@@ -477,5 +477,6 @@ void main(string[] args){
 	image.clampImage;
 
 	image.writePNG(params.outputPNGFile.dup,params.gamma);
+	//image.writePFMFile(params.outputPNGFile);
 	writeln("File "~params.outputPNGFile~" has been written to disk");
 }
