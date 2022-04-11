@@ -10,6 +10,10 @@ import std.range;
 import std.system;
 import std.bitmanip;
 import std.algorithm;
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3f6b1536afe6a07aed3328dc1f747400d5c6ef67
 import imageformats.png;
 import geometry;
 
@@ -476,6 +480,7 @@ void main(string[] args){
 	image.normalizeImage(params.factor);
 	image.clampImage;
 
+<<<<<<< HEAD
 	//image.writePNG(params.outputPNGFile.dup,params.gamma);
 	writeln("File "~params.outputPNGFile~" has been read from disk");	
 }*/
@@ -524,4 +529,8 @@ void main(){
    point p3 = p1+v2;
 
 	writeln(v1, " ", p3);
+=======
+	image.writePNG(params.outputPNGFile.dup,params.gamma);
+	writeln("File "~params.outputPNGFile~" has been written to disk");
+>>>>>>> 3f6b1536afe6a07aed3328dc1f747400d5c6ef67
 }
