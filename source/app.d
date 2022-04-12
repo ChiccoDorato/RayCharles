@@ -354,6 +354,10 @@ class HDRImage
 			data ~= to!ubyte(round(255*pow(c.g, 1 / gamma)));
 			data ~= to!ubyte(round(255*pow(c.b, 1 / gamma)));
 		}
+		if (!fileName.endsWith(".png")){
+			fileName ~= ".png";
+			if (!fileName.exists) writeln("WARNING: file automatically renamed to ", fileName);
+		}
 		imageformats.png.write_png(fileName, width, height, data, 0);
 	}
 
@@ -499,5 +503,5 @@ void main(string[] args)
 	image.clampImage;
 
 	image.writePNG(params.outputPNGFile.dup,params.gamma);
-	writeln("File "~params.outputPNGFile~" has been read from disk");	
+	writeln("File "~params.outputPNGFile~" has been written to disk");
 }
