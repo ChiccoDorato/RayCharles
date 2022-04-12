@@ -1,15 +1,6 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"cblas": "2.3.1",
-		"imageformats": "7.0.2",
-		"lapack": "0.6.3",
-		"lubeck": "1.5.1",
-		"mir-algorithm": "3.12.27",
-		"mir-blas": "1.1.14",
-		"mir-core": "1.1.103",
-		"mir-lapack": "1.2.8",
-		"mir-linux-kernel": "1.2.1",
-		"mir-random": "2.2.19"
+		"imageformats": "7.0.2"
 	}
 }
