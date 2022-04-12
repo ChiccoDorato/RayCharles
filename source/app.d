@@ -1,17 +1,16 @@
 import core.exception;
 import geometry;
 import imageformats.png;
-import std.algorithm;
-import std.array;
+import std.algorithm : endsWith, max, min;
+import std.array : Appender, appender, split;
 import std.bitmanip;
 import std.conv;
-import std.exception;
-import std.file;
-import std.math;
-import std.range;
-import std.stdio;
-import std.string;
-import std.system;
+import std.exception : assertThrown, assertNotThrown;
+import std.file : exists, isFile, read, FileException;
+import std.format : format;
+import std.math : abs, isNaN, log10, NaN, pow, round;
+import std.stdio : File, writeln;
+import std.system : endian;
 
 struct Parameters
 {
@@ -182,12 +181,12 @@ struct Color
 		mixin("return Color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
 	}
 
-	Color opBinary(string op)(float alfa) if(op == "*")
+	Color opBinary(string op)(float alfa) if (op == "*")
 	{
 		mixin("return Color(r*alfa, g*alfa, b*alfa);");
 	}
 
-	Color opBinaryRight(string op)(float alfa) if(op == "*")
+	Color opBinaryRight(string op)(float alfa) if (op == "*")
 	{
 		mixin("return Color(alfa*r, alfa*g, alfa*b);");
 	}
@@ -235,7 +234,7 @@ class HDRImage
 	{
 		width = w;
 		height = h;
-		pixels.length = width*height;
+		pixels.length = width * height;
 	}
 
 	this(ubyte[] stream)
@@ -350,11 +349,12 @@ class HDRImage
 		ubyte[] data;
 		foreach (Color c; pixels)
 		{
-			data ~= to!ubyte(round(255*pow(c.r, 1 / gamma)));
-			data ~= to!ubyte(round(255*pow(c.g, 1 / gamma)));
-			data ~= to!ubyte(round(255*pow(c.b, 1 / gamma)));
+			data ~= to!ubyte(round(255 * pow(c.r, 1 / gamma)));
+			data ~= to!ubyte(round(255 * pow(c.g, 1 / gamma)));
+			data ~= to!ubyte(round(255 * pow(c.b, 1 / gamma)));
 		}
-		if (!fileName.endsWith(".png")){
+		if (!fileName.endsWith(".png"))
+		{
 			fileName ~= ".png";
 			if (!fileName.exists) writeln("WARNING: file automatically renamed to ", fileName);
 		}
