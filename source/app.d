@@ -1,4 +1,3 @@
-import core.exception;
 import geometry;
 import imageformats.png;
 import std.algorithm : endsWith, max, min;
@@ -61,9 +60,9 @@ ubyte[] readLine(ubyte[] stream, uint startingPosition)
 
 unittest
 {
-	ubyte[] line = [72,101,108,108,111,10,119,111,114,108,100];
-	assert(readLine(line, 0) == [72,101,108,108,111,10]);
-	assert(readLine(line, 6) == [119,111,114,108,100]);
+	ubyte[] line = [72, 101, 108, 108, 111, 10, 119, 111, 114, 108, 100];
+	assert(readLine(line, 0) == [72, 101, 108, 108, 111, 10]);
+	assert(readLine(line, 6) == [119, 111, 114, 108, 100]);
 	assert(line.readLine(11) == []);
 }
 
@@ -101,12 +100,12 @@ do
 
 unittest
 {
-	ubyte[] dimensionsLine = [51,32,50,10], dimensionsOnlyLine = [45,48,32,55,48];
-	assert(parseImgSize(dimensionsLine) == [3,2]);
-	assert(parseImgSize(dimensionsOnlyLine) == [0,70]);
+	ubyte[] dimensionsLine = [51, 32, 50, 10], dimensionsOnlyLine = [45, 48, 32, 55, 48];
+	assert(parseImgSize(dimensionsLine) == [3, 2]);
+	assert(parseImgSize(dimensionsOnlyLine) == [0, 70]);
 
-	ubyte[] floatDimensions = [50,46,32,51], negativeDimensions = [45,50,32,52];
-	ubyte[] manyDimensions = [53,32,53,32,49];
+	ubyte[] floatDimensions = [50, 46, 32, 51], negativeDimensions = [45, 50, 32, 52];
+	ubyte[] manyDimensions = [53, 32, 53, 32, 49];
 	assertThrown!ConvException(parseImgSize(floatDimensions));
 	assertThrown!Exception(parseImgSize(negativeDimensions));
 	assertThrown!Exception(parseImgSize(manyDimensions));
