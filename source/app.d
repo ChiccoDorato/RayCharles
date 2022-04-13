@@ -5,7 +5,7 @@ import std.array : Appender, appender, split;
 import std.bitmanip;
 import std.conv;
 import std.exception : assertThrown, assertNotThrown;
-import std.file : exists, isFile, read, FileException, write;
+import std.file : exists, isFile, read, FileException;
 import std.format : format;
 import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
