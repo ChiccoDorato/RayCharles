@@ -1,6 +1,6 @@
 import std.array : split;
 import std.conv : to;
-import std.math : abs,sqrt,PI,sin,cos;
+import std.math : abs, sqrt, PI, sin, cos;
 
 mixin template toString(T)
 {
@@ -167,6 +167,28 @@ struct Vec
 
 Vec vecX = Vec(1.0, 0.0, 0.0), vecY = Vec(0.0, 1.0, 0.0), vecZ = Vec(0.0, 0.0, 1.0);
 
+unittest
+{
+    Vec a = {1.0, 2.0, 3.0}, b = {4.0, 6.0, 8.0};
+
+    assert(a.xyzIsClose(a));
+    assert(!a.xyzIsClose(b));
+
+    assert((-a).xyzIsClose(Vec(-1.0, -2.0, -3.0)));
+    assert((a + b).xyzIsClose(Vec(5.0, 8.0, 11.0)));
+    assert((b - a).xyzIsClose(Vec(3.0, 4.0, 5.0)));
+
+    assert((a * 2).xyzIsClose(Vec(2.0, 4.0, 6.0)));
+    assert((-4 * a).xyzIsClose(Vec(-4.0, -8.0, -12.0)));
+
+    assert((a * b).areClose(40.0));
+    assert((a ^ b).xyzIsClose(Vec(-2.0, 4.0, -2.0)));
+    assert((b ^ a).xyzIsClose(Vec(2.0, -4.0, 2.0)));
+
+    assert(areClose(a.squaredNorm, 14.0));
+    assert(areClose(a.norm * a.norm, 14.0));
+}
+
 struct Point
 {
     float x, y, z;
@@ -193,6 +215,21 @@ struct Point
     mixin rightMul!Point;
 
     mixin convert!(Point, Vec);
+}
+
+unittest
+{
+    Point p1 = {1.0, 2.0, 3.0}, p2 = {4.0, 6.0, 8.0};
+    assert(p1.xyzIsClose(p1));
+    assert(!p1.xyzIsClose(p2));
+
+    assert((-p1 * 2).xyzIsClose(Point(-2.0, -4.0, -6.0)));
+    assert((0.5 * p2).xyzIsClose(Point(2.0, 3.0, 4.0)));
+
+    Vec v = {4.0, 6.0, 8.0};
+    assert((p1 + v).xyzIsClose(Point(5.0, 8.0, 11.0)));
+    assert((p1 - v).xyzIsClose(Point(-3.0, -4.0, -5.0)));
+    assert((p2 - p1).xyzIsClose(Vec(3.0, 4.0, 5.0)));
 }
 
 struct Normal
@@ -224,43 +261,6 @@ struct Normal
     mixin squaredNorm!Normal;
     mixin norm!Normal;
     mixin normalize!Normal;
-}
-
-unittest
-{
-    Vec a = {1.0, 2.0, 3.0}, b = {4.0, 6.0, 8.0};
-
-    assert(a.xyzIsClose(a));
-    assert(!a.xyzIsClose(b));
-
-    assert((-a).xyzIsClose(Vec(-1.0, -2.0, -3.0)));
-    assert((a + b).xyzIsClose(Vec(5.0, 8.0, 11.0)));
-    assert((b - a).xyzIsClose(Vec(3.0, 4.0, 5.0)));
-
-    assert((a * 2).xyzIsClose(Vec(2.0, 4.0, 6.0)));
-    assert((-4 * a).xyzIsClose(Vec(-4.0, -8.0, -12.0)));
-
-    assert((a * b).areClose(40.0));
-    assert((a ^ b).xyzIsClose(Vec(-2.0, 4.0, -2.0)));
-    assert((b ^ a).xyzIsClose(Vec(2.0, -4.0, 2.0)));
-
-    assert(areClose(a.squaredNorm, 14.0));
-    assert(areClose(a.norm * a.norm, 14.0));
-}
-
-unittest
-{
-    Point p1 = {1.0, 2.0, 3.0}, p2 = {4.0, 6.0, 8.0};
-    assert(p1.xyzIsClose(p1));
-    assert(!p1.xyzIsClose(p2));
-
-    assert((-p1 * 2).xyzIsClose(Point(-2.0, -4.0, -6.0)));
-    assert((0.5 * p2).xyzIsClose(Point(2.0, 3.0, 4.0)));
-
-    Vec v = {4.0, 6.0, 8.0};
-    assert((p1 + v).xyzIsClose(Point(5.0, 8.0, 11.0)));
-    assert((p1 - v).xyzIsClose(Point(-3.0, -4.0, -5.0)));
-    assert((p2 - p1).xyzIsClose(Vec(3.0, 4.0, 5.0)));
 }
 
 float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
@@ -337,74 +337,6 @@ struct Transformation
             rhs.x * invM[0][1] + rhs.y * invM[1][1] + rhs.z * invM[2][1],
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
-    
-// Function that creates translation of a given vector.
-Transformation translation(Vec v)
-{
-	float[4][4] m = [[1.0, 0.0, 0.0, v.x],
-		[0.0, 1.0, 0.0, v.y],
-		[0.0, 0.0, 1.0, v.z],
-		[0.0, 0.0, 0.0, 1.0]];
-	float[4][4] invM = [[1.0, 0.0, 0.0, -v.x],
-		[0.0, 1.0, 0.0, -v.y],
-		[0.0, 0.0, 1.0, -v.z],
-		[0.0, 0.0, 0.0, 1.0]];
-	return Transformation(m, invM);
-}
-
-Transformation rotationX(float angleInDegrees)
-{
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
-        [0.0, cosine, -sine, 0.0],
-        [0.0, sine, cosine, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[1.0, 0.0, 0.0, 0.0],
-        [0.0, cosine, sine, 0.0],
-        [0.0, -sine, cosine, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    return Transformation(m, invM);
-}
-
-Transformation rotationY(float angleInDegrees)
-{
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[cosine, 0.0, sine, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [-sine, 0.0, cosine, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[cosine, 0.0, -sine, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [sine, 0.0, cosine, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    return Transformation(m, invM);
-}
-
-Transformation rotationZ(float angleInDegrees)
-{
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[cosine, -sine, 0.0, 0.0],
-        [sine, cosine, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[cosine, sine, 0.0, 0.0],
-        [-sine, cosine, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    return Transformation(m, invM);
-}
-
-Transformation scaling(Vec v)
-{
-	float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
-		[0.0, v.y, 0.0, 0.0],
-		[0.0, 0.0, v.z, 0.0],
-		[0.0, 0.0, 0.0, 1.0]];
-	float[4][4] invM = [[1/v.x, 0.0, 0.0, 0.0],
-		[0.0, 1/v.y, 0.0, 0.0],
-		[0.0, 0.0, 1/v.z, 0.0],
-		[0.0, 0.0, 0.0, 1.0]];
-	return Transformation(m, invM);
 }
 
 unittest
@@ -430,6 +362,29 @@ unittest
     Transformation t4 = Transformation(t1.m, t1.invM);
     t4.invM[2][2] += 1.0;
     assert(!t1.transfIsClose(t4));
+}
+
+unittest
+{
+    float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0],
+        [9.0, 9.0, 8.0, 7.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    float[4][4] m2 = [[-3.75, 2.75, -1, 0],
+        [5.75, -4.75, 2.0, 1.0],
+        [-2.25, 2.25, -1.0, -2.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    Transformation t = Transformation(m1, m2);
+    assert(t.isConsistent);
+
+    Vec expectedV = {14.0, 38.0, 51.0};
+    assert(expectedV.xyzIsClose(t * Vec(1.0, 2.0, 3.0)));
+
+    Point expectedP = {18.0, 46.0, 58.0};
+    assert(expectedP.xyzIsClose(t * Point(1.0, 2.0, 3.0)));
+
+    Point expectedN = {-8.75, 7.75, -3.0};
+    assert(expectedN.xyzIsClose(t * Normal(3.0, 2.0, 4.0)));
 }
 
 unittest
@@ -474,29 +429,6 @@ unittest
     float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
         [5.0, 6.0, 7.0, 8.0],
         [9.0, 9.0, 8.0, 7.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] m2 = [[-3.75, 2.75, -1, 0],
-        [5.75, -4.75, 2.0, 1.0],
-        [-2.25, 2.25, -1.0, -2.0],
-        [0.0, 0.0, 0.0, 1.0]];
-    Transformation t = Transformation(m1, m2);
-    assert(t.isConsistent);
-
-    Vec expectedV = {14.0, 38.0, 51.0};
-    assert(expectedV.xyzIsClose(t * Vec(1.0, 2.0, 3.0)));
-
-    Point expectedP = {18.0, 46.0, 58.0};
-    assert(expectedP.xyzIsClose(t * Point(1.0, 2.0, 3.0)));
-
-    Point expectedN = {-8.75, 7.75, -3.0};
-    assert(expectedN.xyzIsClose(t * Normal(3.0, 2.0, 4.0)));
-}
-
-unittest
-{
-    float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
-        [5.0, 6.0, 7.0, 8.0],
-        [9.0, 9.0, 8.0, 7.0],
         [6.0, 5.0, 4.0, 1.0]];
     float[4][4] m2 = [[-3.75, 2.75, -1, 0],
         [4.375, -3.875, 2.0, -0.5],
@@ -510,6 +442,20 @@ unittest
     Transformation prod = t1 * t2;
     assert(prod.isConsistent);
     assert(prod.transfIsClose(Transformation()));
+}
+
+// Function that creates translation of a given vector.
+Transformation translation(Vec v)
+{
+	float[4][4] m = [[1.0, 0.0, 0.0, v.x],
+		[0.0, 1.0, 0.0, v.y],
+		[0.0, 0.0, 1.0, v.z],
+		[0.0, 0.0, 0.0, 1.0]];
+	float[4][4] invM = [[1.0, 0.0, 0.0, -v.x],
+		[0.0, 1.0, 0.0, -v.y],
+		[0.0, 0.0, 1.0, -v.z],
+		[0.0, 0.0, 0.0, 1.0]];
+	return Transformation(m, invM);
 }
 
 unittest
@@ -527,6 +473,48 @@ unittest
     assert(prod.transfIsClose(expected));
 }
 
+Transformation rotationX(float angleInDegrees)
+{
+    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
+        [0.0, cosine, -sine, 0.0],
+        [0.0, sine, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    float[4][4] invM = [[1.0, 0.0, 0.0, 0.0],
+        [0.0, cosine, sine, 0.0],
+        [0.0, -sine, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
+Transformation rotationY(float angleInDegrees)
+{
+    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    float[4][4] m = [[cosine, 0.0, sine, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [-sine, 0.0, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    float[4][4] invM = [[cosine, 0.0, -sine, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [sine, 0.0, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
+Transformation rotationZ(float angleInDegrees)
+{
+    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    float[4][4] m = [[cosine, -sine, 0.0, 0.0],
+        [sine, cosine, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    float[4][4] invM = [[cosine, sine, 0.0, 0.0],
+        [-sine, cosine, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
 unittest
 {
     assert(rotationX(0.1).isConsistent);
@@ -536,6 +524,19 @@ unittest
     assert((rotationX(90) * vecY).xyzIsClose(vecZ));
     assert((rotationY(90) * vecZ).xyzIsClose(vecX));
     assert((rotationZ(90) * vecX).xyzIsClose(vecY));
+}
+
+Transformation scaling(Vec v)
+{
+	float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
+		[0.0, v.y, 0.0, 0.0],
+		[0.0, 0.0, v.z, 0.0],
+		[0.0, 0.0, 0.0, 1.0]];
+	float[4][4] invM = [[1/v.x, 0.0, 0.0, 0.0],
+		[0.0, 1/v.y, 0.0, 0.0],
+		[0.0, 0.0, 1/v.z, 0.0],
+		[0.0, 0.0, 0.0, 1.0]];
+	return Transformation(m, invM);
 }
 
 unittest
