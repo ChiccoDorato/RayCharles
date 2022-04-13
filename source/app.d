@@ -5,7 +5,7 @@ import std.array : Appender, appender, split;
 import std.bitmanip;
 import std.conv;
 import std.exception : assertThrown, assertNotThrown;
-import std.file : exists, isFile, read, FileException;
+import std.file : exists, isFile, read, FileException, write;
 import std.format : format;
 import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
@@ -83,7 +83,7 @@ do
 
 	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException. Va controllato? Temo di sì.
 	char[] widthArray = cast(char[])(dimensions[][0]);
-	char[] heightArray = cast(char[])(dimensions[1][0..$-1]);
+	char[] heightArray = cast(char[])(dimensions[1][0 .. $-1]);
 	if (dimensions[1][$-1] != 10) heightArray ~= cast(char)(dimensions[1][$-1]);
 
 	try
@@ -120,7 +120,7 @@ in
 do
 {
 	// Sempre problema se ASCII esteso.
-	char[] endiannessArray = cast(char[])(endiannessLine[0..$-1]);
+	char[] endiannessArray = cast(char[])(endiannessLine[0 .. $-1]);
 	if (endiannessLine[$-1] != 10) endiannessArray ~= cast(char)(endiannessLine[$-1]);
 
 	try
@@ -317,15 +317,15 @@ class HDRImage
 				col = getPixel(j, i);
 				if (endianness == Endian.bigEndian)
 				{
-					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.r));
-					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.g));
-					pfm.append!(uint, Endian.bigEndian)(*cast(int*)(&col.b));
+					pfm.append!(uint, Endian.bigEndian)(*cast(uint*)(&col.r));
+					pfm.append!(uint, Endian.bigEndian)(*cast(uint*)(&col.g));
+					pfm.append!(uint, Endian.bigEndian)(*cast(uint*)(&col.b));
 				}
 				else
 				{
-					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.r));
-					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.g));
-					pfm.append!(uint, Endian.littleEndian)(*cast(int*)(&col.b));
+					pfm.append!(uint, Endian.littleEndian)(*cast(uint*)(&col.r));
+					pfm.append!(uint, Endian.littleEndian)(*cast(uint*)(&col.g));
+					pfm.append!(uint, Endian.littleEndian)(*cast(uint*)(&col.b));
 				}
 			}
 		}
@@ -339,8 +339,8 @@ class HDRImage
 			fileName ~= ".pfm";
 			if (!fileName.exists) writeln("WARNING: file automatically renamed to ", fileName);
 		}
-		File PFMFile = File(fileName, "w");
-		PFMFile.write(writePFM(endianness));
+		File file = File(fileName, "wb");
+		file.rawWrite(writePFM(endianness));
 	}
 
 	void writePNG(char[] fileName, float gamma = 1.0)
@@ -462,6 +462,10 @@ unittest
 	
 	assert(img.writePFM == LEreferenceBytes);
 	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
+
+	auto file = File("MyLE.pfm", "wb");
+	file.rawWrite(LEreferenceBytes);
+	file.close();
 }
 
 unittest
