@@ -461,10 +461,6 @@ unittest
 	
 	assert(img.writePFM == LEreferenceBytes);
 	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
-
-	auto file = File("MyLE.pfm", "wb");
-	file.rawWrite(LEreferenceBytes);
-	file.close();
 }
 
 unittest
