@@ -1,3 +1,4 @@
+import cameras;
 import geometry;
 import imageformats.png;
 import std.algorithm : endsWith, max, min;
@@ -488,7 +489,7 @@ unittest
         assert(img.getPixel(2,1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
 	}
 }
-
+/* 
 void main(string[] args)
 { 
 	Parameters* params;
@@ -507,4 +508,13 @@ void main(string[] args)
 
 	image.writePNG(params.outputPNGFile.dup,params.gamma);
 	writeln("File "~params.outputPNGFile~" has been written to disk");
+} */
+
+void main(){
+
+    Ray r;
+    writeln(r.tMax);
+	Ray ray4 = Ray(Point(1.0, 2.0, 4.0), Vec(4.0, 2.0, 1.0));
+	writeln(ray4.at(0.0));
+	writeln(ray4.origin);
 }
