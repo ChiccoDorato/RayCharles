@@ -14,6 +14,6 @@ jobs:
       - name: Install D compiler
         uses: dlang-community/setup-dlang@v1
         with:
-          dc: ${{ matrix.dc }}
+          compiler: ${{ matrix.dc }}
       - name: Run tests
         run: dub -b unittest
