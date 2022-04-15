@@ -6,7 +6,7 @@ jobs:
   dub-tests:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        os: [macOS-latest]
         dc: [ldc-latest, dmd-2.098.1, dmd-2.099.0, dmd-latest]
     runs-on: ${{ matrix.os }}
     steps:
