@@ -13,5 +13,4 @@ raycharles-test-*
 *.o
 *.obj
 *.lst
-*.pfm
 *.png
