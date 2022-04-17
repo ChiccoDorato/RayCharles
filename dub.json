@@ -1,12 +1,11 @@
 {
-	"authors": [
-		"Luca Bernardi"
-	],
+	"name": "raycharles",
+	"targetName": "RayCharles",
+	"description": "A basic ray tracer.",
+	"authors": ["Luca Bernardi, Francesco Andreetto"],
 	"copyright": "Copyright © 2022, Luca Bernardi",
+	"license": "GPL-3.0",
 	"dependencies": {
 		"imageformats": "~>7.0.2"
-	},
-	"description": "A minimal D application.",
-	"license": "proprietary",
-	"name": "imagegenerator"
+	}
 }

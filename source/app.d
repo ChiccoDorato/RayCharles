@@ -1,3 +1,4 @@
+import geometry;
 import imageformats.png;
 import std.algorithm : endsWith, max, min;
 import std.array : Appender, appender, split;
