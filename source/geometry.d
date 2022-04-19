@@ -1,3 +1,4 @@
+import cameras;
 import std.array : split;
 import std.conv : to;
 import std.math : abs, sqrt, PI, sin, cos;
@@ -337,6 +338,13 @@ struct Transformation
             rhs.x * invM[0][1] + rhs.y * invM[1][1] + rhs.z * invM[2][1],
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
+
+    // Ray Transformation
+    Ray opBinary(string op)(Ray rhs) if (op == "*")
+    {
+        Transformation t = Transformation(m, invM);
+        return Ray(t * rhs.origin, t * rhs.dir);
+    }
 }
 
 unittest

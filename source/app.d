@@ -512,9 +512,27 @@ void main(string[] args)
 
 void main(){
 
-    Ray r;
+   /*  Ray r;
     writeln(r.tMax);
 	Ray ray4 = Ray(Point(1.0, 2.0, 4.0), Vec(4.0, 2.0, 1.0));
 	writeln(ray4.at(0.0));
 	writeln(ray4.origin);
+
+	Camera gianPaolo = new OrthogonalCamera;
+	Camera gianFranco = new PerspectiveCamera;
+	
+	gianPaolo.d = 0.0;
+	gianFranco.d = 1;
+	Ray paolo = gianPaolo.fireRay(1.0,2.0);
+	gianFranco.fireRay(3.0,4.0);
+
+	//writeln(paolo); */
+	Ray ray5 = Ray(Point(1.0,2.0,3.0), Vec(6.0,5.0,4.0));
+    Transformation tra = translation(Vec(10.0, 11.0, 12.0)) * rotationX(90.0);
+	writeln(tra);
+    Ray transformed = tra * ray5;
+
+	writeln(transformed);
+    //assert(transformed.origin.xyzIsClose(Point(11.0, 8.0, 14.0)));
+    //assert(transformed.dir.xyzIsClose(Vec(6.0, -4.0, 5.0)));
 }
