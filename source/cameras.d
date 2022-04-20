@@ -191,7 +191,7 @@ unittest
     Ray ray16 = tracer.fireRay(2, 1, 0.5, 0.5);
     assert(ray15.at(0.0).xyzIsClose(ray16.at(0.0)));
 
-/*     tracer.fireAllRays(lambda ray: Color(1.0, 2.0, 3.0))
+/*  tracer.fireAllRays(lambda ray: Color(1.0, 2.0, 3.0))
     for row in range(image.height):
         for col in range(image.width):
             assert image.get_pixel(col, row) == Color(1.0, 2.0, 3.0 */
