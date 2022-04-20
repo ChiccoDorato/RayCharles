@@ -1,6 +1,8 @@
 import geometry;
+import hdrimage;
 import std.math;
 import std.stdio;
+
 
 struct Ray
 {
@@ -140,4 +142,57 @@ unittest
     assert(ray12.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
     assert(ray13.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
     assert(ray14.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
+}
+
+class ImageTracer
+{
+    HDRImage image = new HDRImage(0,0);
+    Camera camera;
+
+    this(HDRImage img, Camera cam)
+    {
+        image = img;
+        camera = cam;
+    }
+
+    Ray fireRay(int col, int row, float uPixel = 0.5, float vPixel = 0.5)
+    {
+        // For now, there is an error in this formula
+        float u = (col + uPixel) / (image.width - 1);
+        float v = (row + vPixel) / (image.height - 1);
+        return camera.fireRay(u, v);
+    }
+
+/*     // This func should be passed to fireAllRays...
+    Color func(Ray r){
+        return Color(0,0,0); // All black(?)
+    }
+
+    void fireAllRays(){
+        Ray ray;
+        Color color;
+        for(uint row = 0; row < image.height-1; row++){
+            for(uint col=0; col < image.width-1; col++){
+                ray = fireRay(col, row);
+                color = func(ray);
+                image.setPixel(col, row, color);
+            }
+        }
+    } */
+}
+
+unittest
+{
+    HDRImage image = new HDRImage(4,2);
+    Camera camera = new PerspectiveCamera(1,2);
+    ImageTracer tracer = new ImageTracer(image, camera);
+
+    Ray ray15 = tracer.fireRay(0, 0, 2.5, 1.5);
+    Ray ray16 = tracer.fireRay(2, 1, 0.5, 0.5);
+    assert(ray15.at(0.0).xyzIsClose(ray16.at(0.0)));
+
+/*     tracer.fireAllRays(lambda ray: Color(1.0, 2.0, 3.0))
+    for row in range(image.height):
+        for col in range(image.width):
+            assert image.get_pixel(col, row) == Color(1.0, 2.0, 3.0 */
 }
