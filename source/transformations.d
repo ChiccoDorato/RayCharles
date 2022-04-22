@@ -1,3 +1,4 @@
+import cameras : Ray;
 import geometry;
 import hdrimage : areClose;
 import std.math : PI, sin, cos;
@@ -76,6 +77,11 @@ struct Transformation
             rhs.x * invM[0][1] + rhs.y * invM[1][1] + rhs.z * invM[2][1],
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
+
+    Ray opBinary(string op)(Ray rhs) if (op == "*")
+    {
+        return Ray(this * rhs.origin, this * rhs.dir);
+    }
 }
 
 unittest

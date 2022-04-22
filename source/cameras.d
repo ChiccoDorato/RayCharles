@@ -1,8 +1,6 @@
 import geometry;
 import hdrimage;
-import std.math;
-import std.stdio;
-
+import transformations;
 
 struct Ray
 {
@@ -31,26 +29,25 @@ unittest
     assert(r1.rayIsClose(r2));
     assert(!r1.rayIsClose(r3));
 
-    Ray ray4 = Ray(Point(1.0, 2.0, 4.0), Vec(4.0, 2.0, 1.0));
-    assert(ray4.at(0.0).xyzIsClose(ray4.origin));
-    assert(ray4.at(1.0).xyzIsClose(Point(5.0, 4.0, 5.0)));
-    assert(ray4.at(2.0).xyzIsClose(Point(9.0, 6.0, 6.0)));
+    Ray r4 = {Point(1.0, 2.0, 4.0), Vec(4.0, 2.0, 1.0)};
+    assert(r4.at(0.0).xyzIsClose(r4.origin));
+    assert(r4.at(1.0).xyzIsClose(Point(5.0, 4.0, 5.0)));
+    assert(r4.at(2.0).xyzIsClose(Point(9.0, 6.0, 6.0)));
 }
 
 unittest
 {
-    Ray ray5 = Ray(Point(1.0,2.0,3.0),Vec(6.0,5.0,4.0));
-    Transformation tra = translation(Vec(10.0, 11.0, 12.0)) * rotationX(90.0);
-    Ray transformed = tra * ray5;
+    Ray r = {Point(1.0, 2.0, 3.0), Vec(6.0, 5.0, 4.0)};
+    Transformation t = translation(Vec(10.0, 11.0, 12.0)) * rotationX(90.0);
+    Ray transformed = t * r;
 
     assert(transformed.origin.xyzIsClose(Point(11.0, 8.0, 14.0)));
     assert(transformed.dir.xyzIsClose(Vec(6.0, -4.0, 5.0)));
 }
 
-// It works also using "interface Camera" removing the "abstract"
 class Camera
 {   
-    float d;    // Screen-Observer distance
+    float d; // Screen-observer distance
     float aspectRatio;
     Transformation transformation;  
      
@@ -59,7 +56,8 @@ class Camera
 
 class OrthogonalCamera : Camera 
 {
-    this(float aspRat = 1.0, Transformation transf = Transformation(id4,id4))
+    this(float aspRat = 1.0, Transformation transf = Transformation())
+    in (aspRat > 0)
     {
         aspectRatio = aspRat;
         transformation = transf;
@@ -67,11 +65,10 @@ class OrthogonalCamera : Camera
 
     override Ray fireRay(float u, float v)
     {
-        if (d == 0) writeln("USAGE: distance d from the screen cannot be zero in OrthogonalCamera.");
-        
-        Ray r = Ray(Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX);
+        Ray r = {Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX};
+        r = transformation * r;
         r.tMin = 1.0;
-        return transformation * r;
+        return r;
     }
 }
 
@@ -79,34 +76,34 @@ unittest
 {
     OrthogonalCamera cam = new OrthogonalCamera(2.0);
 
-    Ray ray6 = cam.fireRay(0.0, 0.0);
-    Ray ray7 = cam.fireRay(1.0, 0.0);
-    Ray ray8 = cam.fireRay(0.0, 1.0);
-    Ray ray9 = cam.fireRay(1.0, 1.0);
+    Ray r1 = cam.fireRay(0.0, 0.0);
+    Ray r2 = cam.fireRay(1.0, 0.0);
+    Ray r3 = cam.fireRay(0.0, 1.0);
+    Ray r4 = cam.fireRay(1.0, 1.0);
 
-    // Rays are parallel by verifying that cross-products vanish
-    assert(areClose(0.0, (ray6.dir ^ (ray7.dir)).squaredNorm()));
-    assert(areClose(0.0, (ray6.dir ^ (ray8.dir)).squaredNorm()));
-    assert(areClose(0.0, (ray6.dir ^ (ray9.dir)).squaredNorm()));
+    // Rays are parallel if their cross product vanishes
+    assert(areClose(0.0, (r1.dir ^ r2.dir).squaredNorm));
+    assert(areClose(0.0, (r1.dir ^ r3.dir).squaredNorm));
+    assert(areClose(0.0, (r1.dir ^ r4.dir).squaredNorm));
 
    // Rays hitting the corners have the right coordinates
-    assert(ray6.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
-    assert(ray7.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
-    assert(ray8.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
-    assert(ray9.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
+    assert(r1.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
+    assert(r2.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
+    assert(r3.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
+    assert(r4.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
 }
 
 unittest
 {
     Camera cam = new OrthogonalCamera(1.0, translation(-vecY * 2.0) * rotationZ(90));
-
-    Ray ray10 = cam.fireRay(0.5, 0.5);
-    assert(ray10.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
+    Ray r = cam.fireRay(0.5, 0.5);
+    assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
  class PerspectiveCamera : Camera 
 {
-    this(float dist = 1.0, float aspRat = 1.0, Transformation transf = Transformation(id4,id4))
+    this(float dist = 1.0, float aspRat = 1.0, Transformation transf = Transformation())
+    in (dist > 0 && aspRat > 0)
     {
         d = dist;
         aspectRatio = aspRat;
@@ -115,11 +112,10 @@ unittest
 
     override Ray fireRay(float u, float v)
     {
-        if (d == 0) writeln("USAGE: distance d from the screen cannot be zero in PerspectiveCamera.");
-        
-        Ray r = Ray(Point(-d,0.0,0.0), Vec(d, (1.0 - 2 * u) * aspectRatio, 2 * v - 1));
+        Ray r = {Point(-d, 0.0, 0.0), Vec(d, (1.0 - 2 * u) * aspectRatio, 2 * v - 1)};
+        r = transformation * r;
         r.tMin = 1.0;
-        return transformation * r;
+        return r;
     }
 }
 
@@ -127,26 +123,33 @@ unittest
 {
     Camera cam = new PerspectiveCamera(1.0, 2.0);
 
-    Ray ray11 = cam.fireRay(0.0, 0.0);
-    Ray ray12 = cam.fireRay(1.0, 0.0);
-    Ray ray13 = cam.fireRay(0.0, 1.0);
-    Ray ray14 = cam.fireRay(1.0, 1.0);
+    Ray r1 = cam.fireRay(0.0, 0.0);
+    Ray r2 = cam.fireRay(1.0, 0.0);
+    Ray r3 = cam.fireRay(0.0, 1.0);
+    Ray r4 = cam.fireRay(1.0, 1.0);
 
     // All the rays depart from the same point
-    assert(ray11.origin.xyzIsClose(ray12.origin));
-    assert(ray11.origin.xyzIsClose(ray13.origin));
-    assert(ray11.origin.xyzIsClose(ray14.origin));
+    assert(r1.origin.xyzIsClose(r2.origin));
+    assert(r1.origin.xyzIsClose(r3.origin));
+    assert(r1.origin.xyzIsClose(r4.origin));
 
     // The ray hitting the corners have the right coordinates
-    assert(ray11.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
-    assert(ray12.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
-    assert(ray13.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
-    assert(ray14.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
+    assert(r1.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
+    assert(r2.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
+    assert(r3.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
+    assert(r4.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
+}
+
+unittest
+{
+    Camera cam = new PerspectiveCamera(1.0, 1.0, translation(-vecY * 2.0) * rotationZ(90));
+    Ray r = cam.fireRay(0.5, 0.5);
+    assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
 class ImageTracer
 {
-    HDRImage image = new HDRImage(0,0);
+    HDRImage image;
     Camera camera;
 
     this(HDRImage img, Camera cam)
@@ -163,36 +166,32 @@ class ImageTracer
         return camera.fireRay(u, v);
     }
 
-/*     // This func should be passed to fireAllRays...
-    Color func(Ray r){
-        return Color(0,0,0); // All black(?)
-    }
-
-    void fireAllRays(){
+    alias coloring = Color function(Ray);
+    void fireAllRays(coloring solveRendering){
         Ray ray;
         Color color;
-        for(uint row = 0; row < image.height-1; row++){
-            for(uint col=0; col < image.width-1; col++){
+        for (uint row = 0; row < image.height; ++row){
+            for (uint col = 0; col < image.width; ++col){
                 ray = fireRay(col, row);
-                color = func(ray);
+                color = solveRendering(ray);
                 image.setPixel(col, row, color);
             }
         }
-    } */
+    }
 }
 
 unittest
 {
-    HDRImage image = new HDRImage(4,2);
-    Camera camera = new PerspectiveCamera(1,2);
+    HDRImage image = new HDRImage(4, 2);
+    Camera camera = new PerspectiveCamera(1.0, 2.0);
     ImageTracer tracer = new ImageTracer(image, camera);
 
-    Ray ray15 = tracer.fireRay(0, 0, 2.5, 1.5);
-    Ray ray16 = tracer.fireRay(2, 1, 0.5, 0.5);
-    assert(ray15.rayIsClose(ray16));
-
-/*  tracer.fireAllRays(lambda ray: Color(1.0, 2.0, 3.0))
-    for row in range(image.height):
-        for col in range(image.width):
-            assert image.get_pixel(col, row) == Color(1.0, 2.0, 3.0 */
+    Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
+    Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
+    assert(r1.rayIsClose(r2));
+    
+    tracer.fireAllRays((Ray r) => Color(1.0, 2.0, 3.0));
+    for (uint row = 0; row < image.height; ++row)
+        for (uint col = 0; col < image.width; ++col)
+            assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
 }
