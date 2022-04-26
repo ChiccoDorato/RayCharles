@@ -166,10 +166,11 @@ class ImageTracer
         return camera.fireRay(u, v);
     }
 
-    alias coloring = Color function(Ray);
-    void fireAllRays(coloring solveRendering){
+    void fireAllRays(Color function(Ray) solveRendering)
+    {
         Ray ray;
         Color color;
+
         for (uint row = 0; row < image.height; ++row){
             for (uint col = 0; col < image.width; ++col){
                 ray = fireRay(col, row);
@@ -190,7 +191,7 @@ unittest
     Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
     assert(r1.rayIsClose(r2));
     
-    tracer.fireAllRays((Ray r) => Color(1.0, 2.0, 3.0));
+    tracer.fireAllRays(r => Color(1.0, 2.0, 3.0));
     for (uint row = 0; row < image.height; ++row)
         for (uint col = 0; col < image.width; ++col)
             assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
