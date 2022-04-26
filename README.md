@@ -28,10 +28,10 @@ Once the building is done, it is possible to run by
 ```
 
 ## Example
-If the directory `Source code` contains the file `memorial.pfm`, the file `memorial.png` can be generated through
+If the unzipped directory contains the file `a_nice_pfm_image.pfm`, the file `a_nice_png_image.png` can be generated through
 
 ```bash
-dub run -- memorial.pfm 0.1 1 memorial
+dub run -- a_nice_pfm_image.pfm 0.1 1 a_nice_png_image
 ```
 
 ## License
