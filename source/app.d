@@ -1,10 +1,9 @@
-import geometry;
 import hdrimage;
 import std.conv;
-import std.file : isFile, FileException;
+import std.exception : enforce;
+import std.file : isFile;
 import std.format : format;
 import std.stdio : writeln;
-import transformations;
 
 struct Parameters
 {
@@ -13,18 +12,24 @@ struct Parameters
 
 	this(string[] args)
 	{
-		if (args.length != 5)
-			throw new Exception("USAGE: executable inputPFMFile factor gamma outputPNGFile");
+		enforce(args.length == 5, "USAGE: executable inputPFMFile factor gamma outputPNGFile");
 		
-		if (!args[1].isFile)
-			throw new FileException(format("Invalid input file [%s] ", args[1]));
+		enforce(args[1].isFile);
 		inputPFMFile = args[1];
 
-		try factor = to!float(args[2]);
+		try
+		{
+			factor = to!float(args[2]);
+			enforce(factor > 0, "Factor must be a positive number");
+		}
 		catch (std.conv.ConvException exc)
 			throw new std.conv.ConvException(format("Invalid factor [%s]", args[2]));
 
-		try gamma = to!float(args[3]);
+		try
+		{
+			gamma = to!float(args[3]);
+			enforce(gamma > 0, "Gamma must be a positive number");
+		}
 		catch (std.conv.ConvException exc)
 			throw new std.conv.ConvException(format("Invalid gamma [%s]", args[3]));
 
@@ -42,12 +47,20 @@ void main(string[] args)
 		return;
 	}
 
-	HDRImage image = new HDRImage(params.inputPFMFile);
-	writeln("File "~params.inputPFMFile~" has been read from disk");
+	try
+	{
+		HDRImage image = new HDRImage(params.inputPFMFile);
+		writeln("File "~params.inputPFMFile~" has been read from disk");
 
-	image.normalizeImage(params.factor);
-	image.clampImage;
+		image.normalizeImage(params.factor);
+		image.clampImage;
 
-	image.writePNG(params.outputPNGFile.dup,params.gamma);
-	writeln("File "~params.outputPNGFile~" has been written to disk");
+		image.writePNG(params.outputPNGFile.dup, params.gamma);
+		writeln("File "~params.outputPNGFile~" has been written to disk");
+	}
+	catch (InvalidPFMFileFormat exc)
+	{
+		writeln(format("File [%s] is not a correct PFM file", params.inputPFMFile));
+		return;
+	}
 }

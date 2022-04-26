@@ -3,8 +3,8 @@ import std.algorithm : endsWith, max, min;
 import std.array : Appender, appender, split;
 import std.bitmanip;
 import std.conv;
-import std.exception : assertThrown, assertNotThrown;
-import std.file : exists, read, FileException;
+import std.exception : assertThrown, assertNotThrown, enforce;
+import std.file : read;
 import std.format : format;
 import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
@@ -68,6 +68,14 @@ unittest
 	assert(areClose(7.0, c3.luminosity));
 }
 
+class InvalidPFMFileFormat : Exception
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
+
 ubyte[] readLine(ubyte[] stream, uint startingPosition)
 {
 	ubyte[] line;
@@ -88,87 +96,78 @@ unittest
 }
 
 int[2] parseImgSize(ubyte[] imgSize)
-in
 {
-	if (imgSize.length == 0)
-		throw new Exception(format("%s is an empty array", imgSize));
-}
+	enforce!InvalidPFMFileFormat(imgSize.length > 0, "Image dimensions are not indicated");
 
-do
-{
 	ubyte[][] dimensions = imgSize.split(32);
 	if (dimensions.length != 2)
-		throw new Exception("Invalid number of dimensions");
+		throw new InvalidPFMFileFormat("Invalid number of dimensions");
 	if (dimensions[][0].length == 0 || dimensions[][1].length == 0)
-		throw new Exception("Invalid number of dimensions");
+		throw new InvalidPFMFileFormat("Invalid number of dimensions");
 
-	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException. Va controllato? Temo di sì.
+	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException.
+	// Va controllato? Temo di sì.
 	char[] widthArray = cast(char[])(dimensions[][0]);
 	char[] heightArray = cast(char[])(dimensions[1][0 .. $-1]);
-	if (dimensions[1][$-1] != 10) heightArray ~= cast(char)(dimensions[1][$-1]);
 
 	try
 	{
 		int w = to!int(widthArray);
 		int h = to!int(heightArray);
 		if (w < 0 || h < 0)
-			throw new object.Exception("Invalid width and/or height: negative value");
+			throw new InvalidPFMFileFormat("Invalid width and/or height: negative value");
 		return [w,h];
 	}
 	catch (std.conv.ConvException exc)
-		throw new std.conv.ConvException("Invalid width and/or height: not an integer");
+		throw new InvalidPFMFileFormat("Invalid width and/or height: not an integer");
 }
 
 unittest
 {
-	ubyte[] dimensionsLine = [51, 32, 50, 10], dimensionsOnlyLine = [45, 48, 32, 55, 48];
+	ubyte[] dimensionsLine = [51, 32, 50, 10];
 	assert(parseImgSize(dimensionsLine) == [3, 2]);
-	assert(parseImgSize(dimensionsOnlyLine) == [0, 70]);
 
-	ubyte[] floatDimensions = [50, 46, 32, 51], negativeDimensions = [45, 50, 32, 52];
-	ubyte[] manyDimensions = [53, 32, 53, 32, 49];
-	assertThrown!ConvException(parseImgSize(floatDimensions));
-	assertThrown!Exception(parseImgSize(negativeDimensions));
-	assertThrown!Exception(parseImgSize(manyDimensions));
+	ubyte[] emptyArray;
+	assertThrown!InvalidPFMFileFormat(parseImgSize(emptyArray));
+
+	ubyte[] floatDimensions = [50, 46, 32, 51, 10], negativeDimensions = [45, 50, 32, 52, 10];
+	ubyte[] manyDimensions = [53, 32, 53, 32, 49, 10];
+	assertThrown!InvalidPFMFileFormat(parseImgSize(floatDimensions));
+	assertThrown!InvalidPFMFileFormat(parseImgSize(negativeDimensions));
+	assertThrown!InvalidPFMFileFormat(parseImgSize(manyDimensions));
 }
 
 float parseEndiannessLine(ubyte[] endiannessLine)
-in
 {
-	if (endiannessLine.length == 0)
-		throw new Exception(format("%s is an empty array", endiannessLine));
-}
-do
-{
+	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "Endianness is not indicated");
 	// Sempre problema se ASCII esteso.
 	char[] endiannessArray = cast(char[])(endiannessLine[0 .. $-1]);
-	if (endiannessLine[$-1] != 10) endiannessArray ~= cast(char)(endiannessLine[$-1]);
 
 	try
 	{
 		float endiannessValue = to!float(endiannessArray);
 		if (areClose(endiannessValue, 0, 1e-20))
-			throw new object.Exception("Endianness cannot be too close to zero");
+			throw new InvalidPFMFileFormat("Endianness cannot be too close to zero");
 		return endiannessValue;
 	}
 	catch (std.conv.ConvException exc)
-		throw new std.conv.ConvException(format("Invalid endianness %s", endiannessArray));
+		throw new InvalidPFMFileFormat("Invalid endianness: not a floating point");
 }
 
 unittest
 {
-	ubyte[] positiveNumber = [48, 55, 46, 50, 10], negativeNumber = [45, 56, 49];
+	ubyte[] positiveNumber = [48, 55, 46, 50, 10], negativeNumber = [45, 56, 49, 10];
 	assert(areClose(parseEndiannessLine(positiveNumber), 7.2));
 	assert(areClose(parseEndiannessLine(negativeNumber), -81));
 
-	ubyte[] zero = [48, 46, 48, 48], epsilon = [46, 48, 48, 48, 48, 48, 48, 48, 48, 50, 10];
-	ubyte[] notNumber = [50, 60, 70, 10];
-	assertThrown!Exception(parseEndiannessLine(zero));
-	assertNotThrown(parseEndiannessLine(epsilon));
-	assertThrown!ConvException(parseEndiannessLine(notNumber));
+	ubyte[] emptyArray;
+	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(emptyArray));
 
-	ubyte[] emptyArray = [];
-	assertThrown!Exception(parseEndiannessLine(emptyArray));
+	ubyte[] zero = [48, 46, 48, 48, 10], epsilon = [46, 48, 48, 48, 48, 48, 48, 48, 48, 50, 10];
+	ubyte[] notNumber = [50, 60, 70, 10];
+	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(zero));
+	assertNotThrown(parseEndiannessLine(epsilon));
+	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(notNumber));
 }
 
 float readFloat(ubyte[] stream, int startingPosition, float endiannessValue)
@@ -188,8 +187,8 @@ unittest
 {
 	ubyte[] test = [30, 20, 70, 55, 108, 99, 10, 7];
 	ubyte[] check = [55, 70, 20, 30, 7, 10, 99, 108];
-	for (int i = 0; i < test.length; i += 4)
-		assert(test.readFloat(i,-1) == check.readFloat(i,1));
+	assert(test.readFloat(0,-1) == check.readFloat(0,1));
+	assert(test.readFloat(4,-1) == check.readFloat(4,1));
 }
 
 float clamp(float x)
@@ -214,8 +213,7 @@ class HDRImage
 		int streamPosition = 0;
 
 		ubyte[] magic = stream.readLine(streamPosition);
-		if (magic != [80, 70, 10])
-			throw new Exception(format("Invalid magic %s", magic));
+		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], format("Invalid magic %s", magic));
 		streamPosition += magic.length;
 
 		ubyte[] imgSize = stream.readLine(streamPosition);
@@ -226,8 +224,8 @@ class HDRImage
 		float endiannessValue = parseEndiannessLine(endiannessLine);
 		streamPosition += endiannessLine.length;
 
-		if (12 * size[0] * size[1] != stream.length - streamPosition)
-			throw new Exception(format("Expected %s pixels", size[0]*size[1]));
+		enforce!InvalidPFMFileFormat(12 * size[0] * size[1] == stream.length - streamPosition,
+									format("Expected %s pixels", size[0]*size[1]));
 		this(size[0], size[1]);
 
 		float red, green, blue;
@@ -263,13 +261,13 @@ class HDRImage
 
 	Color getPixel(int x, int y)
 	{
-		assert (validCoordinates(x, y));
+		assert(validCoordinates(x, y));
 		return pixels[pixelOffset(x, y)];
 	}
 
 	void setPixel(int x, int y, Color c)
 	{
-		assert (validCoordinates(x, y));
+		assert(validCoordinates(x, y));
 		pixels[pixelOffset(x, y)] = c;
 	}
 
@@ -310,7 +308,7 @@ class HDRImage
 		if (!fileName.endsWith(".pfm"))
 		{
 			fileName ~= ".pfm";
-			if (!fileName.exists) writeln("WARNING: file automatically renamed to ", fileName);
+			writeln("WARNING: file automatically renamed to ", fileName);
 		}
 		File file = File(fileName, "wb");
 		file.rawWrite(writePFM(endianness));
@@ -328,7 +326,7 @@ class HDRImage
 		if (!fileName.endsWith(".png"))
 		{
 			fileName ~= ".png";
-			if (!fileName.exists) writeln("WARNING: file automatically renamed to ", fileName);
+			writeln("WARNING: file automatically renamed to ", fileName);
 		}
 		imageformats.png.write_png(fileName, width, height, data, 0);
 	}
