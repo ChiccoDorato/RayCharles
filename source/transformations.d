@@ -1,6 +1,6 @@
-import cameras : Ray;
 import geometry;
 import hdrimage : areClose;
+import ray;
 import std.math : PI, sin, cos;
 
 float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
