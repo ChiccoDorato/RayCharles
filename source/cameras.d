@@ -119,8 +119,8 @@ class ImageTracer
     Ray fireRay(int col, int row, float uPixel = 0.5, float vPixel = 0.5)
     {
         // For now, there is an error in this formula
-        float u = (col + uPixel) / image.width;
-        float v = 1 - (row + vPixel) / image.height;
+        float u = (col + uPixel) / (image.width - 1);
+        float v = (row + vPixel) / (image.height - 1);
         return camera.fireRay(u, v);
     }
 
