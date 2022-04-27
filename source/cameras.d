@@ -119,8 +119,8 @@ class ImageTracer
     Ray fireRay(int col, int row, float uPixel = 0.5, float vPixel = 0.5)
     {
         // For now, there is an error in this formula
-        float u = (col + uPixel) / (image.width - 1);
-        float v = (row + vPixel) / (image.height - 1);
+        float u = (col + uPixel) / image.width;
+        float v = 1 - (row + vPixel) / image.height;
         return camera.fireRay(u, v);
     }
 
@@ -139,18 +139,37 @@ class ImageTracer
     }
 }
 
+void testOrientation(ImageTracer tracer)
+{
+    Ray topLeftRay = tracer.fireRay(0, 0, 0, 0);
+    assert(Point(0, 2, 1).xyzIsClose(topLeftRay.at(1)));
+
+    Ray bottomRightRay = tracer.fireRay(3, 1, 1, 1);
+    assert(Point(0, -2, -1).xyzIsClose(bottomRightRay.at(1)));
+}
+
+void testUVSubMapping(ImageTracer tracer)
+{
+    Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
+    Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
+    assert(r1.rayIsClose(r2));
+}
+
+void testImageCoverage(HDRImage image, ImageTracer tracer)
+{
+    tracer.fireAllRays((Ray r) => Color(1.0, 2.0, 3.0));
+    for (uint row = 0; row < image.height; ++row)
+        for (uint col = 0; col < image.width; ++col)
+            assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
+}
+
 unittest
 {
     HDRImage image = new HDRImage(4, 2);
     Camera camera = new PerspectiveCamera(1.0, 2.0);
     ImageTracer tracer = new ImageTracer(image, camera);
 
-    Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
-    Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
-    assert(r1.rayIsClose(r2));
-    
-    tracer.fireAllRays((Ray r) => Color(1.0, 2.0, 3.0));
-    for (uint row = 0; row < image.height; ++row)
-        for (uint col = 0; col < image.width; ++col)
-            assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
+    testOrientation(tracer);
+    testUVSubMapping(tracer);
+    testImageCoverage(image, tracer);
 }
