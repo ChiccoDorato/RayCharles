@@ -260,14 +260,14 @@ class HDRImage
 	}
 
 	Color getPixel(int x, int y)
+	in (validCoordinates(x, y))
 	{
-		assert(validCoordinates(x, y));
 		return pixels[pixelOffset(x, y)];
 	}
 
 	void setPixel(int x, int y, Color c)
+	in (validCoordinates(x, y))
 	{
-		assert(validCoordinates(x, y));
 		pixels[pixelOffset(x, y)] = c;
 	}
 
