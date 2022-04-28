@@ -1,9 +1,9 @@
 module shapes;
 
-import geometry : Normal, Point, Vec, Vec2d;
+import geometry : Normal, Point, Vec, Vec2d, vecX, vecZ;
 import hdrimage : areClose;
 import ray : Ray;
-import std.math : sqrt;
+import std.math : atan2, acos, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : Transformation;
 
@@ -54,3 +54,53 @@ class Sphere : Shape
         return hit;
     }
 }
+
+/* unittest
+{   
+    Sphere s = new Sphere;
+// RAY 1
+    Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
+    HitRecord h1 = HitRecord(s.rayIntersection(r1));
+
+    Point p1 = Point(0.0, 0.0, 1.0);
+    assert(p1.xyzIsClose(h1.worldPoint));
+
+    Normal n1 = vecZ.convert;
+    assert(n1.xyzIsClose(h1.normal));
+
+    Vec2d uv1 = Vec2d(atan2(0.0,0.0)/(2*PI), acos(1.0)/PI);
+    assert(uv1.uvIsClose(h1.surfacePoint));
+
+    float t1 = 1.0;
+    assert(areClose(t1, h1.t));
+// RAY 2
+    Ray r2 = {Point(3.0, 0.0, 0.0), -vecX};
+    HitRecord h2 = HitRecord(s.rayIntersection(r2));
+
+    Point p2 = Point(0.0, 0.0, 0.0);
+    assert(p1.xyzIsClose(h2.worldPoint));
+
+    Normal n2 = vecZ.convert;
+    assert(n2.xyzIsClose(h2.normal));
+
+    Vec2d uv2 = Vec2d(atan2(0.0,0.0)/(2*PI), acos(0.0)/PI);
+    assert(uv1.uvIsClose(h2.surfacePoint));
+
+    float t2 = 2.0;
+    assert(areClose(t2, h2.t));
+// RAY 3
+    Ray ray3 = {Point(3.0, 0.0, 0.0), vecX};
+    HitRecord h3 = HitRecord(s.rayIntersection(r3));
+
+    Point p3 = Point(1.0, 0.0, 0.0);
+    assert(p3.xyzIsClose(h3.worldPoint));
+
+    Normal n3 = vecZ.convert;
+    assert(n3.xyzIsClose(h3.normal));
+
+    Vec2d uv3 = Vec2d(atan2(0.0,1.0)/(2*PI), acos(0.0)/PI);
+    assert(uv3.uvIsClose(h3.surfacePoint));
+
+    float t3 = 1.0;
+    assert(areClose(t3, h3.t));
+} */
