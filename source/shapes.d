@@ -32,7 +32,8 @@ class Shape
 Vec2d sphereUVPoint(Point p)
 {
     float u = atan2(p.y, p.x) / (2.0 * PI);
-    return Vec2d(u >= 0 ? u : u + 1.0, acos(p.z) / PI);
+    if (u < 0) ++u;
+    return Vec2d(u, acos(p.z) / PI);
 }
 
 Normal sphereNormal(Point p, Vec v)
@@ -55,8 +56,8 @@ class Sphere : Shape
         Nullable!HitRecord hit;
         if (reducedDelta < 0) return hit;
 
-        float t1 = (- halfB - sqrt(reducedDelta)) / a;
-        float t2 = (- halfB + sqrt(reducedDelta)) / a;
+        float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        float t2 = (-halfB + sqrt(reducedDelta)) / a;
 
         float firstHit;
         if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
@@ -80,7 +81,7 @@ unittest
     Sphere s = new Sphere;
 
     assert(s.rayIntersection(Ray(Point(0, 10, 2), -vecZ)).isNull);
-    
+
     // RAY 1
     Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
     HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
