@@ -5,6 +5,7 @@ import hdrimage : areClose;
 import ray : Ray;
 import std.math : sqrt;
 import transformations : Transformation;
+import typecons : Nullable;
 
 struct HitRecord
 {
