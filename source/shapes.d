@@ -1,6 +1,6 @@
 module shapes;
 
-import geometry : Normal, Point, Vec2d;
+import geometry : Normal, Point, Vec, Vec2d;
 import hdrimage : areClose;
 import ray : Ray;
 import std.math : sqrt;
@@ -40,14 +40,17 @@ class Sphere : Shape
         float c = originVec.squaredNorm - 1.0;
         float reducedDelta = halfB * halfB - a * c;
 
-        if (reducedDelta < 0) return Nullable!HitRecord;
+        Nullable!HitRecord hit;
+        if (reducedDelta < 0) return hit;
 
-        t1 = (- halfB - sqrt(reducedDelta)) / a;
-        t2 = (- halfB + sqrt(reducedDelta)) / a;
+        float t1 = (- halfB - sqrt(reducedDelta)) / a;
+        float t2 = (- halfB + sqrt(reducedDelta)) / a;
 
         float firstHit;
         if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
         else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
-        else return Nullable!HitRecord;
+        else return hit;
+
+        return hit;
     }
 }
