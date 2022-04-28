@@ -4,8 +4,8 @@ import geometry : Normal, Point, Vec2d;
 import hdrimage : areClose;
 import ray : Ray;
 import std.math : sqrt;
+import std.typecons : Nullable;
 import transformations : Transformation;
-import typecons : Nullable;
 
 struct HitRecord
 {
