@@ -1,6 +1,6 @@
 module shapes;
 
-import geometry : Normal, Point, Vec, Vec2d;
+import geometry : Normal, Point, Vec, Vec2d, vecX, vecZ;
 import hdrimage : areClose;
 import ray : Ray;
 import std.math : acos, atan2, PI, sqrt;
@@ -73,4 +73,44 @@ class Sphere : Shape
             );
         return hit;
     }
+}
+
+unittest
+{   
+    Sphere s = new Sphere;
+
+    assert(s.rayIntersection(Ray(Point(0, 10, 2), -vecZ)).isNull);
+    
+    // RAY 1
+    Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
+    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.0, 1.0),
+        Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1
+        ).recordIsClose(h1));
+
+    // RAY 2
+    Ray r2 = {Point(3.0, 0.0, 0.0), -vecX};
+    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    assert(HitRecord(
+        Point(1.0, 0.0, 0.0),
+        Normal(1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        2.0,
+        r2
+        ).recordIsClose(h2));
+
+    // RAY 3
+    Ray r3 = {Point(0.0, 0.0, 0.0), vecX};
+    HitRecord h3 = s.rayIntersection(r3).get(HitRecord());
+    assert(HitRecord(
+        Point(1.0, 0.0, 0.0),
+        Normal(-1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        1.0,
+        r3
+        ).recordIsClose(h3));
 }
