@@ -1,6 +1,8 @@
-import geometry;
+module transformations;
+
+import geometry : Normal, Point, Vec, vecX, vecY, vecZ;
 import hdrimage : areClose;
-import ray;
+import ray : Ray;
 import std.math : PI, sin, cos;
 
 float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];

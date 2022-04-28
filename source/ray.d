@@ -1,3 +1,5 @@
+module ray;
+
 import geometry : Point, Vec, xyzIsClose; 
 import transformations : rotationX, Transformation, translation;
 

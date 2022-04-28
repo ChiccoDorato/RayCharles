@@ -1,3 +1,5 @@
+module geometry;
+
 import hdrimage : areClose;
 import std.array : split;
 import std.conv : to;
@@ -257,4 +259,14 @@ struct Normal
     mixin squaredNorm!Normal;
     mixin norm!Normal;
     mixin normalize!Normal;
+}
+
+struct Vec2d
+{
+    float u, v;
+
+    bool uvIsClose(Vec2d v2d)
+    {
+        return areClose(u, v2d.u) && areClose(v, v2d.v);
+    }
 }

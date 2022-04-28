@@ -1,6 +1,8 @@
-import geometry : Point, Vec, vecX, vecY, xyzIsClose;
-import hdrimage;
-import ray;
+module cameras;
+
+import geometry : Point, Vec, vecX, vecY;
+import hdrimage : areClose, Color, HDRImage;
+import ray : Ray;
 import transformations : rotationZ, Transformation, translation;
 
 class Camera
@@ -158,7 +160,7 @@ void testUVSubMapping(ImageTracer tracer)
 
 void testImageCoverage(HDRImage image, ImageTracer tracer)
 {
-    tracer.fireAllRays((Ray r) => Color(1.0, 2.0, 3.0));
+    tracer.fireAllRays(Ray => Color(1.0, 2.0, 3.0));
     for (uint row = 0; row < image.height; ++row)
         for (uint col = 0; col < image.width; ++col)
             assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
