@@ -3,7 +3,7 @@ module shapes;
 import geometry : Normal, Point, Vec, Vec2d;
 import hdrimage : areClose;
 import ray : Ray;
-import std.math : sqrt;
+import std.math : acos, atan2, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : Transformation;
 
@@ -29,6 +29,18 @@ class Shape
     abstract Nullable!HitRecord rayIntersection(Ray r);
 }
 
+Vec2d sphereUVPoint(Point p)
+{
+    float u = atan2(p.y, p.x) / (2.0 * PI);
+    return Vec2d(u >= 0 ? u : u + 1.0, acos(p.z) / PI);
+}
+
+Normal sphereNormal(Point p, Vec v)
+{
+    Normal n = Normal(p.x, p.y, p.z);
+    return p.convert * v < 0 ? n : -n;
+}
+
 class Sphere : Shape
 {
     override Nullable!HitRecord rayIntersection(Ray r)
@@ -51,6 +63,14 @@ class Sphere : Shape
         else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
         else return hit;
 
+        Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * sphereNormal(hitPoint, invR.dir),
+            sphereUVPoint(hitPoint),
+            firstHit,
+            r
+            );
         return hit;
     }
 }
