@@ -1,4 +1,4 @@
-module shape;
+module shapes;
 
 import geometry : Normal, Point, Vec2d;
 import hdrimage : areClose;
