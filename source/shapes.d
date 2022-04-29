@@ -3,7 +3,7 @@ module shapes;
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecZ;
 import hdrimage : areClose;
 import ray : Ray;
-import std.math : acos, atan2, PI, sqrt;
+import std.math : abs, acos, atan2, PI, sqrt, floor;
 import std.typecons : Nullable;
 import transformations : Transformation, translation;
 
@@ -178,5 +178,61 @@ class World
             if (closest.isNull || intersection.get.t < closest.get.t) closest = intersection;
         }
         return closest;
+    }
+}
+
+class Plane : Shape
+{
+    this(Transformation t)
+    {
+        transf = t;
+    }
+
+    override Nullable!HitRecord rayIntersection(Ray ray)
+    {
+        Nullable!HitRecord hit;
+        Ray invR = transf.inverse * ray;
+        Vec originVec = invR.origin.convert;
+        if(abs(invR.dir.z < 1e-5)) return hit;
+
+        float t = -originVec.z / invR.dir.z;
+        if(t <= invR.tMin || t>= invR.tMax) return hit;
+
+        Point hitPoint = invR.at(t);
+        float z=1;
+        if(invR.dir.z < 0.0)
+
+        hit = HitRecord(transf*invR,
+                    transf*Normal(0,0,z), 
+                    Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
+                    t,
+                    ray);
+        return hit;
+
+
+        float halfB = originVec * invR.dir;
+        float a = invR.dir.squaredNorm;
+        float c = originVec.squaredNorm - 1.0;
+        float reducedDelta = halfB * halfB - a * c;
+
+        if (reducedDelta < 0) return hit;
+
+        float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        float t2 = (-halfB + sqrt(reducedDelta)) / a;
+
+        float firstHit;
+        if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
+        else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
+        else return hit;
+
+        Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * sphereNormal(hitPoint, invR.dir),
+            sphereUVPoint(hitPoint),
+            firstHit,
+            r
+            );
+        return hit;
     }
 }
