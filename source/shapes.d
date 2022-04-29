@@ -5,7 +5,7 @@ import hdrimage : areClose;
 import ray : Ray;
 import std.math : acos, atan2, PI, sqrt;
 import std.typecons : Nullable;
-import transformations : Transformation;
+import transformations : Transformation, translation;
 
 struct HitRecord
 {
@@ -44,6 +44,11 @@ Normal sphereNormal(Point p, Vec v)
 
 class Sphere : Shape
 {
+    this(Transformation t)
+    {
+        transf = t;
+    }
+
     override Nullable!HitRecord rayIntersection(Ray r)
     {
         Ray invR = transf.inverse * r;
@@ -78,9 +83,9 @@ class Sphere : Shape
 
 unittest
 {   
-    Sphere s = new Sphere;
+    Sphere s = new Sphere(Transformation());
 
-    assert(s.rayIntersection(Ray(Point(0, 10, 2), -vecZ)).isNull);
+    assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
     // RAY 1
     Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
@@ -114,4 +119,35 @@ unittest
         1.0,
         r3
         ).recordIsClose(h3));
+}
+
+unittest
+{
+    Sphere s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
+
+    // Check if the sphere was actually translated by trying to hit the untrasformed shape.
+    assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
+
+    // Check if the inverse transformation was wrongly applied.
+    assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
+
+    Ray r1 = {Point(10.0, 0.0, 2.0), -vecZ};
+    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(10.0, 0.0, 1.0),
+        Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1
+        ).recordIsClose(h1));
+    
+    Ray r2 = {Point(13.0, 0.0, 0.0), -vecX};
+    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    assert(HitRecord(
+        Point(11.0, 0.0, 0.0),
+        Normal(1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        2.0,
+        r2
+        ).recordIsClose(h2));
 }
