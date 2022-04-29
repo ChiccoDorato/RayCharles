@@ -118,7 +118,7 @@ int[2] parseImgSize(ubyte[] imgSize)
 		int h = to!int(heightArray);
 		if (w < 0 || h < 0)
 			throw new InvalidPFMFileFormat("Invalid width and/or height: negative value");
-		return [w,h];
+		return [w, h];
 	}
 	catch (std.conv.ConvException exc)
 		throw new InvalidPFMFileFormat("Invalid width and/or height: not an integer");
@@ -173,8 +173,10 @@ unittest
 }
 
 float readFloat(ubyte[] stream, int startingPosition, float endiannessValue)
-in (startingPosition < stream.length - 3,
-	format("Less than 4 bytes in %s from index %s", stream, startingPosition))
+in (
+	stream.length - startingPosition > 3,
+	format("Less than 4 bytes in %s from index %s", stream, startingPosition)
+	)
 in (!areClose(endiannessValue, 0, 1e-20), "Endianness cannot be too close to zero")
 {
 	uint nativeValue = *cast(uint*)(stream.ptr + startingPosition);
@@ -226,8 +228,10 @@ class HDRImage
 		float endiannessValue = parseEndiannessLine(endiannessLine);
 		streamPosition += endiannessLine.length;
 
-		enforce!InvalidPFMFileFormat(12 * size[0] * size[1] == stream.length - streamPosition,
-									format("Expected %s pixels", size[0]*size[1]));
+		enforce!InvalidPFMFileFormat(
+			12 * size[0] * size[1] == stream.length - streamPosition,
+			format("Expected %s pixels", size[0]*size[1])
+			);
 		this(size[0], size[1]);
 
 		float red, green, blue;

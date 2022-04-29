@@ -3,9 +3,9 @@ module shapes;
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecZ;
 import hdrimage : areClose;
 import ray : Ray;
-import std.math : atan2, acos, PI, sqrt;
+import std.math : acos, atan2, PI, sqrt;
 import std.typecons : Nullable;
-import transformations : Transformation;
+import transformations : Transformation, translation;
 
 struct HitRecord
 {
@@ -29,8 +29,26 @@ class Shape
     abstract Nullable!HitRecord rayIntersection(Ray r);
 }
 
+Vec2d sphereUVPoint(Point p)
+{
+    float u = atan2(p.y, p.x) / (2.0 * PI);
+    if (u < 0) ++u;
+    return Vec2d(u, acos(p.z) / PI);
+}
+
+Normal sphereNormal(Point p, Vec v)
+{
+    Normal n = Normal(p.x, p.y, p.z);
+    return p.convert * v < 0 ? n : -n;
+}
+
 class Sphere : Shape
 {
+    this(Transformation t)
+    {
+        transf = t;
+    }
+
     override Nullable!HitRecord rayIntersection(Ray r)
     {
         Ray invR = transf.inverse * r;
@@ -43,67 +61,96 @@ class Sphere : Shape
         Nullable!HitRecord hit;
         if (reducedDelta < 0) return hit;
 
-        float t1 = (- halfB - sqrt(reducedDelta)) / a;
-        float t2 = (- halfB + sqrt(reducedDelta)) / a;
+        float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        float t2 = (-halfB + sqrt(reducedDelta)) / a;
 
         float firstHit;
         if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
         else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
         else return hit;
 
+        Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * sphereNormal(hitPoint, invR.dir),
+            sphereUVPoint(hitPoint),
+            firstHit,
+            r
+            );
         return hit;
     }
 }
 
-/* unittest
+unittest
 {   
-    Sphere s = new Sphere;
-// RAY 1
+    Sphere s = new Sphere(Transformation());
+
+    assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
+
+    // RAY 1
     Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
-    HitRecord h1 = HitRecord(s.rayIntersection(r1));
+    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.0, 1.0),
+        Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1
+        ).recordIsClose(h1));
 
-    Point p1 = Point(0.0, 0.0, 1.0);
-    assert(p1.xyzIsClose(h1.worldPoint));
-
-    Normal n1 = vecZ.convert;
-    assert(n1.xyzIsClose(h1.normal));
-
-    Vec2d uv1 = Vec2d(atan2(0.0,0.0)/(2*PI), acos(1.0)/PI);
-    assert(uv1.uvIsClose(h1.surfacePoint));
-
-    float t1 = 1.0;
-    assert(areClose(t1, h1.t));
-// RAY 2
+    // RAY 2
     Ray r2 = {Point(3.0, 0.0, 0.0), -vecX};
-    HitRecord h2 = HitRecord(s.rayIntersection(r2));
+    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    assert(HitRecord(
+        Point(1.0, 0.0, 0.0),
+        Normal(1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        2.0,
+        r2
+        ).recordIsClose(h2));
 
-    Point p2 = Point(0.0, 0.0, 0.0);
-    assert(p1.xyzIsClose(h2.worldPoint));
+    // RAY 3
+    Ray r3 = {Point(0.0, 0.0, 0.0), vecX};
+    HitRecord h3 = s.rayIntersection(r3).get(HitRecord());
+    assert(HitRecord(
+        Point(1.0, 0.0, 0.0),
+        Normal(-1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        1.0,
+        r3
+        ).recordIsClose(h3));
+}
 
-    Normal n2 = vecZ.convert;
-    assert(n2.xyzIsClose(h2.normal));
+unittest
+{
+    Sphere s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
 
-    Vec2d uv2 = Vec2d(atan2(0.0,0.0)/(2*PI), acos(0.0)/PI);
-    assert(uv1.uvIsClose(h2.surfacePoint));
+    // Check if the sphere was actually translated by trying to hit the untrasformed shape.
+    assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
 
-    float t2 = 2.0;
-    assert(areClose(t2, h2.t));
-// RAY 3
-    Ray ray3 = {Point(3.0, 0.0, 0.0), vecX};
-    HitRecord h3 = HitRecord(s.rayIntersection(r3));
+    // Check if the inverse transformation was wrongly applied.
+    assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
 
-    Point p3 = Point(1.0, 0.0, 0.0);
-    assert(p3.xyzIsClose(h3.worldPoint));
-
-    Normal n3 = vecZ.convert;
-    assert(n3.xyzIsClose(h3.normal));
-
-    Vec2d uv3 = Vec2d(atan2(0.0,1.0)/(2*PI), acos(0.0)/PI);
-    assert(uv3.uvIsClose(h3.surfacePoint));
-
-    float t3 = 1.0;
-    assert(areClose(t3, h3.t));
-} */
+    Ray r1 = {Point(10.0, 0.0, 2.0), -vecZ};
+    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(10.0, 0.0, 1.0),
+        Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1
+        ).recordIsClose(h1));
+    
+    Ray r2 = {Point(13.0, 0.0, 0.0), -vecX};
+    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    assert(HitRecord(
+        Point(11.0, 0.0, 0.0),
+        Normal(1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.5),
+        2.0,
+        r2
+        ).recordIsClose(h2));
+}
 
 class World
 {
