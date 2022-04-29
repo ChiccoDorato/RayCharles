@@ -207,32 +207,5 @@ class Plane : Shape
                     Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
                     t,
                     ray);
-        return hit;
-
-
-        float halfB = originVec * invR.dir;
-        float a = invR.dir.squaredNorm;
-        float c = originVec.squaredNorm - 1.0;
-        float reducedDelta = halfB * halfB - a * c;
-
-        if (reducedDelta < 0) return hit;
-
-        float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        float t2 = (-halfB + sqrt(reducedDelta)) / a;
-
-        float firstHit;
-        if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
-        else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
-        else return hit;
-
-        Point hitPoint = invR.at(firstHit);
-        hit = HitRecord(
-            transf * hitPoint,
-            transf * sphereNormal(hitPoint, invR.dir),
-            sphereUVPoint(hitPoint),
-            firstHit,
-            r
-            );
-        return hit;
     }
 }
