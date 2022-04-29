@@ -156,6 +156,11 @@ class World
 {
     Shape[] shapes;
 
+    this(Shape[] s)
+    {
+        shapes = s;
+    }
+
     void addShape(Shape s)
     {
         shapes ~= s;
@@ -169,7 +174,7 @@ class World
         foreach (Shape s; shapes)
         {
             intersection = s.rayIntersection(ray);
-            if(intersection.isNull) continue;
+            if (intersection.isNull) continue;
             if (closest.isNull || intersection.get.t < closest.get.t) closest = intersection;
         }
         return closest;
