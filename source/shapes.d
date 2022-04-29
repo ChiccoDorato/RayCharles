@@ -104,3 +104,27 @@ class Sphere : Shape
     float t3 = 1.0;
     assert(areClose(t3, h3.t));
 } */
+
+class World
+{
+    Shape[] shapes;
+
+    void addShape(Shape s)
+    {
+        shapes ~= s;
+    }
+
+    Nullable!HitRecord rayIntersection(Ray ray)
+    {
+        Nullable!HitRecord closest;
+        Nullable!HitRecord intersection;
+
+        foreach (Shape s; shapes)
+        {
+            intersection = s.rayIntersection(ray);
+            if(intersection.isNull) continue;
+            if (closest.isNull || intersection.get.t < closest.get.t) closest = intersection;
+        }
+        return closest;
+    }
+}
