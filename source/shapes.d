@@ -180,6 +180,7 @@ class World
         return closest;
     }
 }
+
 // A 3D infinite plane parallel to the x and y axis and passing through the origin.
 class Plane : Shape
 {
@@ -191,11 +192,11 @@ class Plane : Shape
     override Nullable!HitRecord rayIntersection(Ray ray)
     {
         Nullable!HitRecord hit;
-        Ray invR = transf.inverse * ray;
-        Vec originVec = invR.origin.convert;
-        if(abs(invR.dir.z < 1e-5)) return hit;
 
-        float t = -originVec.z / invR.dir.z;
+        Ray invR = transf.inverse * ray;
+        if(abs(invR.dir.z) < 1e-5) return hit;
+
+        float t = -invR.origin.z / invR.dir.z;
         if(t <= invR.tMin || t>= invR.tMax) return hit;
 
         Point hitPoint = invR.at(t);
@@ -203,17 +204,17 @@ class Plane : Shape
         if(invR.dir.z < 0.0) z = 1.0;
 
         hit = HitRecord(transf*hitPoint,
-                    transf*Normal(0,0,z), 
-                    Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
-                    t,
-                    ray);
+                        transf*Normal(0,0,z), 
+                        Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
+                        t,
+                        ray);
         return hit;
     }
 
     bool quickRayIntersection(Ray ray)
     {
         Ray invR = transf.inverse * ray;
-        if(abs(invR.dir.z < 1e-5)) return false;
+        if(abs(invR.dir.z) < 1e-5) return false;
 
         float t = -invR.origin.z / invR.dir.z;
         if(t < invR.tMin || t > invR.tMax) return false; 
@@ -229,14 +230,14 @@ unittest
 
         Ray ray1 = {Point(0, 0, 1), -vecZ};
         Nullable!HitRecord intersection1 = plane.rayIntersection(ray1);
-        //Seems null...
-        /* assert(!intersection1.isNull);  
+
+        assert(!intersection1.isNull);  
         assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(0.0, 0.0, 1.0),
         Vec2d(0.0, 0.0),
         1.0,
-        ray1).recordIsClose(intersection1.get(HitRecord()))); */
+        ray1).recordIsClose(intersection1.get(HitRecord())));
 
         Ray ray2 = {Point(0, 0, 1), vecZ};
         Nullable!HitRecord intersection2 = plane.rayIntersection(ray2);
@@ -257,15 +258,15 @@ unittest
     Ray ray1 = {Point(1,0,0), -vecX};
 
     Nullable!HitRecord intersection1 = plane.rayIntersection(ray1);
-    //Here it seems null as well...
-    /* assert(!intersection1.isNull);
+
+    assert(!intersection1.isNull);
     assert(HitRecord(
         Point(0.0,0.0,0.0),
         Normal(1.0,0.0,0.0),
         Vec2d(0.0, 0.0),
         1.0,
         ray1).recordIsClose(intersection1.get));
- */
+
     Ray ray2 = {Point(0, 0, 1), vecZ};
     Nullable!HitRecord intersection2 = plane.rayIntersection(ray2);
     assert(intersection2.isNull);
@@ -284,18 +285,17 @@ unittest
      // test UV Coordinates
         Transformation transf;
         Plane plane = new Plane(transf);
-    
-    // It seems they are all Null... No intersection
-        /* Ray ray1 = {Point(0, 0, 1), -vecZ};
+
+        Ray ray1 = {Point(0, 0, 1), -vecZ};
         Nullable!HitRecord intersection1 = plane.rayIntersection(ray1);
-        assert(intersection1.get.surfacePoint.uvIsClose(Vec2d(0.0, 0.0))); */
+        assert(intersection1.get.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
 
-        /* Ray ray2 = {Point(0.25, 0.75, 1), -vecZ};
+        Ray ray2 = {Point(0.25, 0.75, 1), -vecZ};
         Nullable!HitRecord intersection2 = plane.rayIntersection(ray2);
-        assert(intersection2.get.surfacePoint.uvIsClose(Vec2d(0.25, 0.75))); */
+        assert(intersection2.get.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 
-        /* Ray ray3 = {Point(4.25, 7.75, 1), -vecZ};
+        Ray ray3 = {Point(4.25, 7.75, 1), -vecZ};
         Nullable!HitRecord intersection3 = plane.rayIntersection(ray3);
-        assert(intersection3.get.surfacePoint.uvIsClose(Vec2d(0.25, 0.75))); */
+        assert(intersection3.get.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 
 }

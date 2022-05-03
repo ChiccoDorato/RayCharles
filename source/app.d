@@ -63,4 +63,4 @@ void main(string[] args)
 		writeln(format("File [%s] is not a correct PFM file", params.inputPFMFile));
 		return;
 	}
-}
+} 
