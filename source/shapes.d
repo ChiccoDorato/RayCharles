@@ -1,11 +1,11 @@
 module shapes;
 
-import geometry : Normal, Point, Vec, Vec2d, vecX, vecZ;
+import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import ray : Ray;
-import std.math : acos, atan2, PI, sqrt;
+import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
-import transformations : Transformation, translation;
+import transformations : Transformation, translation, rotationY;
 
 struct HitRecord
 {
@@ -75,8 +75,7 @@ class Sphere : Shape
             transf * sphereNormal(hitPoint, invR.dir),
             sphereUVPoint(hitPoint),
             firstHit,
-            r
-            );
+            r);
         return hit;
     }
 }
@@ -95,8 +94,7 @@ unittest
         Normal(0.0, 0.0, 1.0),
         Vec2d(0.0, 0.0),
         1.0,
-        r1
-        ).recordIsClose(h1));
+        r1).recordIsClose(h1));
 
     // RAY 2
     Ray r2 = {Point(3.0, 0.0, 0.0), -vecX};
@@ -106,8 +104,7 @@ unittest
         Normal(1.0, 0.0, 0.0),
         Vec2d(0.0, 0.5),
         2.0,
-        r2
-        ).recordIsClose(h2));
+        r2).recordIsClose(h2));
 
     // RAY 3
     Ray r3 = {Point(0.0, 0.0, 0.0), vecX};
@@ -117,8 +114,7 @@ unittest
         Normal(-1.0, 0.0, 0.0),
         Vec2d(0.0, 0.5),
         1.0,
-        r3
-        ).recordIsClose(h3));
+        r3).recordIsClose(h3));
 }
 
 unittest
@@ -138,8 +134,7 @@ unittest
         Normal(0.0, 0.0, 1.0),
         Vec2d(0.0, 0.0),
         1.0,
-        r1
-        ).recordIsClose(h1));
+        r1).recordIsClose(h1));
     
     Ray r2 = {Point(13.0, 0.0, 0.0), -vecX};
     HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
@@ -148,11 +143,118 @@ unittest
         Normal(1.0, 0.0, 0.0),
         Vec2d(0.0, 0.5),
         2.0,
-        r2
-        ).recordIsClose(h2));
+        r2).recordIsClose(h2));
 }
 
-class World
+// A 3D infinite plane parallel to the x and y axis and passing through the origin.
+class Plane : Shape
+{
+    this(Transformation t)
+    {
+        transf = t;
+    }
+
+    override Nullable!HitRecord rayIntersection(Ray r)
+    {
+        Nullable!HitRecord hit;
+
+        Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0)) return hit;
+
+        float t = -invR.origin.z / invR.dir.z;
+        if (t <= invR.tMin || t >= invR.tMax) return hit;
+
+        Point hitPoint = invR.at(t);
+        hit = HitRecord(transf * hitPoint,
+            transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0), 
+            Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
+            t,
+            r);
+        return hit;
+    }
+
+    /* bool quickRayIntersection(Ray r)
+    {
+        Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0)) return false;
+
+        float t = -invR.origin.z / invR.dir.z;
+        if (t < invR.tMin || t > invR.tMax) return false; 
+
+        return true;
+    } */
+}
+
+unittest
+{
+    Plane p = new Plane(Transformation());
+
+    Ray r1 = {Point(0.0, 0.0, 1.0), -vecZ};
+    HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.0, 0.0),
+        Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1).recordIsClose(h1));
+
+    Ray r2 = {Point(0.0, 0.0, 1.0), vecZ};
+    Nullable!HitRecord h2 = p.rayIntersection(r2);
+    assert(h2.isNull);
+
+    Ray r3 = {Point(0.0, 0.0, 1.0), vecX};
+    Nullable!HitRecord h3 = p.rayIntersection(r3);
+    assert(h3.isNull);
+
+    Ray r4 = {Point(0.0, 0.0, 1.0), vecY};
+    Nullable!HitRecord h4 = p.rayIntersection(r4);
+    assert(h4.isNull);
+}
+
+ unittest
+{
+    Plane p = new Plane(rotationY(90.0));
+
+    Ray r1 = {Point(1.0, 0.0, 0.0), -vecX};
+    HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.0, 0.0),
+        Normal(1.0, 0.0, 0.0),
+        Vec2d(0.0, 0.0),
+        1.0,
+        r1).recordIsClose(h1));
+
+    Ray r2 = {Point(0.0, 0.0, 1.0), vecZ};
+    Nullable!HitRecord h2 = p.rayIntersection(r2);
+    assert(h2.isNull);
+
+    Ray r3 = {Point(0.0, 0.0, 1.0), vecX};
+    Nullable!HitRecord h3 = p.rayIntersection(r3);
+    assert(h3.isNull);
+
+    Ray r4 = {Point(0.0, 0.0, 1.0), vecY};
+    Nullable!HitRecord h4 = p.rayIntersection(r4);
+    assert(h4.isNull);
+}
+
+unittest
+{
+    Plane p = new Plane(Transformation());
+
+    Ray r1 = {Point(0.0, 0.0, 1.0), -vecZ};
+    HitRecord h1 = p.rayIntersection(r1).get;
+    assert(h1.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
+
+    Ray r2 = {Point(0.25, 0.75, 1), -vecZ};
+    HitRecord h2 = p.rayIntersection(r2).get;
+    assert(h2.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
+
+    Ray r3 = {Point(4.25, 7.75, 1), -vecZ};
+    HitRecord h3 = p.rayIntersection(r3).get;
+    assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
+}
+
+struct World
 {
     Shape[] shapes;
 

@@ -121,7 +121,7 @@ void main(string[] args)
 				float angle = to!float(rayC.option("angleDeg"));
 
 				Shape[] s;
-				World world = new World(s);
+				World world = World(s);
 				Transformation cameraTr = rotationZ(angle) * translation(Vec(-1.0, 0.0, 0.0));
 				if (rayC.flag("orthogonal")) OrthogonalCamera camera;
 				else PerspectiveCamera camera;
