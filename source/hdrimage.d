@@ -120,7 +120,7 @@ int[2] parseImgSize(ubyte[] imgSize)
 			throw new InvalidPFMFileFormat("Invalid width and/or height: negative value");
 		return [w, h];
 	}
-	catch (std.conv.ConvException exc)
+	catch (ConvException exc)
 		throw new InvalidPFMFileFormat("Invalid width and/or height: not an integer");
 }
 
@@ -152,7 +152,7 @@ float parseEndiannessLine(ubyte[] endiannessLine)
 			throw new InvalidPFMFileFormat("Endianness cannot be too close to zero");
 		return endiannessValue;
 	}
-	catch (std.conv.ConvException exc)
+	catch (ConvException exc)
 		throw new InvalidPFMFileFormat("Invalid endianness: not a floating point");
 }
 
@@ -313,9 +313,10 @@ class HDRImage
 	{
 		if (fileName == [])
 		{
-			writeln("WARNING: file not written because of missing name");
+			writeln("WARNING: file not written because no name was provided");
 			return;
 		}
+
 		if (!fileName.endsWith(".pfm"))
 		{
 			fileName ~= ".pfm";
@@ -329,7 +330,7 @@ class HDRImage
 	{
 		if (fileName == [])
 		{
-			writeln("WARNING: png file not written because of missing name");
+			writeln("WARNING: png file not written because no name was provided");
 			return;
 		}
 

@@ -2,60 +2,105 @@ import commandr;
 import hdrimage : HDRImage, InvalidPFMFileFormat;
 import std.conv;
 import std.exception : enforce;
-import std.file : isFile;
+import std.file : FileException, isFile;
 import std.format : format;
-import std.math : isNaN;
+import std.math : isFinite;
 import std.stdio : writeln;
 import std.string : isNumeric;
 
-bool potentialFloat(string arg)
+class InvalidPfm2pngParms : Exception
 {
-	try
-	{
-		if (!isNaN(to!float(arg))) return true;
-		return false;
-	}
-	catch (std.conv.ConvException exc) return false;
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
 }
 
-bool potentialPositive(T)(string arg)
-in (is(T == int) || is(T == float))
+struct Pfm2pngParameters
 {
-	try
-	{
-		if (to!T(arg) > 0) return true;
-		return false;
-	}
-	catch (std.conv.ConvException exc) return false;
-}
-
-struct pfm2pngParameters
-{
-	string inputPFMFile, outputPNGFile;
-	float factor = 0.2, gamma = 1.0;
+	string pfmInput, pngOutput;
+	float factor, gamma;
 
 	this(string[] args)
-	{		
-		enforce(args[1].isFile);
-		inputPFMFile = args[1];
+	{	
+		assert(args.length == 4);
+
+		enforce(args[0].isFile);
+		pfmInput = args[0];
+
+		pngOutput = args[1];
 
 		try
 		{
 			factor = to!float(args[2]);
-			enforce(factor > 0, "Factor must be a positive number");
+			enforce!InvalidPfm2pngParms(isFinite(factor) && factor > 0,
+				"Factor must be a positive number");
 		}
-		catch (std.conv.ConvException exc)
-			throw new std.conv.ConvException(format("Invalid factor [%s]", args[2]));
+		catch (ConvException exc)
+			throw new InvalidPfm2pngParms(format("Invalid factor [%s]", args[2]));
 
 		try
 		{
 			gamma = to!float(args[3]);
-			enforce(gamma > 0, "Gamma must be a positive number");
+			enforce!InvalidPfm2pngParms(isFinite(gamma) && gamma > 0,
+				"Gamma must be a positive number");
 		}
-		catch (std.conv.ConvException exc)
-			throw new std.conv.ConvException(format("Invalid gamma [%s]", args[3]));
+		catch (ConvException exc)
+			throw new InvalidPfm2pngParms(format("Invalid gamma [%s]", args[3]));
+	}
+}
 
-		outputPNGFile = args[4];
+class InvalidDemoParms : Exception
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
+}
+
+struct DemoParameters
+{
+	int width, height;
+	float angle;
+	string pfmOutput, pngOutput;
+	bool orthogonal;
+
+	this(string[] args)
+	{		
+		assert(args.length == 6);
+
+		try
+		{
+			width = to!int(args[0]);
+			enforce!InvalidDemoParms(width > 0, format("Invalid width [%s]", args[0]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid width [%s]", args[0]));
+		
+		try
+		{
+			height = to!int(args[1]);
+			enforce!InvalidDemoParms(height > 0, format("Invalid height [%s]", args[1]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
+		
+		try
+		{
+			angle = to!float(args[2]);
+			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[2]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid angle [%s]", args[2]));
+		
+		pfmOutput = args[3];
+		pngOutput = args[4];
+		if (args[5] != "") orthogonal = true;
+	}
+
+	float aspRat()
+	{
+		return cast(float)(width) / height;
 	}
 }
 
@@ -64,36 +109,25 @@ void main(string[] args)
 	auto rayC = new Program("RayCharles", "1.0")
 		.add(new Command("pfm2png")
 			.add(new Argument("pfmInputFileName",
-				"name of the pfm file to convert")
-				.acceptsFiles())
+				"name of the pfm file to convert"))
 			.add(new Argument("pngOutputFileName",
 				"name of the png file to create/override"))
 			.add(new Option("f", "factor",
 				"multiplicative factor. Default: 0.2")
-				.defaultValue("0.2")
-				.validateEachWith(arg => potentialPositive!float(arg),
-					"must be a positive floating point"))
+				.defaultValue("0.2"))
 			.add(new Option("g", "gamma",
 				"gamma correction value. Default: 1.0")
-				.defaultValue("1.0")
-				.validateEachWith(arg => potentialPositive!float(arg),
-					"must be a positive floating point")))
+				.defaultValue("1.0")))
 		.add(new Command("demo")
 			.add(new Option(null, "width",
 				"width in pixels of the image to render. Default: 640")
-				.defaultValue("640")
-				.validateEachWith(arg => potentialPositive!int(arg),
-					"must be a positive integer"))
+				.defaultValue("640"))
 			.add(new Option(null, "height",
 				"height in pixels of the image to render. Default: 480")
-				.defaultValue("480")
-				.validateEachWith(arg => potentialPositive!int(arg),
-					"must be a positive integer"))
+				.defaultValue("480"))
 			.add(new Option("a", "angleDeg",
 				"angle of view in degree. Default: 0.0")
-				.defaultValue("0.0")
-				.validateEachWith(arg => potentialFloat(arg),
-					"must be a floating point"))
+				.defaultValue("0.0"))
 			.add(new Option("pfm", "pfmOutput",
 				"name of the pfm file to create/override. Default: output.pfm")
 				.defaultValue("output.pfm"))
@@ -107,20 +141,37 @@ void main(string[] args)
 	rayC
 		.on("pfm2png", (rayC)
 			{
+				Pfm2pngParameters* parms;
+				try parms = new Pfm2pngParameters(
+					[rayC.arg("pfmInputFileName"),
+					rayC.arg("pngOutputFileName"),
+					rayC.option("factor"),
+					rayC.option("gamma")]);
+				catch (FileException exc)
+				{
+					writeln("Error! ", exc.msg);
+					return;
+				}
+				catch (InvalidPfm2pngParms exc)
+				{
+					writeln("Error! ", exc.msg);
+					return;
+				}
+
 				try
 				{
-					HDRImage image = new HDRImage(rayC.arg("pfmInputFileName"));
-					writeln("File "~rayC.arg("pfmInputFileName")~" has been read from disk");
+					HDRImage image = new HDRImage(parms.pfmInput);
+					writeln("File "~parms.pfmInput~" has been read from disk");
 
-					image.normalizeImage(to!float(rayC.option("factor")));
+					image.normalizeImage(parms.factor);
 					image.clampImage;
 
-					image.writePNG(rayC.arg("pngOutputFileName").dup, to!float(rayC.option("gamma")));
-					writeln("File "~rayC.arg("pngOutputFileName")~" has been written to disk");
+					image.writePNG(parms.pngOutput.dup, parms.gamma);
+					writeln("File "~parms.pngOutput~" has been written to disk");
 				}
 				catch (InvalidPFMFileFormat exc)
 				{
-					writeln(format("File [%s] is not a correct PFM file", rayC.arg("pfmInputFileName")));
+					writeln(format("File [%s] is not a correct PFM file", parms.pfmInput));
 					return;
 				}
 			}
@@ -134,9 +185,20 @@ void main(string[] args)
 				import shapes : Shape, Sphere, World;
 				import transformations : rotationZ, scaling, Transformation, translation;
 
-				int w = to!int(rayC.option("width")), h = to!int(rayC.option("height"));
-				float aspRat = cast(float)(w) / h;
-				float angle = to!float(rayC.option("angleDeg"));
+
+				DemoParameters* parms;
+				try parms = new DemoParameters(
+					[rayC.option("width"),
+					rayC.option("height"),
+					rayC.option("angleDeg"),
+					rayC.option("pfmOutput"),
+					rayC.option("pngOutput"),
+					rayC.flag("orthogonal") == true ? "o" : ""]);
+				catch (InvalidDemoParms exc)
+				{
+					writeln("Error! ", exc.msg);
+					return;
+				}
 
 				Transformation decimate = scaling(Vec(0.1, 0.1, 0.1));
 				Shape[10] s = [new Sphere(translation(Vec(0.5, 0.5, 0.5)) * decimate),
@@ -151,20 +213,20 @@ void main(string[] args)
 					new Sphere(translation(Vec(0.0, 0.5, 0.0)) * decimate)];
 				World world = World(s);
 
-				Transformation cameraTr = rotationZ(angle) * translation(Vec(-1.0, 0.0, 0.0));
+				Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 0.0));
 				Camera camera;
-				if (rayC.flag("orthogonal")) camera = new OrthogonalCamera(aspRat, cameraTr);
-				else camera = new PerspectiveCamera(1.0, aspRat, cameraTr);
-				
-				HDRImage image = new HDRImage(w, h);
+				if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
+				else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
+
+				HDRImage image = new HDRImage(parms.width, parms.height);
 				ImageTracer tracer = ImageTracer(image, camera);
 				tracer.fireAllRays((Ray r) => world.rayIntersection(r).isNull ?
 					Color(1e-5, 1e-5, 1e-5) : Color(255.0, 255.0, 255.0));
 
-				//image.writePFMFile(rayC.option("pfmOutput"));
+				image.writePFMFile(rayC.option("pfmOutput"));
 				image.normalizeImage(0.1);
 				image.clampImage;
-				image.writePNG(rayC.option("pngOutput").dup);
+				image.writePNG(parms.pngOutput.dup);
 			}
 		);
 }
