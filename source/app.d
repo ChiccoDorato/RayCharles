@@ -223,7 +223,7 @@ void main(string[] args)
 				tracer.fireAllRays((Ray r) => world.rayIntersection(r).isNull ?
 					Color(1e-5, 1e-5, 1e-5) : Color(255.0, 255.0, 255.0));
 
-				image.writePFMFile(rayC.option("pfmOutput"));
+				image.writePFMFile(parms.pfmOutput);
 				image.normalizeImage(0.1);
 				image.clampImage;
 				image.writePNG(parms.pngOutput.dup);
