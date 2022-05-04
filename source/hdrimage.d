@@ -311,10 +311,15 @@ class HDRImage
 
 	void writePFMFile(string fileName, Endian endianness = Endian.littleEndian)
 	{
+		if (fileName == [])
+		{
+			writeln("WARNING: file not written because of missing name");
+			return;
+		}
 		if (!fileName.endsWith(".pfm"))
 		{
 			fileName ~= ".pfm";
-			writeln("WARNING: file automatically renamed to ", fileName);
+			writeln("WARNING: pfm file automatically renamed to ", fileName);
 		}
 		File file = File(fileName, "wb");
 		file.rawWrite(writePFM(endianness));
@@ -322,6 +327,12 @@ class HDRImage
 
 	void writePNG(char[] fileName, float gamma = 1.0)
 	{
+		if (fileName == [])
+		{
+			writeln("WARNING: png file not written because of missing name");
+			return;
+		}
+
 		ubyte[] data;
 		foreach (Color c; pixels)
 		{

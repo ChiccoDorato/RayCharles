@@ -63,7 +63,8 @@ unittest
  class PerspectiveCamera : Camera 
 {
     this(float dist = 1.0, float aspRat = 1.0, Transformation transf = Transformation())
-    in (dist > 0 && aspRat > 0)
+    in (dist > 0)
+    in (aspRat > 0)
     {
         d = dist;
         aspectRatio = aspRat;
