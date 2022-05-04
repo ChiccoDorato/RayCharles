@@ -107,7 +107,7 @@ unittest
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
-class ImageTracer
+struct ImageTracer
 {
     HDRImage image;
     Camera camera;
@@ -123,19 +123,17 @@ class ImageTracer
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {
         float u = (col + uPixel) / image.width;
-        float v = 1 - (row + vPixel) / image.height;
+        float v = 1.0 - (row + vPixel) / image.height;
         return camera.fireRay(u, v);
     }
 
-    void fireAllRays(Color function(Ray) solveRendering)
+    void fireAllRays(Color delegate(Ray) solveRendering)
     {
-        Ray ray;
         Color color;
 
         for (uint row = 0; row < image.height; ++row){
             for (uint col = 0; col < image.width; ++col){
-                ray = fireRay(col, row);
-                color = solveRendering(ray);
+                color = solveRendering(fireRay(col, row));
                 image.setPixel(col, row, color);
             }
         }
@@ -170,7 +168,7 @@ unittest
 {
     HDRImage image = new HDRImage(4, 2);
     Camera camera = new PerspectiveCamera(1.0, 2.0);
-    ImageTracer tracer = new ImageTracer(image, camera);
+    ImageTracer tracer = ImageTracer(image, camera);
 
     testOrientation(tracer);
     testUVSubMapping(tracer);

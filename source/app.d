@@ -63,7 +63,7 @@ in (is(T == int) || is(T == float))
 
 void main(string[] args)
 { 
-	auto rayC = new Program("RayCharles")
+	auto rayC = new Program("RayCharles", "1.0")
 		.add(new Command("pfm2png")
 			.add(new Argument("pfmInputFileName", "name of the pfm file to convert")
 				.acceptsFiles())
@@ -112,20 +112,42 @@ void main(string[] args)
 		)
 		.on("demo", (rayC)
 			{
-				import cameras : OrthogonalCamera, PerspectiveCamera;
+				import cameras : Camera, ImageTracer, OrthogonalCamera, PerspectiveCamera;
 				import geometry : Vec;
-				import shapes : Shape, World;
-				import transformations : rotationZ, Transformation, translation;
+				import hdrimage : Color;
+				import ray : Ray;
+				import shapes : Shape, Sphere, World;
+				import transformations : rotationZ, scaling, Transformation, translation;
 
 				int w = to!int(rayC.option("width")), h = to!int(rayC.option("height"));
 				float angle = to!float(rayC.option("angleDeg"));
 
-				Shape[] s;
+				Shape[10] s = [new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.5, 0.5, 0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.5, -0.5, 0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(-0.5, -0.5, 0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(-0.5, 0.5, 0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.5, 0.5, -0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.5, -0.5, -0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(-0.5, -0.5, -0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(-0.5, 0.5, -0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.0, 0.0, -0.5))),
+					new Sphere(scaling(Vec(0.1, 0.1, 0.1)) * translation(Vec(0.0, 0.5, 0.0)))];
 				World world = World(s);
+
 				Transformation cameraTr = rotationZ(angle) * translation(Vec(-1.0, 0.0, 0.0));
-				if (rayC.flag("orthogonal")) OrthogonalCamera camera;
-				else PerspectiveCamera camera;
-				return;
+				Camera camera;
+				if (rayC.flag("orthogonal")) camera = new OrthogonalCamera(w / h, cameraTr);
+				else camera = new PerspectiveCamera(1.0, w / h, cameraTr);
+				
+				HDRImage image = new HDRImage(w, h);
+				ImageTracer tracer = ImageTracer(image, camera);
+				tracer.fireAllRays((Ray r) => world.rayIntersection(r).isNull ?
+					Color(1e-5, 1e-5, 1e-5) : Color(255.0, 255.0, 255.0));
+
+				image.writePFMFile(rayC.option("pfmOutput"));
+				image.normalizeImage(0.1);
+				image.clampImage;
+				image.writePNG(rayC.option("pfmOutput").dup);
 			}
 		);
 }
