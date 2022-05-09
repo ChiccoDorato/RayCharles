@@ -11,19 +11,19 @@ class Camera
     float aspectRatio;
     Transformation transformation;  
      
-    abstract Ray fireRay(float u, float v);
+    abstract Ray fireRay(in float u, in float v) const;
 }
 
 class OrthogonalCamera : Camera 
 {
-    this(float aspRat = 1.0, Transformation transf = Transformation())
+    this(in float aspRat = 1.0, in Transformation transf = Transformation())
     in (aspRat > 0)
     {
         aspectRatio = aspRat;
         transformation = transf;
     }
 
-    override Ray fireRay(float u, float v)
+    override Ray fireRay(in float u, in float v) const
     {
         Ray r = {Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX};
         r = transformation * r;
@@ -62,7 +62,7 @@ unittest
 
  class PerspectiveCamera : Camera 
 {
-    this(float dist = 1.0, float aspRat = 1.0, Transformation transf = Transformation())
+    this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation())
     in (dist > 0)
     in (aspRat > 0)
     {
@@ -71,7 +71,7 @@ unittest
         transformation = transf;
     }
 
-    override Ray fireRay(float u, float v)
+    override Ray fireRay(in float u, in float v) const
     {
         Ray r = {Point(-d, 0.0, 0.0), Vec(d, (1.0 - 2 * u) * aspectRatio, 2 * v - 1)};
         r = transformation * r;
@@ -119,16 +119,16 @@ struct ImageTracer
         camera = cam;
     }
 
-    Ray fireRay(int col, int row, float uPixel = 0.5, float vPixel = 0.5)
+    Ray fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
     in (col + uPixel >= 0 && col + uPixel <= image.width)
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {
-        float u = (col + uPixel) / image.width;
-        float v = 1.0 - (row + vPixel) / image.height;
+        immutable float u = (col + uPixel) / image.width;
+        immutable float v = 1.0 - (row + vPixel) / image.height;
         return camera.fireRay(u, v);
     }
 
-    void fireAllRays(Color delegate(Ray) solveRendering)
+    void fireAllRays(in Color delegate(Ray) solveRendering)
     {
         Color color;
 
@@ -141,28 +141,28 @@ struct ImageTracer
     }
 }
 
-void testOrientation(ImageTracer tracer)
+void testOrientation(in ImageTracer tracer)
 {
-    Ray topLeftRay = tracer.fireRay(0, 0, 0, 0);
+    immutable Ray topLeftRay = tracer.fireRay(0, 0, 0, 0);
     assert(Point(0, 2, 1).xyzIsClose(topLeftRay.at(1)));
 
-    Ray bottomRightRay = tracer.fireRay(3, 1, 1, 1);
+    immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1, 1);
     assert(Point(0, -2, -1).xyzIsClose(bottomRightRay.at(1)));
 }
 
-void testUVSubMapping(ImageTracer tracer)
+void testUVSubMapping(in ImageTracer tracer)
 {
-    Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
-    Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
+    immutable Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
+    immutable Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
     assert(r1.rayIsClose(r2));
 }
 
-void testImageCoverage(HDRImage image, ImageTracer tracer)
+void testImageCoverage(ImageTracer tracer)
 {
     tracer.fireAllRays(Ray => Color(1.0, 2.0, 3.0));
-    for (uint row = 0; row < image.height; ++row)
-        for (uint col = 0; col < image.width; ++col)
-            assert(image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
+    for (uint row = 0; row < tracer.image.height; ++row)
+        for (uint col = 0; col < tracer.image.width; ++col)
+            assert(tracer.image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
 }
 
 unittest
@@ -173,5 +173,5 @@ unittest
 
     testOrientation(tracer);
     testUVSubMapping(tracer);
-    testImageCoverage(image, tracer);
+    testImageCoverage(tracer);
 }

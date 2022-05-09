@@ -15,7 +15,7 @@ struct HitRecord
     float t;
     Ray ray;
 
-    bool recordIsClose(HitRecord hit)
+    bool recordIsClose(in HitRecord hit) const
     {
         return worldPoint.xyzIsClose(hit.worldPoint) && normal.xyzIsClose(hit.normal) &&
         surfacePoint.uvIsClose(hit.surfacePoint) && areClose(t, hit.t) && ray.rayIsClose(hit.ray);
@@ -26,17 +26,17 @@ class Shape
 {
     Transformation transf;
 
-    abstract Nullable!HitRecord rayIntersection(Ray r);
+    abstract Nullable!HitRecord rayIntersection(in Ray r) const;
 }
 
-Vec2d sphereUVPoint(Point p)
+Vec2d sphereUVPoint(in Point p)
 {
     float u = atan2(p.y, p.x) / (2.0 * PI);
     if (u < 0) ++u;
     return Vec2d(u, acos(p.z) / PI);
 }
 
-Normal sphereNormal(Point p, Vec v)
+Normal sphereNormal(in Point p, in Vec v)
 {
     Normal n = Normal(p.x, p.y, p.z);
     return p.convert * v < 0 ? n : -n;
@@ -44,32 +44,32 @@ Normal sphereNormal(Point p, Vec v)
 
 class Sphere : Shape
 {
-    this(Transformation t)
+    this(in Transformation t)
     {
         transf = t;
     }
 
-    override Nullable!HitRecord rayIntersection(Ray r)
+    override Nullable!HitRecord rayIntersection(in Ray r) const
     {
-        Ray invR = transf.inverse * r;
-        Vec originVec = invR.origin.convert;
-        float halfB = originVec * invR.dir;
-        float a = invR.dir.squaredNorm;
-        float c = originVec.squaredNorm - 1.0;
-        float reducedDelta = halfB * halfB - a * c;
+        immutable Ray invR = transf.inverse * r;
+        immutable Vec originVec = invR.origin.convert;
+        immutable float halfB = originVec * invR.dir;
+        immutable float a = invR.dir.squaredNorm;
+        immutable float c = originVec.squaredNorm - 1.0;
+        immutable float reducedDelta = halfB * halfB - a * c;
 
         Nullable!HitRecord hit;
         if (reducedDelta < 0) return hit;
 
-        float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        float t2 = (-halfB + sqrt(reducedDelta)) / a;
+        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
 
         float firstHit;
         if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
         else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
         else return hit;
 
-        Point hitPoint = invR.at(firstHit);
+        immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(
             transf * hitPoint,
             transf * sphereNormal(hitPoint, invR.dir),
@@ -154,17 +154,17 @@ class Plane : Shape
         transf = t;
     }
 
-    override Nullable!HitRecord rayIntersection(Ray r)
+    override Nullable!HitRecord rayIntersection(in Ray r) const
     {
         Nullable!HitRecord hit;
 
-        Ray invR = transf.inverse * r;
+        immutable Ray invR = transf.inverse * r;
         if (areClose(invR.dir.z, 0)) return hit;
 
-        float t = -invR.origin.z / invR.dir.z;
+        immutable float t = -invR.origin.z / invR.dir.z;
         if (t <= invR.tMin || t >= invR.tMax) return hit;
 
-        Point hitPoint = invR.at(t);
+        immutable Point hitPoint = invR.at(t);
         hit = HitRecord(transf * hitPoint,
             transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0), 
             Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
@@ -268,12 +268,12 @@ struct World
         shapes ~= s;
     }
 
-    Nullable!HitRecord rayIntersection(Ray ray)
+    Nullable!HitRecord rayIntersection(in Ray ray) const
     {
         Nullable!HitRecord closest;
         Nullable!HitRecord intersection;
 
-        foreach (Shape s; shapes)
+        foreach (const Shape s; shapes)
         {
             intersection = s.rayIntersection(ray);
             if (intersection.isNull) continue;

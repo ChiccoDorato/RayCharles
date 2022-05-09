@@ -21,7 +21,7 @@ struct Pfm2pngParameters
 	string pfmInput, pngOutput;
 	float factor, gamma;
 
-	this(string[] args)
+	this(in string[] args)
 	{	
 		assert(args.length == 4);
 
@@ -65,7 +65,7 @@ struct DemoParameters
 	string pfmOutput, pngOutput;
 	bool orthogonal;
 
-	this(string[] args)
+	this(in string[] args)
 	{		
 		assert(args.length == 6);
 
@@ -98,7 +98,7 @@ struct DemoParameters
 		if (args[5] != "") orthogonal = true;
 	}
 
-	float aspRat()
+	immutable(float) aspRat()
 	{
 		return cast(float)(width) / height;
 	}
@@ -200,7 +200,7 @@ void main(string[] args)
 					return;
 				}
 
-				Transformation decimate = scaling(Vec(0.1, 0.1, 0.1));
+				immutable Transformation decimate = scaling(Vec(0.1, 0.1, 0.1));
 				Shape[10] s = [new Sphere(translation(Vec(0.5, 0.5, 0.5)) * decimate),
 					new Sphere(translation(Vec(0.5, -0.5, 0.5)) * decimate),
 					new Sphere(translation(Vec(-0.5, -0.5, 0.5)) * decimate),
@@ -221,7 +221,7 @@ void main(string[] args)
 				HDRImage image = new HDRImage(parms.width, parms.height);
 				ImageTracer tracer = ImageTracer(image, camera);
 				tracer.fireAllRays((Ray r) => world.rayIntersection(r).isNull ?
-					Color(1e-5, 1e-5, 1e-5) : Color(255.0, 255.0, 255.0));
+					Color(0.0, 0.0, 0.0) : Color(1.0, 1.0, 1.0));
 
 				image.writePFMFile(parms.pfmOutput);
 				image.normalizeImage(0.1);

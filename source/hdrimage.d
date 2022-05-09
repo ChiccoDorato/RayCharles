@@ -12,7 +12,7 @@ import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
 import std.system : endian;
 
-bool areClose(float x, float y, float epsilon=1e-5)
+bool areClose(in float x, in float y, in float epsilon=1e-5)
 {
 	return abs(x - y) < epsilon;
 }
@@ -21,32 +21,32 @@ struct Color
 {
 	float r=0.0, g=0.0, b=0.0;
 
-	Color opBinary(string op)(Color rhs) if (op == "+" || op == "-" || op == "*")
+	Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
 	{
 		mixin("return Color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
 	}
 
-	Color opBinary(string op)(float alfa) if (op == "*")
+	Color opBinary(string op)(in float alfa) const if (op == "*")
 	{
 		mixin("return Color(r*alfa, g*alfa, b*alfa);");
 	}
 
-	Color opBinaryRight(string op)(float alfa) if (op == "*")
+	Color opBinaryRight(string op)(in float alfa) const if (op == "*")
 	{
 		mixin("return Color(alfa*r, alfa*g, alfa*b);");
 	}
 
-	string colorToString()
+	string colorToString() const
 	{
 		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
 	}
 
-	bool colorIsClose(Color c)
+	bool colorIsClose(in Color c) const
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
-	float luminosity()
+	float luminosity() const
 	{
 		return (max(r, g, b) + min(r, g, b)) / 2.0;
 	}
@@ -78,7 +78,7 @@ class InvalidPFMFileFormat : Exception
     }
 }
 
-ubyte[] readLine(ubyte[] stream, uint startingPosition)
+ubyte[] readLine(in ubyte[] stream, uint startingPosition)
 {
 	ubyte[] line;
 	for (uint i = startingPosition; i < stream.length; ++i)
@@ -97,11 +97,11 @@ unittest
 	assert(line.readLine(11) == []);
 }
 
-int[2] parseImgSize(ubyte[] imgSize)
+int[2] parseImgSize(in ubyte[] imgSize)
 {
 	enforce!InvalidPFMFileFormat(imgSize.length > 0, "Image dimensions are not indicated");
 
-	ubyte[][] dimensions = imgSize.split(32);
+	const ubyte[][] dimensions = imgSize.split(32);
 	if (dimensions.length != 2)
 		throw new InvalidPFMFileFormat("Invalid number of dimensions");
 	if (dimensions[][0].length == 0 || dimensions[][1].length == 0)
@@ -139,7 +139,7 @@ unittest
 	assertThrown!InvalidPFMFileFormat(parseImgSize(manyDimensions));
 }
 
-float parseEndiannessLine(ubyte[] endiannessLine)
+float parseEndiannessLine(in ubyte[] endiannessLine)
 {
 	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "Endianness is not indicated");
 	// Sempre problema se ASCII esteso.
@@ -172,7 +172,7 @@ unittest
 	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(notNumber));
 }
 
-float readFloat(ubyte[] stream, int startingPosition, float endiannessValue)
+float readFloat(in ubyte[] stream, int startingPosition, in float endiannessValue)
 in (
 	stream.length - startingPosition > 3,
 	format("Less than 4 bytes in %s from index %s", stream, startingPosition)
@@ -202,30 +202,30 @@ float clamp(float x)
 
 class HDRImage
 {
-	int width, height;
+	immutable int width, height;
 	Color[] pixels;
 	
-	this(int w, int h)
+	this(in int w, in int h)
 	{
 		width = w;
 		height = h;
 		pixels.length = width * height;
 	}
 
-	this(ubyte[] stream)
+	this(in ubyte[] stream)
 	{
 		int streamPosition = 0;
 
-		ubyte[] magic = stream.readLine(streamPosition);
+		immutable ubyte[] magic = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
 		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], format("Invalid magic %s", magic));
 		streamPosition += magic.length;
 
-		ubyte[] imgSize = stream.readLine(streamPosition);
-		int[2] size = parseImgSize(imgSize);
+		immutable ubyte[] imgSize = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
+		immutable int[2] size = cast(immutable(int[2]))(parseImgSize(imgSize));
 		streamPosition += imgSize.length;
 
-		ubyte[] endiannessLine = stream.readLine(streamPosition);
-		float endiannessValue = parseEndiannessLine(endiannessLine);
+		immutable ubyte[] endiannessLine = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
+		immutable float endiannessValue = cast(immutable(float))(parseEndiannessLine(endiannessLine));
 		streamPosition += endiannessLine.length;
 
 		enforce!InvalidPFMFileFormat(
@@ -240,44 +240,44 @@ class HDRImage
 		{
 			for (int j = 0; j < width; ++j)
 			{
-				posPixel = streamPosition + 12 * pixelOffset(j, height - 1 - i);
+				posPixel = streamPosition + 12 * this.pixelOffset(j, height - 1 - i);
 				red = readFloat(stream, posPixel, endiannessValue);
 				green = readFloat(stream, posPixel + 4, endiannessValue);
 				blue = readFloat(stream, posPixel + 8, endiannessValue);
-				setPixel(j, i, Color(red, green, blue));
+				this.setPixel(j, i, Color(red, green, blue));
 			}
 		}
 	}
 
-	this(string fileName)
+	this(in string fileName)
 	{
-		ubyte[] stream = cast(ubyte[])(fileName.read);
+		immutable(ubyte[]) stream = cast(immutable(ubyte[]))(fileName.read);
 		this(stream);
 	}
 
-	bool validCoordinates(int x, int y)
+	bool validCoordinates(in int x, in int y) const
 	{
 		return x >= 0 && x < width && y >= 0 && y < height;
 	}
 
-	int pixelOffset(int x, int y)
+	int pixelOffset(in int x, in int y) const
 	{
 		return y * width + x;
 	}
 
-	Color getPixel(int x, int y)
+	Color getPixel(in int x, in int y) const
 	in (validCoordinates(x, y))
 	{
 		return pixels[pixelOffset(x, y)];
 	}
 
-	void setPixel(int x, int y, Color c)
+	void setPixel(in int x, in int y, Color c)
 	in (validCoordinates(x, y))
 	{
 		pixels[pixelOffset(x, y)] = c;
 	}
 
-	ubyte[] writePFM(Endian endianness = Endian.littleEndian)
+	ubyte[] writePFM(in Endian endianness = Endian.littleEndian) const
 	{
 		string endiannessStr;
 		if (endianness == Endian.bigEndian) endiannessStr = "1.0";
@@ -309,7 +309,7 @@ class HDRImage
 		return pfm.data;
 	}
 
-	void writePFMFile(string fileName, Endian endianness = Endian.littleEndian)
+	void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
 	{
 		if (fileName == [])
 		{
@@ -326,7 +326,7 @@ class HDRImage
 		file.rawWrite(writePFM(endianness));
 	}
 
-	void writePNG(char[] fileName, float gamma = 1.0)
+	void writePNG(char[] fileName, in float gamma = 1.0) const
 	{
 		if (fileName == [])
 		{
@@ -349,16 +349,16 @@ class HDRImage
 		imageformats.png.write_png(fileName, width, height, data, 0);
 	}
 
-	float averageLuminosity(float delta=1e-10)
+	float averageLuminosity(in float delta=1e-10) const
 	{
 		float lumSum = 0.0;
         foreach (p; pixels[]) lumSum += log10(delta + p.luminosity);
         return pow(10, lumSum / pixels.length);
 	}
 
-	void normalizeImage(float factor, float luminosity = NaN(0x3FFFFF))
+	void normalizeImage(in float factor, float luminosity = NaN(0x3FFFFF))
 	{
-		if (luminosity.isNaN()) luminosity = averageLuminosity(0);
+		if (luminosity.isNaN()) luminosity = averageLuminosity();
 		for (int i = 0; i < pixels.length; ++i) pixels[i] = pixels[i] * (factor / luminosity);
 	}
 	
