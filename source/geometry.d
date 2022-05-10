@@ -1,3 +1,5 @@
+module geometry;
+
 import hdrimage : areClose;
 import std.array : split;
 import std.conv : to;
@@ -5,7 +7,7 @@ import std.math : sqrt;
 
 mixin template toString(T)
 {
-    string toString()()
+    string toString()() const
     in (T.tupleof.length == 3, "toString accepts xyz types only.")
     {
         string[] typePath = to!string(typeid(T)).split(".");
@@ -15,7 +17,7 @@ mixin template toString(T)
 
 mixin template xyzIsClose(T)
 {
-    bool xyzIsClose(T)(T v)
+    bool xyzIsClose(T)(in T v) const
     in (T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
     {
         return areClose(x, v.x) && areClose(y, v.y) && areClose(z, v.z);
@@ -24,7 +26,7 @@ mixin template xyzIsClose(T)
 
 /*mixin template sumDiff(T, R)
 {
-    R opBinary(string op)(T rhs) if (op == "+" || op == "-")
+    R opBinary(string op)(in T rhs) const if (op == "+" || op == "-")
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "sumDiff accepts xyz types only.")
     {
         return mixin("R(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
@@ -33,7 +35,7 @@ mixin template xyzIsClose(T)
 
 mixin template neg(R)
 {
-    R opUnary(string op)() if (op == "-")
+    R opUnary(string op)() const if (op == "-")
     in (R.tupleof.length == 3, "neg accepts xyz types only.")
     {
         return R(-x, -y, -z);
@@ -42,7 +44,7 @@ mixin template neg(R)
 
 /*mixin template mul(R)
 {
-    R opBinary(string op)(float alfa) if (op == "*")
+    R opBinary(string op)(in float alfa) const if (op == "*")
     in (R.tupleof.length == 3, "mul accepts xyz types only.")
     {
         return R(x * alfa, y * alfa, z * alfa);
@@ -51,7 +53,7 @@ mixin template neg(R)
 
 mixin template rightMul(R)
 {
-    R opBinaryRight(string op)(float alfa) if (op == "*")
+    R opBinaryRight(string op)(in float alfa) const if (op == "*")
     in (R.tupleof.length == 3, "rightMul accepts xyz types only.")
     {
         return R(alfa * x, alfa * y, alfa * z);
@@ -60,7 +62,7 @@ mixin template rightMul(R)
 
 /*mixin template dot(T)
 {
-    float opBinary(string op)(T rhs) if (op == "*")
+    float opBinary(string op)(in T rhs) const if (op == "*")
     in (T.tupleof.length == 3, "dot accepts xyz types only.")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
@@ -69,7 +71,7 @@ mixin template rightMul(R)
 
 /*mixin template cross(T, R)
 {
-    R opBinary(string op)(T rhs) if (op == "^")
+    R opBinary(string op)(in T rhs) const if (op == "^")
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "cross accepts xyz types only.")
     {
         return mixin("R(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x)");
@@ -78,7 +80,7 @@ mixin template rightMul(R)
 
 mixin template squaredNorm(T)
 {
-    float squaredNorm()()
+    float squaredNorm()() const
     in (T.tupleof.length == 3, "squaredNorm accepts xyz types only.")
     {
         return x * x + y * y + z * z;
@@ -87,7 +89,7 @@ mixin template squaredNorm(T)
 
 mixin template norm(T)
 {
-    float norm()()
+    float norm()() const
     in (T.tupleof.length == 3, "norm accepts xyz types only.")
     {
         return sqrt(squaredNorm());
@@ -96,16 +98,16 @@ mixin template norm(T)
 
 mixin template normalize(R)
 {
-    R normalize()()
+    R normalize()() const
     in (R.tupleof.length == 3, "normalize accepts xyz types only.")
     {
-        return 1 / norm() * this;
+        return 1.0 / norm() * this;
     }
 }
 
 mixin template convert(T, R)
 {
-    R convert()
+    R convert() const
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "convert accepts xyz types only.")
     {
         return R(x, y, z);
@@ -120,36 +122,36 @@ struct Vec
     mixin xyzIsClose!Vec;
 
     //mixin sumDiff!(Vec, Vec);
-    Vec opBinary(string op)(Vec rhs) if (op == "+" || op == "-")
+    Vec opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     {
         return mixin("Vec(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
 
     mixin neg!Vec;
     //mixin mul!Vec;
-    Vec opBinary(string op)(float alfa) if (op == "*")
+    Vec opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Vec(x * alfa, y * alfa, z * alfa);
     }
     mixin rightMul!Vec;
 
     //mixin dot!Vec;
-    float opBinary(string op)(Vec rhs) if (op == "*")
+    float opBinary(string op)(in Vec rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
     //mixin dot!Normal;
-    float opBinary(string op)(Normal rhs) if (op == "*")
+    float opBinary(string op)(in Normal rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
     //mixin cross!(Vec, Vec);
-    Vec opBinary(string op)(Vec rhs) if (op == "^")
+    Vec opBinary(string op)(in Vec rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
     //mixin cross!(Normal, Vec);
-    Vec opBinary(string op)(Normal rhs) if (op == "^")
+    Vec opBinary(string op)(in Normal rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
@@ -193,18 +195,18 @@ struct Point
     mixin xyzIsClose!Point;
     
     //mixin sumDiff!(Point, Vec);
-    Point opBinary(string op)(Vec rhs) if (op == "+" || op == "-")
+    Point opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     {
         return mixin("Point(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
-    Vec opBinary(string op)(Point rhs) if (op == "-")
+    Vec opBinary(string op)(in Point rhs) const if (op == "-")
     {
         return Vec(x - rhs.x, y - rhs.y, z - rhs.z);
     }
 
     mixin neg!Point;
     //mixin mul!Point;
-    Point opBinary(string op)(float alfa) if (op == "*")
+    Point opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Point(x * alfa, y * alfa, z * alfa);
     }
@@ -237,19 +239,19 @@ struct Normal
 
     mixin neg!Normal;
     //mixin mul!Normal;
-    Normal opBinary(string op)(float alfa) if (op == "*")
+    Normal opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Normal(x * alfa, y * alfa, z * alfa);
     }
     mixin rightMul!Normal;
 
     //mixin dot!Vec;
-    float opBinary(string op)(Vec rhs) if (op == "*")
+    float opBinary(string op)(in Vec rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
     //mixin cross!(Normal, Vec);
-    Vec opBinary(string op)(Normal rhs) if (op == "^")
+    Vec opBinary(string op)(in Normal rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
@@ -257,4 +259,14 @@ struct Normal
     mixin squaredNorm!Normal;
     mixin norm!Normal;
     mixin normalize!Normal;
+}
+
+struct Vec2d
+{
+    float u, v;
+
+    bool uvIsClose(in Vec2d v2d) const
+    {
+        return areClose(u, v2d.u) && areClose(v, v2d.v);
+    }
 }
