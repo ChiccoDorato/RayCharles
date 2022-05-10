@@ -99,13 +99,13 @@ unittest
 
 int[2] parseImgSize(in ubyte[] imgSize)
 {
-	enforce!InvalidPFMFileFormat(imgSize.length > 0, "Image dimensions are not indicated");
+	enforce!InvalidPFMFileFormat(imgSize.length > 0, "image dimensions are not indicated");
 
 	const ubyte[][] dimensions = imgSize.split(32);
 	if (dimensions.length != 2)
-		throw new InvalidPFMFileFormat("Invalid number of dimensions");
+		throw new InvalidPFMFileFormat("invalid number of dimensions");
 	if (dimensions[][0].length == 0 || dimensions[][1].length == 0)
-		throw new InvalidPFMFileFormat("Invalid number of dimensions");
+		throw new InvalidPFMFileFormat("invalid number of dimensions");
 
 	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException.
 	// Va controllato? Temo di sì.
@@ -117,11 +117,11 @@ int[2] parseImgSize(in ubyte[] imgSize)
 		int w = to!int(widthArray);
 		int h = to!int(heightArray);
 		if (w < 0 || h < 0)
-			throw new InvalidPFMFileFormat("Invalid width and/or height: negative value");
+			throw new InvalidPFMFileFormat("invalid width and/or height (negative)");
 		return [w, h];
 	}
 	catch (ConvException exc)
-		throw new InvalidPFMFileFormat("Invalid width and/or height: not an integer");
+		throw new InvalidPFMFileFormat("invalid width and/or height (not an integer)");
 }
 
 unittest
@@ -141,7 +141,7 @@ unittest
 
 float parseEndiannessLine(in ubyte[] endiannessLine)
 {
-	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "Endianness is not indicated");
+	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "endianness is not indicated");
 	// Sempre problema se ASCII esteso.
 	char[] endiannessArray = cast(char[])(endiannessLine[0 .. $-1]);
 
@@ -149,11 +149,11 @@ float parseEndiannessLine(in ubyte[] endiannessLine)
 	{
 		float endiannessValue = to!float(endiannessArray);
 		if (areClose(endiannessValue, 0, 1e-20))
-			throw new InvalidPFMFileFormat("Endianness cannot be too close to zero");
+			throw new InvalidPFMFileFormat("endianness cannot be too close to zero");
 		return endiannessValue;
 	}
 	catch (ConvException exc)
-		throw new InvalidPFMFileFormat("Invalid endianness: not a floating point");
+		throw new InvalidPFMFileFormat("invalid endianness (not a floating point)");
 }
 
 unittest
@@ -217,7 +217,7 @@ class HDRImage
 		int streamPosition = 0;
 
 		immutable ubyte[] magic = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
-		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], format("Invalid magic %s", magic));
+		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], "invalid magic");
 		streamPosition += magic.length;
 
 		immutable ubyte[] imgSize = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
@@ -230,7 +230,7 @@ class HDRImage
 
 		enforce!InvalidPFMFileFormat(
 			12 * size[0] * size[1] == stream.length - streamPosition,
-			format("Expected %s pixels", size[0]*size[1])
+			format("expected [%s] pixels", size[0]*size[1])
 			);
 		this(size[0], size[1]);
 
