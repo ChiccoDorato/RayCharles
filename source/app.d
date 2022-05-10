@@ -20,10 +20,10 @@ void main(string[] args)
 				"gamma correction value. Default: 1.0")
 				.defaultValue("1.0")))
 		.add(new Command("demo")
-			.add(new Option(null, "width",
+			.add(new Option("W", "width",
 				"width in pixels of the image to render. Default: 640")
 				.defaultValue("640"))
-			.add(new Option(null, "height",
+			.add(new Option("H", "height",
 				"height in pixels of the image to render. Default: 480")
 				.defaultValue("480"))
 			.add(new Option("a", "angleDeg",

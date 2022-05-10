@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Create the directory where allocate png files
+if [ ! -d ./AnimationFrames ]; then
+    mkdir AnimationFrames
+fi
+
 for angle in $(seq 0 359); do
     # Angle with three digits, e.g. angle="1" → angleNNN="001"
     angleNNN=$(printf "%03d" $angle)
