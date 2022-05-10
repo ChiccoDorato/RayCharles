@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        dc: [dmd-latest, dmd-2.098.0, ldc-latest, gdc-latest]
+        dc: [dmd-latest, dmd-2.098.0, ldc-latest, gdc]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -17,4 +17,4 @@ jobs:
         with:
           compiler: ${{ matrix.dc }}
       - name: Run tests
-        run: dub -b unittest
+        run: dub test
