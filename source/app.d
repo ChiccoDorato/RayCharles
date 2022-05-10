@@ -4,7 +4,6 @@ import parameters;
 import std.file : FileException;
 import std.format : format;
 import std.stdio : writeln;
-import std.string : isNumeric;
 
 void main(string[] args)
 { 
