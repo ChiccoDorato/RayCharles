@@ -2,7 +2,7 @@ module shapes;
 
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
-import ray : Ray;
+import ray;
 import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : Transformation, translation, rotationY;
