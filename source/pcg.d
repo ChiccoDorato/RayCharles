@@ -14,10 +14,10 @@ class PCG
 
     uint random()
     {
-        ulong oldState = state;
+        immutable ulong oldState = state;
         state = oldState * 6_364_136_223_846_793_005 + inc;
-        uint xorShifted = cast(uint)(((oldState >> 18) ^ oldState) >> 27);
-        uint rot = oldState >> 59;
+        immutable uint xorShifted = cast(uint)(((oldState >> 18) ^ oldState) >> 27);
+        immutable uint rot = oldState >> 59;
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
