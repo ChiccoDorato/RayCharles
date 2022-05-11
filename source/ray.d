@@ -1,3 +1,5 @@
+module ray;
+
 import geometry : Point, Vec, xyzIsClose; 
 import transformations : rotationX, Transformation, translation;
 
@@ -8,12 +10,12 @@ struct Ray
     float tMin = 1e-5, tMax = float.infinity; 
     int depth = 0;
 
-    Point at(float t)
+    Point at(in float t) const
     {
         return origin + t * dir;
     }
 
-    bool rayIsClose(Ray rhs)
+    bool rayIsClose(in Ray rhs) const
     {
         return origin.xyzIsClose(rhs.origin) && dir.xyzIsClose(rhs.dir);
     }

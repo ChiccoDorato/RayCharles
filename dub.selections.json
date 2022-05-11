@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"commandr": "0.2.0",
 		"imageformats": "7.0.2"
 	}
 }

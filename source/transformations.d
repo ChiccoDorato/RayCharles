@@ -1,6 +1,8 @@
-import geometry;
+module transformations;
+
+import geometry : Normal, Point, Vec, vecX, vecY, vecZ;
 import hdrimage : areClose;
-import ray;
+import ray : Ray;
 import std.math : PI, sin, cos;
 
 float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
@@ -10,13 +12,13 @@ struct Transformation
 	float[4][4] m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 	float[4][4] invM = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 
-	this(float[4][4] matrix, float[4][4] invMatrix)
+	this(in float[4][4] matrix, in float[4][4] invMatrix)
     {
 		m = matrix;
 		invM = invMatrix;
 	}
 
-	float[4][4] matProd(float[4][4] m1, float[4][4] m2)
+	float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
     {
 		float[4][4] prod = 0;
 		for (ubyte i = 0; i < 4; ++i)
@@ -25,7 +27,7 @@ struct Transformation
 		return prod;
 	}
 
-    bool matrixIsClose(float[4][4] m1, float[4][4] m2, float epsilon=1e-5)
+    bool matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
     {
         for (ubyte i = 0; i < 4; ++i)
             for (ubyte j = 0; j < 4; ++j)
@@ -33,52 +35,52 @@ struct Transformation
         return true;
     }
 
-    bool transfIsClose(Transformation t, float epsilon=1e-5)
+    bool transfIsClose(in Transformation t, in float epsilon=1e-5) const
     {
         return matrixIsClose(m, t.m, epsilon) && matrixIsClose(invM, t.invM, epsilon);
     }
 
-	bool isConsistent(float epsilon=1e-5)
+	bool isConsistent(in float epsilon=1e-5) const
     {
 		return matrixIsClose(matProd(m, invM), id4, epsilon);
 	}
 
-	Transformation inverse()
+	Transformation inverse() const
     {
 		return Transformation(invM, m);
 	}
 
-	Transformation opBinary(string op)(Transformation rhs) if (op == "*")
+	Transformation opBinary(string op)(in Transformation rhs) const if (op == "*")
     {
 		return Transformation(matProd(m, rhs.m), matProd(rhs.invM, invM));
 	}
 
-	Point opBinary(string op)(Point rhs) if (op == "*")
+	Point opBinary(string op)(in Point rhs) const if (op == "*")
     {
-		Point p = Point(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2] + m[0][3],
+		immutable Point p = Point(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2] + m[0][3],
             rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2] + m[1][3],
             rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2] + m[2][3]);
 
-		float lambda = rhs.x * m[3][0] + rhs.y * m[3][1] + rhs.z * m[3][2] + m[3][3];
+		immutable float lambda = rhs.x * m[3][0] + rhs.y * m[3][1] + rhs.z * m[3][2] + m[3][3];
 		if (lambda == 1) return p;
 		return p * (1 / lambda);
 	}
 
-	Vec opBinary(string op)(Vec rhs) if (op == "*")
+	Vec opBinary(string op)(in Vec rhs) const if (op == "*")
     {
 		return Vec(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2],
             rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2],
             rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2]);
 	}
 
-    Normal opBinary(string op)(Normal rhs) if (op == "*")
+    Normal opBinary(string op)(in Normal rhs) const if (op == "*")
     {
 		return Normal(rhs.x * invM[0][0] + rhs.y * invM[1][0] + rhs.z * invM[2][0],
             rhs.x * invM[0][1] + rhs.y * invM[1][1] + rhs.z * invM[2][1],
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
 
-    Ray opBinary(string op)(Ray rhs) if (op == "*")
+    Ray opBinary(string op)(in Ray rhs) const if (op == "*")
     {
         return Ray(this * rhs.origin, this * rhs.dir);
     }
@@ -190,13 +192,13 @@ unittest
 }
 
 // Function that creates translation of a given vector.
-Transformation translation(Vec v)
+Transformation translation(in Vec v)
 {
-	float[4][4] m = [[1.0, 0.0, 0.0, v.x],
+	immutable float[4][4] m = [[1.0, 0.0, 0.0, v.x],
 		[0.0, 1.0, 0.0, v.y],
 		[0.0, 0.0, 1.0, v.z],
 		[0.0, 0.0, 0.0, 1.0]];
-	float[4][4] invM = [[1.0, 0.0, 0.0, -v.x],
+	immutable float[4][4] invM = [[1.0, 0.0, 0.0, -v.x],
 		[0.0, 1.0, 0.0, -v.y],
 		[0.0, 0.0, 1.0, -v.z],
 		[0.0, 0.0, 0.0, 1.0]];
@@ -218,42 +220,42 @@ unittest
     assert(prod.transfIsClose(expected));
 }
 
-Transformation rotationX(float angleInDegrees)
+Transformation rotationX(in float angleInDegrees)
 {
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
+    immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
         [0.0, cosine, -sine, 0.0],
         [0.0, sine, cosine, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[1.0, 0.0, 0.0, 0.0],
+    immutable float[4][4] invM = [[1.0, 0.0, 0.0, 0.0],
         [0.0, cosine, sine, 0.0],
         [0.0, -sine, cosine, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
     return Transformation(m, invM);
 }
 
-Transformation rotationY(float angleInDegrees)
+Transformation rotationY(in float angleInDegrees)
 {
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[cosine, 0.0, sine, 0.0],
+    immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float[4][4] m = [[cosine, 0.0, sine, 0.0],
         [0.0, 1.0, 0.0, 0.0],
         [-sine, 0.0, cosine, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[cosine, 0.0, -sine, 0.0],
+    immutable float[4][4] invM = [[cosine, 0.0, -sine, 0.0],
         [0.0, 1.0, 0.0, 0.0],
         [sine, 0.0, cosine, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
     return Transformation(m, invM);
 }
 
-Transformation rotationZ(float angleInDegrees)
+Transformation rotationZ(in float angleInDegrees)
 {
-    float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
-    float[4][4] m = [[cosine, -sine, 0.0, 0.0],
+    immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float[4][4] m = [[cosine, -sine, 0.0, 0.0],
         [sine, cosine, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
-    float[4][4] invM = [[cosine, sine, 0.0, 0.0],
+    immutable float[4][4] invM = [[cosine, sine, 0.0, 0.0],
         [-sine, cosine, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]];
@@ -271,13 +273,13 @@ unittest
     assert((rotationZ(90) * vecX).xyzIsClose(vecY));
 }
 
-Transformation scaling(Vec v)
+Transformation scaling(in Vec v)
 {
-	float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
+	immutable float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
 		[0.0, v.y, 0.0, 0.0],
 		[0.0, 0.0, v.z, 0.0],
 		[0.0, 0.0, 0.0, 1.0]];
-	float[4][4] invM = [[1/v.x, 0.0, 0.0, 0.0],
+	immutable float[4][4] invM = [[1/v.x, 0.0, 0.0, 0.0],
 		[0.0, 1/v.y, 0.0, 0.0],
 		[0.0, 0.0, 1/v.z, 0.0],
 		[0.0, 0.0, 0.0, 1.0]];
