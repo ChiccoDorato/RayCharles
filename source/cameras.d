@@ -119,7 +119,7 @@ struct ImageTracer
         camera = cam;
     }
 
-    Ray fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
+    immutable(Ray) fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
     in (col + uPixel >= 0 && col + uPixel <= image.width)
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {

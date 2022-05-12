@@ -17,7 +17,7 @@ mixin template toString(T)
 
 mixin template xyzIsClose(T)
 {
-    bool xyzIsClose(T)(in T v) const
+    immutable(bool) xyzIsClose(T)(in T v) const
     in (T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
     {
         return areClose(x, v.x) && areClose(y, v.y) && areClose(z, v.z);
@@ -267,7 +267,7 @@ struct Vec2d
 {
     float u, v;
 
-    bool uvIsClose(in Vec2d v2d) const
+    immutable(bool) uvIsClose(in Vec2d v2d) const
     {
         return areClose(u, v2d.u) && areClose(v, v2d.v);
     }

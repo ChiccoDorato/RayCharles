@@ -10,12 +10,12 @@ struct Ray
     float tMin = 1e-5, tMax = float.infinity; 
     int depth = 0;
 
-    Point at(in float t) const
+    immutable(Point) at(in float t) const
     {
         return origin + t * dir;
     }
 
-    bool rayIsClose(in Ray rhs) const
+    immutable(bool) rayIsClose(in Ray rhs) const
     {
         return origin.xyzIsClose(rhs.origin) && dir.xyzIsClose(rhs.dir);
     }

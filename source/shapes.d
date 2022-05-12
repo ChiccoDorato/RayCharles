@@ -2,6 +2,7 @@ module shapes;
 
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
+import materials : Material;
 import ray;
 import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
@@ -14,8 +15,9 @@ struct HitRecord
     Vec2d surfacePoint;
     float t;
     Ray ray;
+    Shape shape;
 
-    bool recordIsClose(in HitRecord hit) const
+    immutable(bool) recordIsClose(in HitRecord hit) const
     {
         return worldPoint.xyzIsClose(hit.worldPoint) && normal.xyzIsClose(hit.normal) &&
         surfacePoint.uvIsClose(hit.surfacePoint) && areClose(t, hit.t) && ray.rayIsClose(hit.ray);
@@ -25,28 +27,35 @@ struct HitRecord
 class Shape
 {
     Transformation transf;
+    Material material;
+
+    this(in Transformation t = Transformation(), Material m = Material())
+    {
+        transf = t;
+        material = m;
+    }
 
     abstract Nullable!HitRecord rayIntersection(in Ray r) const;
 }
 
-Vec2d sphereUVPoint(in Point p)
+immutable(Vec2d) sphereUVPoint(in Point p)
 {
     float u = atan2(p.y, p.x) / (2.0 * PI);
     if (u < 0) ++u;
-    return Vec2d(u, acos(p.z) / PI);
+    return immutable Vec2d(u, acos(p.z) / PI);
 }
 
-Normal sphereNormal(in Point p, in Vec v)
+immutable(Normal) sphereNormal(in Point p, in Vec v)
 {
-    Normal n = Normal(p.x, p.y, p.z);
+    immutable Normal n = Normal(p.x, p.y, p.z);
     return p.convert * v < 0 ? n : -n;
 }
 
 class Sphere : Shape
 {
-    this(in Transformation t)
+    this(in Transformation t = Transformation(), Material m = Material())
     {
-        transf = t;
+        super(t, m);
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r) const
@@ -149,9 +158,9 @@ unittest
 // A 3D infinite plane parallel to the x and y axis and passing through the origin.
 class Plane : Shape
 {
-    this(Transformation t)
+    this(in Transformation t = Transformation(), Material m = Material())
     {
-        transf = t;
+        super(t, m);
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r) const

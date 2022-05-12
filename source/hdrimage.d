@@ -12,7 +12,7 @@ import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
 import std.system : endian;
 
-bool areClose(in float x, in float y, in float epsilon = 1e-5)
+immutable(bool) areClose(in float x, in float y, in float epsilon = 1e-5)
 {
 	return abs(x - y) < epsilon;
 }
@@ -41,12 +41,12 @@ struct Color
 		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
 	}
 
-	bool colorIsClose(in Color c) const
+	immutable(bool) colorIsClose(in Color c) const
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
-	float luminosity() const
+	immutable(float) luminosity() const
 	{
 		return (max(r, g, b) + min(r, g, b)) / 2.0;
 	}
@@ -80,7 +80,7 @@ class InvalidPFMFileFormat : Exception
     }
 }
 
-ubyte[] readLine(in ubyte[] stream, uint startingPosition)
+immutable(ubyte[]) readLine(in ubyte[] stream, uint startingPosition)
 {
 	ubyte[] line;
 	for (uint i = startingPosition; i < stream.length; ++i)
@@ -88,7 +88,7 @@ ubyte[] readLine(in ubyte[] stream, uint startingPosition)
 		line ~= stream[i];
 		if (stream[i] == 10) break;
 	}
-	return line;
+	return line.idup;
 }
 
 unittest
@@ -99,7 +99,7 @@ unittest
 	assert(line.readLine(11) == []);
 }
 
-int[2] parseImgSize(in ubyte[] imgSize)
+immutable(int[2]) parseImgSize(in ubyte[] imgSize)
 {
 	enforce!InvalidPFMFileFormat(imgSize.length > 0, "image dimensions are not indicated");
 
@@ -141,7 +141,7 @@ unittest
 	assertThrown!InvalidPFMFileFormat(parseImgSize(manyDimensions));
 }
 
-float parseEndiannessLine(in ubyte[] endiannessLine)
+immutable(float) parseEndiannessLine(in ubyte[] endiannessLine)
 {
 	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "endianness is not indicated");
 	// Sempre problema se ASCII esteso.
@@ -193,8 +193,8 @@ unittest
 {
 	ubyte[] test = [30, 20, 70, 55, 108, 99, 10, 7];
 	ubyte[] check = [55, 70, 20, 30, 7, 10, 99, 108];
-	assert(test.readFloat(0,-1) == check.readFloat(0,1));
-	assert(test.readFloat(4,-1) == check.readFloat(4,1));
+	assert(test.readFloat(0, -1.0) == check.readFloat(0, 1.0));
+	assert(test.readFloat(4, -1.0) == check.readFloat(4 ,1.0));
 }
 
 float clamp(float x)
@@ -218,16 +218,16 @@ class HDRImage
 	{
 		int streamPosition = 0;
 
-		immutable ubyte[] magic = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
+		immutable ubyte[] magic = stream.readLine(streamPosition);
 		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], "invalid magic");
 		streamPosition += magic.length;
 
-		immutable ubyte[] imgSize = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
-		immutable int[2] size = cast(immutable(int[2]))(parseImgSize(imgSize));
+		immutable ubyte[] imgSize = stream.readLine(streamPosition);
+		immutable int[2] size = parseImgSize(imgSize);
 		streamPosition += imgSize.length;
 
-		immutable ubyte[] endiannessLine = cast(immutable(ubyte[]))(stream.readLine(streamPosition));
-		immutable float endiannessValue = cast(immutable(float))(parseEndiannessLine(endiannessLine));
+		immutable ubyte[] endiannessLine = stream.readLine(streamPosition);
+		immutable float endiannessValue = parseEndiannessLine(endiannessLine);
 		streamPosition += endiannessLine.length;
 
 		enforce!InvalidPFMFileFormat(
@@ -279,7 +279,7 @@ class HDRImage
 		pixels[pixelOffset(x, y)] = c;
 	}
 
-	ubyte[] writePFM(in Endian endianness = Endian.littleEndian) const
+	immutable(ubyte[]) writePFM(in Endian endianness = Endian.littleEndian) const
 	{
 		string endiannessStr;
 		if (endianness == Endian.bigEndian) endiannessStr = "1.0";
@@ -308,7 +308,7 @@ class HDRImage
 				}
 			}
 		}
-		return pfm.data;
+		return pfm.data.idup;
 	}
 
 	void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
@@ -351,7 +351,7 @@ class HDRImage
 		imageformats.png.write_png(fileName, width, height, data, 0);
 	}
 
-	float averageLuminosity(in float delta=1e-10) const
+	immutable(float) averageLuminosity(in float delta=1e-10) const
 	{
 		float lumSum = 0.0;
         foreach (p; pixels[]) lumSum += log10(delta + p.luminosity);

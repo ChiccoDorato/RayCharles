@@ -27,7 +27,7 @@ struct Transformation
 		return prod;
 	}
 
-    bool matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
+    immutable(bool) matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
     {
         for (ubyte i = 0; i < 4; ++i)
             for (ubyte j = 0; j < 4; ++j)
@@ -35,12 +35,12 @@ struct Transformation
         return true;
     }
 
-    bool transfIsClose(in Transformation t, in float epsilon=1e-5) const
+    immutable(bool) transfIsClose(in Transformation t, in float epsilon=1e-5) const
     {
         return matrixIsClose(m, t.m, epsilon) && matrixIsClose(invM, t.invM, epsilon);
     }
 
-	bool isConsistent(in float epsilon=1e-5) const
+	immutable(bool) isConsistent(in float epsilon=1e-5) const
     {
 		return matrixIsClose(matProd(m, invM), id4, epsilon);
 	}
@@ -222,7 +222,8 @@ unittest
 
 Transformation rotationX(in float angleInDegrees)
 {
-    immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float sine = sin(angleInDegrees * PI / 180),
+        cosine = cos(angleInDegrees * PI / 180);
     immutable float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
         [0.0, cosine, -sine, 0.0],
         [0.0, sine, cosine, 0.0],

@@ -1,4 +1,4 @@
-module material;
+module materials;
 
 import geometry : Normal, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;

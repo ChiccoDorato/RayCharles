@@ -17,7 +17,7 @@ class InvalidPfm2pngParms : Exception
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
-	float factor, gamma;
+	immutable float factor, gamma;
 
 	this(in string[] args)
 	{	
@@ -30,7 +30,7 @@ struct Pfm2pngParameters
 
 		try
 		{
-			factor = to!float(args[2]);
+			factor = to!(immutable(float))(args[2]);
 			enforce!InvalidPfm2pngParms(isFinite(factor) && factor > 0,
 				"Factor must be a positive number");
 		}
@@ -39,7 +39,7 @@ struct Pfm2pngParameters
 
 		try
 		{
-			gamma = to!float(args[3]);
+			gamma = to!(immutable(float))(args[3]);
 			enforce!InvalidPfm2pngParms(isFinite(gamma) && gamma > 0,
 				"Gamma must be a positive number");
 		}
@@ -58,10 +58,10 @@ class InvalidDemoParms : Exception
 
 struct DemoParameters
 {
-	int width, height;
-	float angle;
+	immutable int width, height;
+	immutable float angle;
 	string pfmOutput, pngOutput;
-	bool orthogonal;
+	immutable bool orthogonal;
 
 	this(in string[] args)
 	{		
@@ -85,7 +85,7 @@ struct DemoParameters
 		
 		try
 		{
-			angle = to!float(args[2]);
+			angle = to!(immutable(float))(args[2]);
 			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[2]));
 		}
 		catch (ConvException exc)
