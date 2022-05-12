@@ -163,7 +163,9 @@ struct Vec
     mixin convert!(Vec, Normal);
 }
 
-Vec vecX = Vec(1.0, 0.0, 0.0), vecY = Vec(0.0, 1.0, 0.0), vecZ = Vec(0.0, 0.0, 1.0);
+immutable(Vec) vecX = Vec(1.0, 0.0, 0.0),
+    vecY = Vec(0.0, 1.0, 0.0),
+    vecZ = Vec(0.0, 0.0, 1.0);
 
 unittest
 {

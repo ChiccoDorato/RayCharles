@@ -1,24 +1,31 @@
 module material;
 
 import geometry : Normal, Vec, Vec2d;
-import hdrimage : Color, HDRImage;
+import hdrimage : black, Color, HDRImage, white;
 import std.math : floor, PI;
+
+immutable(bool) validParam(in float coordinate)
+{
+    return coordinate >= 0 && coordinate <= 1;
+}
 
 class Pigment
 {
-    abstract Color getColor(in Vec2d uv) const;
+    abstract Color getColor(in Vec2d uv) const
+    in (validParam(uv.u) && validParam(uv.v));
 }
 
 class UniformPigment : Pigment
 {
     Color color;
 
-    this(in Color col)
+    this(in Color col = black)
     {
         color = col;
     }
 
     override Color getColor(in Vec2d uv) const
+    in (validParam(uv.u) && validParam(uv.v))
     {
         return color;
     }
@@ -30,6 +37,7 @@ class CheckeredPigment : Pigment
     int numberOfSteps;
 
     this(in Color c1, in Color c2, in int nSteps = 10)
+    in (nSteps >= 0)
     {
         color1 = c1;
         color2 = c2;
@@ -37,6 +45,7 @@ class CheckeredPigment : Pigment
     }
 
     override Color getColor(in Vec2d uv) const
+    in (validParam(uv.u) && validParam(uv.v))
     {
         immutable int u = cast(int)(floor(uv.u * numberOfSteps));
         immutable int v = cast(int)(floor(uv.v * numberOfSteps));
@@ -55,6 +64,7 @@ class ImagePigment : Pigment
     }
 
     override Color getColor(in Vec2d uv) const
+    in (validParam(uv.u) && validParam(uv.v))
     {
         int col = cast(int)(uv.u * image.width);
         int row = cast(int)(uv.v * image.height);
@@ -70,7 +80,7 @@ class BRDF
 {
     Pigment pigment;
 
-    this(Pigment p = new UniformPigment(Color()))
+    this(Pigment p = new UniformPigment(white))
     {
         pigment = p;
     }
@@ -82,7 +92,8 @@ class DiffuseBRDF : BRDF
 {
     float reflectance;
 
-    this(Pigment p = new UniformPigment(Color(1.0, 1.0, 1.0)), in float refl = 1.0)
+    this(Pigment p = new UniformPigment(white), in float refl = 1.0)
+    in (refl > 0.0)
     {
         super(p);
         reflectance = refl;
@@ -92,4 +103,10 @@ class DiffuseBRDF : BRDF
     {
         return pigment.getColor(uv) * (reflectance / PI);
     }
+}
+
+struct Material
+{
+    BRDF brdf = new DiffuseBRDF();
+    Pigment emittedRadiance = new UniformPigment(black);
 }

@@ -52,6 +52,8 @@ struct Color
 	}
 }
 
+immutable(Color) black = Color(), white = Color(1.0, 1.0, 1.0);
+
 unittest
 {
 	Color c1 = {1.0, 2.0, 3.0}, c2 = {5.0, 7.0, 9.0};
@@ -255,7 +257,7 @@ class HDRImage
 		this(stream);
 	}
 
-	bool validCoordinates(in int x, in int y) const
+	immutable(bool) validCoordinates(in int x, in int y) const
 	{
 		return x >= 0 && x < width && y >= 0 && y < height;
 	}

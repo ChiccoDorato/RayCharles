@@ -14,7 +14,7 @@ class Camera
     abstract Ray fireRay(in float u, in float v) const;
 }
 
-class OrthogonalCamera : Camera 
+class OrthogonalCamera : Camera
 {
     this(in float aspRat = 1.0, in Transformation transf = Transformation())
     in (aspRat > 0)
