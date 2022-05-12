@@ -12,14 +12,14 @@ import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
 import std.system : endian;
 
-bool areClose(in float x, in float y, in float epsilon=1e-5)
+bool areClose(in float x, in float y, in float epsilon = 1e-5)
 {
 	return abs(x - y) < epsilon;
 }
 
 struct Color
 {
-	float r=0.0, g=0.0, b=0.0;
+	float r = 0.0, g = 0.0, b = 0.0;
 
 	Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
 	{

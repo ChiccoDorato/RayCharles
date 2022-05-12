@@ -143,11 +143,11 @@ struct ImageTracer
 
 void testOrientation(in ImageTracer tracer)
 {
-    immutable Ray topLeftRay = tracer.fireRay(0, 0, 0, 0);
-    assert(Point(0, 2, 1).xyzIsClose(topLeftRay.at(1)));
+    immutable Ray topLeftRay = tracer.fireRay(0, 0, 0.0, 0.0);
+    assert(Point(0.0, 2.0, 1.0).xyzIsClose(topLeftRay.at(1)));
 
-    immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1, 1);
-    assert(Point(0, -2, -1).xyzIsClose(bottomRightRay.at(1)));
+    immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1.0, 1.0);
+    assert(Point(0.0, -2.0, -1.0).xyzIsClose(bottomRightRay.at(1)));
 }
 
 void testUVSubMapping(in ImageTracer tracer)

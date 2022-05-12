@@ -16,14 +16,16 @@ class PCG
     {
         immutable ulong oldState = state;
         state = oldState * 6_364_136_223_846_793_005 + inc;
+
         immutable uint xorShifted = cast(uint)(((oldState >> 18) ^ oldState) >> 27);
         immutable uint rot = oldState >> 59;
+
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
     float randomFloat()
     {
-        return random / ulong.max;
+        return cast(float)(random) / uint.max;
     }
 }
 
@@ -35,5 +37,6 @@ unittest
 
     foreach(uint expected; [2_707_161_783, 2_068_313_097,
                     3_122_475_824, 2_211_639_955,
-                    3_215_226_955, 3_421_331_566]) assert(expected == pcg.random);
+                    3_215_226_955, 3_421_331_566])
+        assert(expected == pcg.random);
 }
