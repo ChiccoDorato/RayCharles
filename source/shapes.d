@@ -91,7 +91,7 @@ class Sphere : Shape
 
 unittest
 {   
-    Sphere s = new Sphere(Transformation());
+    Sphere s = new Sphere();
 
     assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
@@ -196,7 +196,7 @@ class Plane : Shape
 
 unittest
 {
-    Plane p = new Plane(Transformation());
+    Plane p = new Plane();
 
     Ray r1 = {Point(0.0, 0.0, 1.0), -vecZ};
     HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
@@ -248,7 +248,7 @@ unittest
 
 unittest
 {
-    Plane p = new Plane(Transformation());
+    Plane p = new Plane();
 
     Ray r1 = {Point(0.0, 0.0, 1.0), -vecZ};
     HitRecord h1 = p.rayIntersection(r1).get;
