@@ -1,10 +1,13 @@
 module renderer;
 
-import hdrimage : black, Color, white;
-import materials : Material;
+import cameras : Camera, ImageTracer, OrthogonalCamera, PerspectiveCamera;
+import geometry : Vec;
+import hdrimage : black, Color, HDRImage, white;
+import materials : DiffuseBRDF, Material, UniformPigment;
 import ray : Ray;
-import shapes : World, HitRecord;
+import shapes : HitRecord, Sphere, World;
 import std.typecons : Nullable;
+import transformations : scaling, translation;
 
 class Renderer
 {
@@ -46,6 +49,31 @@ class OnOffRenderer : Renderer
     }
 }
 
+unittest
+{
+    Sphere sphere = new Sphere(translation(Vec(2, 0, 0)) * scaling(Vec(0.2, 0.2, 0.2)),
+                        Material(new DiffuseBRDF(new UniformPigment(white))));
+    HDRImage image = new HDRImage(3, 3);
+    Camera camera = new OrthogonalCamera();
+    ImageTracer tracer = ImageTracer(image, camera);
+    World world = World();
+    world.addShape(sphere);
+    Renderer renderer = new OnOffRenderer(world);
+    tracer.fireAllRays((Ray r) => renderer.call(r));
+
+    assert(image.getPixel(0, 0).colorIsClose(black));
+    assert(image.getPixel(1, 0).colorIsClose(black));
+    assert(image.getPixel(2, 0).colorIsClose(black));
+    
+    assert(image.getPixel(0, 1).colorIsClose(black));
+    assert(image.getPixel(1, 1).colorIsClose(white));
+    assert(image.getPixel(2, 1).colorIsClose(black));
+
+    assert(image.getPixel(0, 2).colorIsClose(black));
+    assert(image.getPixel(1, 2).colorIsClose(black));
+    assert(image.getPixel(2, 2).colorIsClose(black));   
+}
+
 class FlatRenderer : Renderer
 {
     this(World w)
@@ -67,4 +95,30 @@ class FlatRenderer : Renderer
         return material.brdf.pigment.getColor(hit.get.surfacePoint) + 
         material.emittedRadiance.getColor(hit.get.surfacePoint);   
     }
+}
+
+unittest
+{
+    Color sphereColor = Color(1.0, 2.0, 3.0);
+    Sphere sphere = new Sphere(translation(Vec(2, 0, 0)) * scaling(Vec(0.2, 0.2, 0.2)),
+                        Material(new DiffuseBRDF(new UniformPigment(sphereColor))));
+    HDRImage image = new HDRImage(3, 3);
+    Camera camera = new OrthogonalCamera();
+    ImageTracer tracer = ImageTracer(image, camera);
+    World world = World();
+    world.addShape(sphere);
+    Renderer renderer = new FlatRenderer(world);
+    tracer.fireAllRays((Ray r) => renderer.call(r));
+
+    assert(image.getPixel(0, 0).colorIsClose(black));
+    assert(image.getPixel(1, 0).colorIsClose(black));
+    assert(image.getPixel(2, 0).colorIsClose(black));
+    
+    assert(image.getPixel(0, 1).colorIsClose(black));
+    assert(image.getPixel(1, 1).colorIsClose(sphereColor));
+    assert(image.getPixel(2, 1).colorIsClose(black));
+
+    assert(image.getPixel(0, 2).colorIsClose(black));
+    assert(image.getPixel(1, 2).colorIsClose(black));
+    assert(image.getPixel(2, 2).colorIsClose(black));   
 }

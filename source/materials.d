@@ -31,6 +31,17 @@ class UniformPigment : Pigment
     }
 }
 
+unittest
+{
+    Color color = Color(1.0, 2.0, 3.0);
+    Pigment pigment = new UniformPigment(color);
+
+        assert(pigment.getColor(Vec2d(0.0, 0.0)).colorIsClose(color));
+        assert(pigment.getColor(Vec2d(1.0, 0.0)).colorIsClose(color));
+        assert(pigment.getColor(Vec2d(0.0, 1.0)).colorIsClose(color));
+        assert(pigment.getColor(Vec2d(1.0, 1.0)).colorIsClose(color));
+}
+
 class CheckeredPigment : Pigment
 {
     Color color1, color2;
@@ -59,6 +70,19 @@ class CheckeredPigment : Pigment
     }
 }
 
+unittest
+{
+    Color color1 = Color(1.0, 2.0, 3.0);
+    Color color2 = Color(10.0, 20.0, 30.0);
+
+    Pigment pigment = new CheckeredPigment(color1, color2, 2);
+
+        assert(pigment.getColor(Vec2d(0.25, 0.25)).colorIsClose(color1));
+        assert(pigment.getColor(Vec2d(0.75, 0.25)).colorIsClose(color2));
+        assert(pigment.getColor(Vec2d(0.25, 0.75)).colorIsClose(color2));
+        assert(pigment.getColor(Vec2d(0.75, 0.75)).colorIsClose(color1));
+}
+
 class ImagePigment : Pigment
 {
     HDRImage image;
@@ -79,6 +103,23 @@ class ImagePigment : Pigment
 
         return image.getPixel(col, row);
     }
+}
+
+unittest
+{
+    HDRImage image = new HDRImage(2, 2);
+
+    image.setPixel(0, 0, Color(1.0, 2.0, 3.0));
+    image.setPixel(1, 0, Color(2.0, 3.0, 1.0));
+    image.setPixel(0, 1, Color(2.0, 1.0, 3.0));
+    image.setPixel(1, 1, Color(3.0, 2.0, 1.0));
+
+    Pigment pigment = new ImagePigment(image);
+
+    assert(pigment.getColor(Vec2d(0.0, 0.0)).colorIsClose(Color(1.0, 2.0, 3.0)));
+    assert(pigment.getColor(Vec2d(1.0, 0.0)).colorIsClose(Color(2.0, 3.0, 1.0)));
+    assert(pigment.getColor(Vec2d(0.0, 1.0)).colorIsClose(Color(2.0, 1.0, 3.0)));
+    assert(pigment.getColor(Vec2d(1.0, 1.0)).colorIsClose(Color(3.0, 2.0, 1.0)));
 }
 
 class BRDF
