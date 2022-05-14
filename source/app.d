@@ -26,6 +26,9 @@ void main(string[] args)
 			.add(new Option("H", "height",
 				"height in pixels of the image to render. Default: 480")
 				.defaultValue("480"))
+			.add(new Option("alg", "algorithm",
+				"algorithm to render an image. Default: flatrenderer")
+				.defaultValue("flatrenderer"))
 			.add(new Option("a", "angleDeg",
 				"angle of view in degree. Default: 0.0")
 				.defaultValue("0.0"))
@@ -83,6 +86,7 @@ void main(string[] args)
 				import geometry : Vec;
 				import hdrimage : Color;
 				import ray : Ray;
+				import renderer : FlatRenderer, OnOffRenderer, Renderer;
 				import shapes : Shape, Sphere, World;
 				import transformations : rotationZ, scaling, Transformation, translation;
 
@@ -91,6 +95,7 @@ void main(string[] args)
 				try parms = new DemoParameters(
 					[rayC.option("width"),
 					rayC.option("height"),
+					rayC.option("algorithm"),
 					rayC.option("angleDeg"),
 					rayC.option("pfmOutput"),
 					rayC.option("pngOutput"),
@@ -121,8 +126,18 @@ void main(string[] args)
 
 				HDRImage image = new HDRImage(parms.width, parms.height);
 				ImageTracer tracer = ImageTracer(image, camera);
-				tracer.fireAllRays((Ray r) => world.rayIntersection(r).isNull ?
-					Color(0.0, 0.0, 0.0) : Color(1.0, 1.0, 1.0));
+				
+				Renderer renderer;
+				if (parms.renderer == "flatrenderer")
+				{
+					renderer = new FlatRenderer(world);
+					tracer.fireAllRays((Ray r) => renderer.call(r));
+				}
+				else
+				{
+					renderer = new OnOffRenderer(world);
+					tracer.fireAllRays((Ray r) => renderer.call(r));
+				}
 
 				image.writePFMFile(parms.pfmOutput);
 				image.normalizeImage(0.1);

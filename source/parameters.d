@@ -59,13 +59,14 @@ class InvalidDemoParms : Exception
 struct DemoParameters
 {
 	immutable int width, height;
+	string renderer;
 	immutable float angle;
 	string pfmOutput, pngOutput;
 	immutable bool orthogonal;
 
 	this(in string[] args)
 	{		
-		assert(args.length == 6);
+		assert(args.length == 7);
 
 		try
 		{
@@ -83,17 +84,19 @@ struct DemoParameters
 		catch (ConvException exc)
 			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
 		
+		renderer = args[2];
+		
 		try
 		{
-			angle = to!(immutable(float))(args[2]);
-			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[2]));
+			angle = to!(immutable(float))(args[3]);
+			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[3]));
 		}
 		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid angle [%s]", args[2]));
+			throw new InvalidDemoParms(format("Invalid angle [%s]", args[3]));
 		
-		pfmOutput = args[3];
-		pngOutput = args[4];
-		if (args[5] != "") orthogonal = true;
+		pfmOutput = args[4];
+		pngOutput = args[5];
+		if (args[6] != "") orthogonal = true;
 	}
 
 	immutable(float) aspRat()

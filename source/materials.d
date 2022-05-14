@@ -19,7 +19,7 @@ class UniformPigment : Pigment
 {
     Color color;
 
-    this(in Color col = black)
+    this(in Color col)
     {
         color = col;
     }
@@ -34,13 +34,18 @@ class UniformPigment : Pigment
 class CheckeredPigment : Pigment
 {
     Color color1, color2;
-    int numberOfSteps;
+    int numberOfSteps = 10;
 
-    this(in Color c1, in Color c2, in int nSteps = 10)
-    in (nSteps >= 0)
+    this(in Color c1, in Color c2)
     {
         color1 = c1;
         color2 = c2;
+    }
+
+    this(in Color c1, in Color c2, in int nSteps)
+    in (nSteps >= 0)
+    {
+        this(c1, c2);
         numberOfSteps = nSteps;
     }
 
@@ -90,12 +95,17 @@ class BRDF
 
 class DiffuseBRDF : BRDF
 {
-    float reflectance;
+    float reflectance = 1.0;
+
+    this(Pigment p = new UniformPigment(white))
+    {
+        super(p);
+    }
 
     this(Pigment p = new UniformPigment(white), in float refl = 1.0)
     in (refl > 0.0)
     {
-        super(p);
+        this(p);
         reflectance = refl;
     }
 

@@ -35,7 +35,7 @@ class Shape
         material = m;
     }
 
-    abstract Nullable!HitRecord rayIntersection(in Ray r) const;
+    abstract Nullable!HitRecord rayIntersection(in Ray r);
 }
 
 immutable(Vec2d) sphereUVPoint(in Point p)
@@ -58,7 +58,7 @@ class Sphere : Shape
         super(t, m);
     }
 
-    override Nullable!HitRecord rayIntersection(in Ray r) const
+    override Nullable!HitRecord rayIntersection(in Ray r)
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
@@ -84,7 +84,8 @@ class Sphere : Shape
             transf * sphereNormal(hitPoint, invR.dir),
             sphereUVPoint(hitPoint),
             firstHit,
-            r);
+            r,
+            this);
         return hit;
     }
 }
@@ -163,7 +164,7 @@ class Plane : Shape
         super(t, m);
     }
 
-    override Nullable!HitRecord rayIntersection(in Ray r) const
+    override Nullable!HitRecord rayIntersection(in Ray r)
     {
         Nullable!HitRecord hit;
 
@@ -178,7 +179,8 @@ class Plane : Shape
             transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0), 
             Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
             t,
-            r);
+            r,
+            this);
         return hit;
     }
 
@@ -277,12 +279,12 @@ struct World
         shapes ~= s;
     }
 
-    Nullable!HitRecord rayIntersection(in Ray ray) const
+    Nullable!HitRecord rayIntersection(in Ray ray)
     {
         Nullable!HitRecord closest;
         Nullable!HitRecord intersection;
 
-        foreach (const Shape s; shapes)
+        foreach (Shape s; shapes)
         {
             intersection = s.rayIntersection(ray);
             if (intersection.isNull) continue;
