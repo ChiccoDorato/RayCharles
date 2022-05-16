@@ -361,7 +361,7 @@ unittest
     //assert(!world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
 }
 
-class AABox : Shape
+/* class AABox : Shape
 {   
     Point pMin, pMax;
     Transformation t; 
@@ -376,7 +376,6 @@ class AABox : Shape
     override Nullable!HitRecord rayIntersection(in Ray r)
     {   
         Nullable!HitRecord hit;
-    // you know what to finish
         return hit;
     }
 
@@ -384,4 +383,4 @@ class AABox : Shape
     {
         return true;
     }
-}
+} */
