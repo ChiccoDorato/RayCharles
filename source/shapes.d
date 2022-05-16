@@ -36,17 +36,6 @@ class Shape
     }
 
     abstract Nullable!HitRecord rayIntersection(in Ray r);
-
-    bool quickRayIntersection(Ray r)
-    {
-        Ray invR = transf.inverse * r;
-        if (abs(invR.dir.z) < 1e-5) return false;
-
-        float t = -invR.origin.z / invR.dir.z;
-        if (t < invR.tMin || t > invR.tMax) return false; 
-
-        return true;
-    }
 }
 
 immutable(Vec2d) sphereUVPoint(in Point p)
@@ -194,6 +183,17 @@ class Plane : Shape
             this);
         return hit;
     }
+
+    bool quickRayIntersection(Ray r)
+    {
+        Ray invR = transf.inverse * r;
+        if (abs(invR.dir.z) < 1e-5) return false;
+
+        float t = -invR.origin.z / invR.dir.z;
+        if (t < invR.tMin || t > invR.tMax) return false; 
+
+        return true;
+    }
 }
 
 unittest
@@ -293,17 +293,17 @@ struct World
         return closest;
     }
 
-    bool isPointVisible(Point point, Point obsPos)
-    {
-        Vec direction = point - obsPos;
-        float dirNorm = direction.norm;
-        Ray ray = Ray(obsPos, direction, 1e-2 / dirNorm, 1.0);
-        foreach(Shape s; shapes)
-        {
-            if(s.quickRayIntersection(ray)) return false;
-        }
-        return true;
-    }
+    // bool isPointVisible(Point point, Point obsPos)
+    // {
+    //     Vec direction = point - obsPos;
+    //     float dirNorm = direction.norm;
+    //     Ray ray = {obsPos, direction, 1e-2 / dirNorm, 1.0};
+    //     foreach(Shape s; shapes)
+    //     {
+    //         if(s.quickRayIntersection(ray)) return false;
+    //     }
+    //     return true;
+    // }
 }
 
 unittest
@@ -324,19 +324,19 @@ unittest
     assert(intersection2.get.worldPoint.xyzIsClose(Point(9.0, 0.0, 0.0)));
 }
 
-unittest
-{
-    World world;
+// unittest
+// {
+//     World world;
 
-    Sphere sphere1 = new Sphere(translation(vecX * 2));
-    Sphere sphere2 = new Sphere(translation(vecX * 8));
-    world.addShape(sphere1);
-    world.addShape(sphere2);
+//     Sphere sphere1 = new Sphere(translation(vecX * 2));
+//     Sphere sphere2 = new Sphere(translation(vecX * 8));
+//     world.addShape(sphere1);
+//     world.addShape(sphere2);
 
-    //assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-    //assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-    assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));
-    assert(world.isPointVisible(Point(0.5, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-    assert(world.isPointVisible(Point(0.0, 10.0, 0.0), Point(0.0, 0.0, 0.0)));
-    //assert(!world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
-}
+//     //assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+//     //assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+//     assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));
+//     assert(world.isPointVisible(Point(0.5, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+//     assert(world.isPointVisible(Point(0.0, 10.0, 0.0), Point(0.0, 0.0, 0.0)));
+//     //assert(!world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
+// }

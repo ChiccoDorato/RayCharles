@@ -27,8 +27,8 @@ void main(string[] args)
 				"height in pixels of the image to render. Default: 480")
 				.defaultValue("480"))
 			.add(new Option("alg", "algorithm",
-				"algorithm to render an image. Default: flatrenderer")
-				.defaultValue("flatrenderer"))
+				"algorithm to render an image. Default: flat, options: flat, on-off")
+				.defaultValue("flat"))
 			.add(new Option("a", "angleDeg",
 				"angle of view in degree. Default: 0.0")
 				.defaultValue("0.0"))
@@ -128,7 +128,7 @@ void main(string[] args)
 				ImageTracer tracer = ImageTracer(image, camera);
 				
 				Renderer renderer;
-				if (parms.renderer == "flatrenderer")
+				if (parms.renderer == "flat")
 				{
 					renderer = new FlatRenderer(world);
 					tracer.fireAllRays((Ray r) => renderer.call(r));

@@ -4,7 +4,7 @@ import geometry : Normal, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
 import std.math : floor, PI;
 
-immutable(bool) validParam(in float coordinate)
+immutable(bool) validParm(in float coordinate)
 {
     return coordinate >= 0 && coordinate <= 1;
 }
@@ -12,7 +12,7 @@ immutable(bool) validParam(in float coordinate)
 class Pigment
 {
     abstract Color getColor(in Vec2d uv) const
-    in (validParam(uv.u) && validParam(uv.v));
+    in (validParm(uv.u) && validParm(uv.v));
 }
 
 class UniformPigment : Pigment
@@ -25,7 +25,7 @@ class UniformPigment : Pigment
     }
 
     override Color getColor(in Vec2d uv) const
-    in (validParam(uv.u) && validParam(uv.v))
+    in (validParm(uv.u) && validParm(uv.v))
     {
         return color;
     }
@@ -33,13 +33,13 @@ class UniformPigment : Pigment
 
 unittest
 {
-    Color color = Color(1.0, 2.0, 3.0);
-    Pigment pigment = new UniformPigment(color);
+    Color c = {1.0, 2.0, 3.0};
+    Pigment p = new UniformPigment(c);
 
-        assert(pigment.getColor(Vec2d(0.0, 0.0)).colorIsClose(color));
-        assert(pigment.getColor(Vec2d(1.0, 0.0)).colorIsClose(color));
-        assert(pigment.getColor(Vec2d(0.0, 1.0)).colorIsClose(color));
-        assert(pigment.getColor(Vec2d(1.0, 1.0)).colorIsClose(color));
+    assert(p.getColor(Vec2d(0.0, 0.0)).colorIsClose(c));
+    assert(p.getColor(Vec2d(1.0, 0.0)).colorIsClose(c));
+    assert(p.getColor(Vec2d(0.0, 1.0)).colorIsClose(c));
+    assert(p.getColor(Vec2d(1.0, 1.0)).colorIsClose(c));
 }
 
 class CheckeredPigment : Pigment
@@ -61,7 +61,7 @@ class CheckeredPigment : Pigment
     }
 
     override Color getColor(in Vec2d uv) const
-    in (validParam(uv.u) && validParam(uv.v))
+    in (validParm(uv.u) && validParm(uv.v))
     {
         immutable int u = cast(int)(floor(uv.u * numberOfSteps));
         immutable int v = cast(int)(floor(uv.v * numberOfSteps));
@@ -72,15 +72,15 @@ class CheckeredPigment : Pigment
 
 unittest
 {
-    Color color1 = Color(1.0, 2.0, 3.0);
-    Color color2 = Color(10.0, 20.0, 30.0);
+    Color c1 = {1.0, 2.0, 3.0};
+    Color c2 = {10.0, 20.0, 30.0};
 
-    Pigment pigment = new CheckeredPigment(color1, color2, 2);
+    Pigment p = new CheckeredPigment(c1, c2, 2);
 
-        assert(pigment.getColor(Vec2d(0.25, 0.25)).colorIsClose(color1));
-        assert(pigment.getColor(Vec2d(0.75, 0.25)).colorIsClose(color2));
-        assert(pigment.getColor(Vec2d(0.25, 0.75)).colorIsClose(color2));
-        assert(pigment.getColor(Vec2d(0.75, 0.75)).colorIsClose(color1));
+    assert(p.getColor(Vec2d(0.25, 0.25)).colorIsClose(c1));
+    assert(p.getColor(Vec2d(0.75, 0.25)).colorIsClose(c2));
+    assert(p.getColor(Vec2d(0.25, 0.75)).colorIsClose(c2));
+    assert(p.getColor(Vec2d(0.75, 0.75)).colorIsClose(c1));
 }
 
 class ImagePigment : Pigment
@@ -93,7 +93,7 @@ class ImagePigment : Pigment
     }
 
     override Color getColor(in Vec2d uv) const
-    in (validParam(uv.u) && validParam(uv.v))
+    in (validParm(uv.u) && validParm(uv.v))
     {
         int col = cast(int)(uv.u * image.width);
         int row = cast(int)(uv.v * image.height);
@@ -107,19 +107,19 @@ class ImagePigment : Pigment
 
 unittest
 {
-    HDRImage image = new HDRImage(2, 2);
+    HDRImage img = new HDRImage(2, 2);
 
-    image.setPixel(0, 0, Color(1.0, 2.0, 3.0));
-    image.setPixel(1, 0, Color(2.0, 3.0, 1.0));
-    image.setPixel(0, 1, Color(2.0, 1.0, 3.0));
-    image.setPixel(1, 1, Color(3.0, 2.0, 1.0));
+    img.setPixel(0, 0, Color(1.0, 2.0, 3.0));
+    img.setPixel(1, 0, Color(2.0, 3.0, 1.0));
+    img.setPixel(0, 1, Color(2.0, 1.0, 3.0));
+    img.setPixel(1, 1, Color(3.0, 2.0, 1.0));
 
-    Pigment pigment = new ImagePigment(image);
+    Pigment p = new ImagePigment(img);
 
-    assert(pigment.getColor(Vec2d(0.0, 0.0)).colorIsClose(Color(1.0, 2.0, 3.0)));
-    assert(pigment.getColor(Vec2d(1.0, 0.0)).colorIsClose(Color(2.0, 3.0, 1.0)));
-    assert(pigment.getColor(Vec2d(0.0, 1.0)).colorIsClose(Color(2.0, 1.0, 3.0)));
-    assert(pigment.getColor(Vec2d(1.0, 1.0)).colorIsClose(Color(3.0, 2.0, 1.0)));
+    assert(p.getColor(Vec2d(0.0, 0.0)).colorIsClose(Color(1.0, 2.0, 3.0)));
+    assert(p.getColor(Vec2d(1.0, 0.0)).colorIsClose(Color(2.0, 3.0, 1.0)));
+    assert(p.getColor(Vec2d(0.0, 1.0)).colorIsClose(Color(2.0, 1.0, 3.0)));
+    assert(p.getColor(Vec2d(1.0, 1.0)).colorIsClose(Color(3.0, 2.0, 1.0)));
 }
 
 class BRDF
