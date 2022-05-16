@@ -89,7 +89,7 @@ void main(string[] args)
 				import renderer : FlatRenderer, OnOffRenderer, Renderer;
 				import shapes : Shape, Sphere, World;
 				import transformations : rotationZ, scaling, Transformation, translation;
-
+				import materials : Material, DiffuseBRDF, Pigment, UniformPigment;
 
 				DemoParameters* parms;
 				try parms = new DemoParameters(
@@ -106,17 +106,27 @@ void main(string[] args)
 					return;
 				}
 
-				immutable Transformation decimate = scaling(Vec(0.1, 0.1, 0.1));
-				Shape[10] s = [new Sphere(translation(Vec(0.5, 0.5, 0.5)) * decimate),
-					new Sphere(translation(Vec(0.5, -0.5, 0.5)) * decimate),
-					new Sphere(translation(Vec(-0.5, -0.5, 0.5)) * decimate),
-					new Sphere(translation(Vec(-0.5, 0.5, 0.5)) * decimate),
-					new Sphere(translation(Vec(0.5, 0.5, -0.5)) * decimate),
-					new Sphere(translation(Vec(0.5, -0.5, -0.5)) * decimate),
-					new Sphere(translation(Vec(-0.5, -0.5, -0.5)) * decimate),
-					new Sphere(translation(Vec(-0.5, 0.5, -0.5)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.0, -0.5)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.5, 0.0)) * decimate)];
+				immutable Transformation decimate = scaling(Vec(0.05, 0.05, 0.05));
+				
+				/* Color sphereColor = Color(1.0, 0.0, 0.0);
+				Pigment p = new UniformPigment(sphereColor);
+				DiffuseBRDF brdf = new DiffuseBRDF(p);
+				Material m = Material(brdf); */
+
+				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, 0.2)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.2, 0.4)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.4, 0.6)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.4, 0.8)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.3, 0.9)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.1, 0.9)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.0, 0.8)) * decimate),
+					new Sphere(translation(Vec(0.0, -0.1, 0.9)) * decimate),
+					new Sphere(translation(Vec(0.0, -0.3, 0.9)) * decimate),
+					new Sphere(translation(Vec(0.0, 0.0, 0.8)) * decimate),
+					new Sphere(translation(Vec(0.0, -0.2, 0.4)) * decimate),
+					new Sphere(translation(Vec(0.0, -0.4, 0.6)) * decimate),
+					new Sphere(translation(Vec(0.0, -0.4, 0.8)) * decimate)];
+
 				World world = World(s);
 
 				Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 0.0));

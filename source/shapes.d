@@ -36,17 +36,7 @@ class Shape
     }
 
     abstract Nullable!HitRecord rayIntersection(in Ray r);
-
-    bool quickRayIntersection(Ray r)
-    {
-        Ray invR = transf.inverse * r;
-        if (abs(invR.dir.z) < 1e-5) return false;
-
-        float t = -invR.origin.z / invR.dir.z;
-        if (t < invR.tMin || t > invR.tMax) return false; 
-
-        return true;
-    }
+    abstract bool quickRayIntersection(Ray r);
 }
 
 immutable(Vec2d) sphereUVPoint(in Point p)
@@ -98,6 +88,25 @@ class Sphere : Shape
             r,
             this);
         return hit;
+    }
+
+    override bool quickRayIntersection(Ray r)
+    {
+        Ray invR = transf.inverse * r;
+        Vec originVec = invR.origin.convert;
+        float a = invR.dir.squaredNorm;
+        float b = 2.0 * originVec * invR.dir;
+        float c = originVec.squaredNorm - 1.0; 
+
+        float delta = b * b - 4.0 * a * c;
+        if (delta <= 0.0) return false;
+
+        float sqrtDelta = sqrt(delta);
+        float tMin = (-b - sqrtDelta) / (2.0 * a);
+        float tMax = (-b + sqrtDelta) / (2.0 * a);
+
+        return ((invR.tMin < tMin && tMin < invR.tMax) || (invR.tMin < tMax && tMax < invR.tMax)) ? true : false;
+
     }
 }
 
@@ -193,6 +202,17 @@ class Plane : Shape
             r,
             this);
         return hit;
+    }
+
+    override bool quickRayIntersection(Ray r)
+    {
+        Ray invR = transf.inverse * r;
+        if (abs(invR.dir.z) < 1e-5) return false;
+
+        float t = -invR.origin.z / invR.dir.z;
+        if (t < invR.tMin || t > invR.tMax) return false; 
+
+        return true;
     }
 }
 
@@ -339,4 +359,29 @@ unittest
     assert(world.isPointVisible(Point(0.5, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
     assert(world.isPointVisible(Point(0.0, 10.0, 0.0), Point(0.0, 0.0, 0.0)));
     //assert(!world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
+}
+
+class AABox : Shape
+{   
+    Point pMin, pMax;
+    Transformation t; 
+
+    this(in Point minP, in Point maxP, in Transformation transformation)
+    {
+        pMin = minP;
+        pMax = maxP;
+        t = transformation;
+    }
+
+    override Nullable!HitRecord rayIntersection(in Ray r)
+    {   
+        Nullable!HitRecord hit;
+    // you know what to finish
+        return hit;
+    }
+
+    override bool quickRayIntersection(Ray r)
+    {
+        return true;
+    }
 }
