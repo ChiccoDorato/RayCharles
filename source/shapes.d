@@ -4,7 +4,7 @@ import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import materials : Material;
 import ray;
-import std.math : abs, acos, atan2, floor, PI, sqrt;
+import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : Transformation, translation, rotationY;
 
@@ -36,19 +36,8 @@ class Shape
     }
 
     abstract Nullable!HitRecord rayIntersection(in Ray r);
-}
 
-immutable(Vec2d) sphereUVPoint(in Point p)
-{
-    float u = atan2(p.y, p.x) / (2.0 * PI);
-    if (u < 0) ++u;
-    return immutable Vec2d(u, acos(p.z) / PI);
-}
-
-immutable(Normal) sphereNormal(in Point p, in Vec v)
-{
-    immutable Normal n = Normal(p.x, p.y, p.z);
-    return p.convert * v < 0 ? n : -n;
+    abstract bool quickRayIntersection(in Ray r) const;
 }
 
 class Sphere : Shape
@@ -56,6 +45,19 @@ class Sphere : Shape
     this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
+    }
+
+    immutable(Vec2d) sphereUVPoint(in Point p) const
+    {
+        float u = atan2(p.y, p.x) / (2.0 * PI);
+        if (u < 0) ++u;
+        return immutable Vec2d(u, acos(p.z) / PI);
+    }
+
+    immutable(Normal) sphereNormal(in Point p, in Vec v) const
+    {
+        immutable Normal n = Normal(p.x, p.y, p.z);
+        return p.convert * v < 0 ? n : -n;
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r)
@@ -88,6 +90,23 @@ class Sphere : Shape
             this);
         return hit;
     }
+
+    override bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable Vec originVec = invR.origin.convert;
+        immutable float halfB = originVec * invR.dir;
+        immutable float a = invR.dir.squaredNorm;
+        immutable float c = originVec.squaredNorm - 1.0;
+
+        immutable float reducedDelta = halfB * halfB - a * c;
+        if (reducedDelta <= 0.0) return false;
+
+        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
+
+        return (t1 > invR.tMin && t1 < invR.tMax) || (t2 > invR.tMin && t2 < invR.tMax);
+    }
 }
 
 unittest
@@ -96,7 +115,6 @@ unittest
 
     assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
-    // RAY 1
     Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
     HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
     assert(HitRecord(
@@ -106,7 +124,6 @@ unittest
         1.0,
         r1).recordIsClose(h1));
 
-    // RAY 2
     Ray r2 = {Point(3.0, 0.0, 0.0), -vecX};
     HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
     assert(HitRecord(
@@ -116,7 +133,6 @@ unittest
         2.0,
         r2).recordIsClose(h2));
 
-    // RAY 3
     Ray r3 = {Point(0.0, 0.0, 0.0), vecX};
     HitRecord h3 = s.rayIntersection(r3).get(HitRecord());
     assert(HitRecord(
@@ -184,10 +200,10 @@ class Plane : Shape
         return hit;
     }
 
-    bool quickRayIntersection(Ray r)
+    override bool quickRayIntersection(in Ray r) const
     {
         Ray invR = transf.inverse * r;
-        if (abs(invR.dir.z) < 1e-5) return false;
+        if (areClose(invR.dir.z, 0)) return false;
 
         float t = -invR.origin.z / invR.dir.z;
         if (t < invR.tMin || t > invR.tMax) return false; 
@@ -265,6 +281,30 @@ unittest
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
 
+/* class AABox : Shape
+{
+    float pMin, pMax;
+    this(in Transformation t = Transformation(), Material m = Material(),
+        in float min = 0, in float max = 1)
+    in (max > min)
+    {
+        super(t, m);
+        pMin = min;
+        pMax = max;
+    }
+
+    override Nullable!HitRecord rayIntersection(in Ray r)
+    {
+        Nullable!HitRecord hit;
+        return hit;
+    }
+
+    override bool quickRayIntersection(in Ray r) const
+    {
+        return true;
+    }
+} */
+
 struct World
 {
     Shape[] shapes;
@@ -293,27 +333,25 @@ struct World
         return closest;
     }
 
-    // bool isPointVisible(Point point, Point obsPos)
-    // {
-    //     Vec direction = point - obsPos;
-    //     float dirNorm = direction.norm;
-    //     Ray ray = {obsPos, direction, 1e-2 / dirNorm, 1.0};
-    //     foreach(Shape s; shapes)
-    //     {
-    //         if(s.quickRayIntersection(ray)) return false;
-    //     }
-    //     return true;
-    // }
+    immutable(bool) isPointVisible(in Point point, in Point obsPos)
+    {
+        immutable Vec direction = point - obsPos;
+        immutable Ray ray = {obsPos, direction, 1e-2 / direction.norm, 1.0};
+
+        foreach (Shape s; shapes) if (s.quickRayIntersection(ray)) return false;
+
+        return true;
+    }
 }
 
 unittest
 {
     World world;
 
-    Sphere sphere1 = new Sphere(translation(vecX * 2));
-    Sphere sphere2 = new Sphere(translation(vecX * 8));
-    world.addShape(sphere1);
-    world.addShape(sphere2);
+    Sphere s1 = new Sphere(translation(vecX * 2.0));
+    Sphere s2 = new Sphere(translation(vecX * 8.0));
+    world.addShape(s1);
+    world.addShape(s2);
 
     Nullable!HitRecord intersection1 = world.rayIntersection(Ray(Point(0.0, 0.0, 0.0), vecX));
     assert(!intersection1.isNull);
@@ -324,19 +362,19 @@ unittest
     assert(intersection2.get.worldPoint.xyzIsClose(Point(9.0, 0.0, 0.0)));
 }
 
-// unittest
-// {
-//     World world;
+unittest
+{
+    World world;
 
-//     Sphere sphere1 = new Sphere(translation(vecX * 2));
-//     Sphere sphere2 = new Sphere(translation(vecX * 8));
-//     world.addShape(sphere1);
-//     world.addShape(sphere2);
+    Sphere s1 = new Sphere(translation(vecX * 2.0));
+    Sphere s2 = new Sphere(translation(vecX * 8.0));
+    world.addShape(s1);
+    world.addShape(s2);
 
-//     //assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-//     //assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-//     assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));
-//     assert(world.isPointVisible(Point(0.5, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
-//     assert(world.isPointVisible(Point(0.0, 10.0, 0.0), Point(0.0, 0.0, 0.0)));
-//     //assert(!world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
-// }
+    assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+    assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+    assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));
+    assert(world.isPointVisible(Point(0.5, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
+    assert(world.isPointVisible(Point(0.0, 10.0, 0.0), Point(0.0, 0.0, 0.0)));
+    assert(world.isPointVisible(Point(0.0, 0.0, 10.0), Point(0.0, 0.0, 0.0)));
+}

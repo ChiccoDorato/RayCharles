@@ -82,7 +82,7 @@ struct Transformation
 
     Ray opBinary(string op)(in Ray rhs) const if (op == "*")
     {
-        return Ray(this * rhs.origin, this * rhs.dir);
+        return Ray(this * rhs.origin, this * rhs.dir, rhs.tMin, rhs.tMax, rhs.depth);
     }
 }
 
