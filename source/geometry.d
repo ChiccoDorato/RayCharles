@@ -272,3 +272,43 @@ struct Vec2d
         return areClose(u, v2d.u) && areClose(v, v2d.v);
     }
 }
+
+Vec[3] createONBFromZ(in Normal n)
+in (areClose(n.squaredNorm, 1.0))
+{
+    float sign;
+    n.z > 0.0 ? (sign = 1.0) : (sign = -1.0); 
+    immutable float a = -1.0 / (sign + n.z);
+    immutable float b = n.x * n.y * a;
+
+    Vec e1 = Vec(1.0 + sign * n.x * n.x * a, sign * b, -sign * n.x);
+    Vec e2 = Vec(b, sign + n.y * n.y * a, -n.y);
+
+    return [e1, e2, Vec(n.x, n.y, n.z)];
+}
+
+unittest
+{
+    import pcg : PCG;
+    PCG pcg = new PCG();
+
+    Vec[3] base;
+    for (int i = 0; i < 10_000; ++i)
+    {
+        Normal n = Normal(pcg.randomFloat, pcg.randomFloat, pcg.randomFloat).normalize;
+        base = createONBFromZ(n);
+        assert(base[2].xyzIsClose(n));
+
+        assert(areClose(base[0]*base[1], 0));
+        assert(areClose(base[1]*base[2], 0));
+        assert(areClose(base[2]*base[0], 0));
+
+        assert((base[0]^base[1]).xyzIsClose(base[2]));
+        assert((base[1]^base[2]).xyzIsClose(base[0]));
+        assert((base[2]^base[0]).xyzIsClose(base[1]));
+        
+        assert(areClose(base[0].squaredNorm, 1));
+        assert(areClose(base[1].squaredNorm, 1));
+        assert(areClose(base[2].squaredNorm, 1));
+    }
+}

@@ -49,11 +49,11 @@ class Sphere : Shape
     }
 
     immutable(Vec2d) sphereUVPoint(in Point p) const
-    {   
+    {
         float z = p.z;
         if (z < -1 && z > -1.001) z = -1;
         if (z > 1 && z < 1.001) z = 1;
-
+ 
         float u = atan2(p.y, p.x) / (2.0 * PI);
         if (u < 0) ++u;
         return immutable Vec2d(u, acos(z) / PI);
@@ -86,6 +86,7 @@ class Sphere : Shape
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
+
         hit = HitRecord(
             transf * hitPoint,
             transf * sphereNormal(hitPoint, invR.dir),
@@ -314,6 +315,7 @@ class AABox : Shape
         float tz1 = pMin.z - r.origin.z / r.dir.z;
         float tz2 = pMax.z - r.origin.z / r.dir.z;
         if (r.dir.z < 0) swap(tz1, tz2);
+
         return [max(tx1, ty1, tz1), min(tx2, ty2, tz2)];
     }
 
@@ -332,11 +334,12 @@ class AABox : Shape
         else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
         else return hit;
 
-        // immutable Point hitPoint = invR.at(firstHit);
+        immutable Point hitPoint = invR.at(firstHit);
+        // Determine normal and surface point.
         // hit = HitRecord(transf * hitPoint,
         //     transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0),
         //     Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
-        //     t,
+        //     firstHit,
         //     r,
         //     this);
 
