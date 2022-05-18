@@ -15,6 +15,7 @@ class Pigment
     in (validParm(uv.u) && validParm(uv.v));
 }
 
+import std.format;
 class UniformPigment : Pigment
 {
     Color color;

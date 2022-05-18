@@ -150,7 +150,7 @@ void main(string[] args)
 				}
 
 				image.writePFMFile(parms.pfmOutput);
-				//image.normalizeImage(0.1);
+				image.normalizeImage(0.1, 0.1);
 				//image.clampImage;
 				image.writePNG(parms.pngOutput.dup);
 			}

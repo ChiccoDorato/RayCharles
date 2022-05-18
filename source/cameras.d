@@ -131,7 +131,6 @@ struct ImageTracer
     void fireAllRays(in Color delegate(Ray) solveRendering)
     {
         Color color;
-
         for (uint row = 0; row < image.height; ++row){
             for (uint col = 0; col < image.width; ++col){
                 color = solveRendering(fireRay(col, row));
