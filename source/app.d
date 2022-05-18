@@ -107,11 +107,6 @@ void main(string[] args)
 				}
 
 				immutable Transformation decimate = scaling(Vec(0.05, 0.05, 0.05));
-				
-				/* Color sphereColor = Color(1.0, 0.0, 0.0);
-				Pigment p = new UniformPigment(sphereColor);
-				DiffuseBRDF brdf = new DiffuseBRDF(p);
-				Material m = Material(brdf); */
 
 				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, 0.2)) * decimate),
 					new Sphere(translation(Vec(0.0, 0.2, 0.4)) * decimate),
