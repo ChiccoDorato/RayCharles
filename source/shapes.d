@@ -297,7 +297,7 @@ class AABox : Shape
         if (pMin.z > pMax.z) swap(pMin.y, pMax.y);
     }
 
-    float[2] intersections(Ray r)
+    float[2] intersections(in Ray r) const
     {
         float tx1 = pMin.x - r.origin.x / r.dir.x;
         float tx2 = pMax.x - r.origin.x / r.dir.x;
