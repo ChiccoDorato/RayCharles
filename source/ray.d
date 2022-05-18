@@ -1,7 +1,6 @@
 module ray;
 
 import geometry : Point, Vec, xyzIsClose; 
-import transformations : rotationX, Transformation, translation;
 
 struct Ray
 {
@@ -38,6 +37,8 @@ unittest
 
 unittest
 {
+    import transformations : rotationX, Transformation, translation;
+
     Ray r = {Point(1.0, 2.0, 3.0), Vec(6.0, 5.0, 4.0)};
     Transformation t = translation(Vec(10.0, 11.0, 12.0)) * rotationX(90.0);
     Ray transformed = t * r;
