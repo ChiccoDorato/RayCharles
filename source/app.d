@@ -27,8 +27,8 @@ void main(string[] args)
 				"height in pixels of the image to render. Default: 480")
 				.defaultValue("480"))
 			.add(new Option("alg", "algorithm",
-				"algorithm to render an image. Default: flatrenderer")
-				.defaultValue("flatrenderer"))
+				"algorithm to render an image. Default: flat, options: flat, on-off")
+				.defaultValue("flat"))
 			.add(new Option("a", "angleDeg",
 				"angle of view in degree. Default: 0.0")
 				.defaultValue("0.0"))
@@ -89,7 +89,7 @@ void main(string[] args)
 				import renderer : FlatRenderer, OnOffRenderer, Renderer;
 				import shapes : Shape, Sphere, World;
 				import transformations : rotationZ, scaling, Transformation, translation;
-				import materials : Material, DiffuseBRDF, Pigment, UniformPigment;
+				//import materials : Material, DiffuseBRDF, UniformPigment;
 
 				DemoParameters* parms;
 				try parms = new DemoParameters(
@@ -107,6 +107,11 @@ void main(string[] args)
 				}
 
 				immutable Transformation decimate = scaling(Vec(0.05, 0.05, 0.05));
+
+				/* Color sphereColor = Color(1.0, 0.0, 0.0);
+				UniformPigment p = new UniformPigment(sphereColor);
+				DiffuseBRDF brdf = new DiffuseBRDF(p);
+				Material m = Material(brdf); */
 
 				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, 0.2)) * decimate),
 					new Sphere(translation(Vec(0.0, 0.2, 0.4)) * decimate),
@@ -131,9 +136,9 @@ void main(string[] args)
 
 				HDRImage image = new HDRImage(parms.width, parms.height);
 				ImageTracer tracer = ImageTracer(image, camera);
-				
+
 				Renderer renderer;
-				if (parms.renderer == "flatrenderer")
+				if (parms.renderer == "flat")
 				{
 					renderer = new FlatRenderer(world);
 					tracer.fireAllRays((Ray r) => renderer.call(r));
