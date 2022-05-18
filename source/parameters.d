@@ -85,7 +85,7 @@ struct DemoParameters
 			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
 
 		enforce!InvalidDemoParms(args[2] == "flat" || args[2] == "on-off",
-			"Option --algorithm must be `flat` or `on-off`");
+			"Option algorithm must be one of the following values: flat, on-off");
 		renderer = args[2];
 
 		try

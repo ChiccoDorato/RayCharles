@@ -1,5 +1,6 @@
 module shapes;
 
+import std.algorithm : max, min, swap;
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import materials : Material;
@@ -192,7 +193,7 @@ class Plane : Shape
 
         immutable Point hitPoint = invR.at(t);
         hit = HitRecord(transf * hitPoint,
-            transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0), 
+            transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0),
             Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
             t,
             r,
@@ -281,29 +282,73 @@ unittest
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
 
-/* class AABox : Shape
+class AABox : Shape
 {
-    float pMin, pMax;
-    this(in Transformation t = Transformation(), Material m = Material(),
-        in float min = 0, in float max = 1)
-    in (max > min)
+    Point pMin, pMax;
+
+    this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
-        pMin = min;
-        pMax = max;
+
+        pMin = t * Point(0.0, 0.0, 0.0);
+        pMax = t * Point(1.0, 1.0, 1.0);
+        if (pMin.x > pMax.x) swap(pMin.x, pMax.x);
+        if (pMin.y > pMax.y) swap(pMin.y, pMax.y);
+        if (pMin.z > pMax.z) swap(pMin.y, pMax.y);
+    }
+
+    float[2] intersections(Ray r)
+    {
+        float tx1 = pMin.x - r.origin.x / r.dir.x;
+        float tx2 = pMax.x - r.origin.x / r.dir.x;
+        if (r.dir.x < 0) swap(tx1, tx2);
+
+        float ty1 = pMin.y - r.origin.y / r.dir.y;
+        float ty2 = pMax.y - r.origin.y / r.dir.y;
+        if (r.dir.y < 0) swap(ty1, ty2);
+
+        float tz1 = pMin.z - r.origin.z / r.dir.z;
+        float tz2 = pMax.z - r.origin.z / r.dir.z;
+        if (r.dir.z < 0) swap(tz1, tz2);
+        return [max(tx1, ty1, tz1), min(tx2, ty2, tz2)];
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r)
     {
         Nullable!HitRecord hit;
+
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.x, 0) || areClose(invR.dir.y, 0) || areClose(invR.dir.z, 0))
+            return hit;
+
+        immutable float[2] t = intersections(invR);
+        float firstHit;
+        if (t[0] > t[1]) return hit;
+        if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
+        else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
+        else return hit;
+
+        // immutable Point hitPoint = invR.at(firstHit);
+        // hit = HitRecord(transf * hitPoint,
+        //     transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0),
+        //     Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
+        //     t,
+        //     r,
+        //     this);
+
         return hit;
     }
 
     override bool quickRayIntersection(in Ray r) const
     {
-        return true;
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.x, 0) || areClose(invR.dir.y, 0) || areClose(invR.dir.z, 0))
+            return false;
+
+        immutable float[2] t = intersections(invR);
+        return (invR.tMin < t[0] && t[0] < t[1] && t[1] < invR.tMax) ? true : false;
     }
-} */
+}
 
 struct World
 {

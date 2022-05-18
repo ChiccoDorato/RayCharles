@@ -89,7 +89,7 @@ void main(string[] args)
 				import renderer : FlatRenderer, OnOffRenderer, Renderer;
 				import shapes : Shape, Sphere, World;
 				import transformations : rotationZ, scaling, Transformation, translation;
-				//import materials : Material, DiffuseBRDF, UniformPigment;
+				import materials : Material, DiffuseBRDF, UniformPigment;
 
 				DemoParameters* parms;
 				try parms = new DemoParameters(
@@ -108,24 +108,24 @@ void main(string[] args)
 
 				immutable Transformation decimate = scaling(Vec(0.05, 0.05, 0.05));
 
-				/* Color sphereColor = Color(1.0, 0.0, 0.0);
+				immutable Color sphereColor = Color(0.8, 0.02, 0.02);
 				UniformPigment p = new UniformPigment(sphereColor);
-				DiffuseBRDF brdf = new DiffuseBRDF(p);
-				Material m = Material(brdf); */
+				DiffuseBRDF sphereBRDF = new DiffuseBRDF(p);
+				Material m = Material(sphereBRDF);
 
-				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, 0.2)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.2, 0.4)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.4, 0.6)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.4, 0.8)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.3, 0.9)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.1, 0.9)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.0, 0.8)) * decimate),
-					new Sphere(translation(Vec(0.0, -0.1, 0.9)) * decimate),
-					new Sphere(translation(Vec(0.0, -0.3, 0.9)) * decimate),
-					new Sphere(translation(Vec(0.0, 0.0, 0.8)) * decimate),
-					new Sphere(translation(Vec(0.0, -0.2, 0.4)) * decimate),
-					new Sphere(translation(Vec(0.0, -0.4, 0.6)) * decimate),
-					new Sphere(translation(Vec(0.0, -0.4, 0.8)) * decimate)];
+				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, -0.2)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.2, 0.0)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.4, 0.2)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.4, 0.4)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.3, 0.5)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.1, 0.5)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
+					new Sphere(translation(Vec(0.0, -0.1, 0.5)) * decimate, m),
+					new Sphere(translation(Vec(0.0, -0.3, 0.5)) * decimate, m),
+					new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
+					new Sphere(translation(Vec(0.0, -0.2, 0.0)) * decimate, m),
+					new Sphere(translation(Vec(0.0, -0.4, 0.2)) * decimate, m),
+					new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m)];
 
 				World world = World(s);
 
@@ -150,8 +150,8 @@ void main(string[] args)
 				}
 
 				image.writePFMFile(parms.pfmOutput);
-				image.normalizeImage(0.1);
-				image.clampImage;
+				//image.normalizeImage(0.1);
+				//image.clampImage;
 				image.writePNG(parms.pngOutput.dup);
 			}
 		);
