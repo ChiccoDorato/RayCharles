@@ -125,7 +125,7 @@ void main(string[] args)
 					new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
 					new Sphere(translation(Vec(0.0, -0.2, 0.0)) * decimate, m),
 					new Sphere(translation(Vec(0.0, -0.4, 0.2)) * decimate, m),
-					new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m)];
+					new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m)];	
 
 				World world = World(s);
 

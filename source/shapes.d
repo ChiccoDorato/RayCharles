@@ -49,10 +49,14 @@ class Sphere : Shape
     }
 
     immutable(Vec2d) sphereUVPoint(in Point p) const
-    {
+    {   
+        float z = p.z;
+        if (z < -1 && z > -1.001) z = -1;
+        if (z > 1 && z < 1.001) z = 1;
+
         float u = atan2(p.y, p.x) / (2.0 * PI);
         if (u < 0) ++u;
-        return immutable Vec2d(u, acos(p.z) / PI);
+        return immutable Vec2d(u, acos(z) / PI);
     }
 
     immutable(Normal) sphereNormal(in Point p, in Vec v) const
