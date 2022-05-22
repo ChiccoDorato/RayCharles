@@ -87,9 +87,9 @@ void main(string[] args)
 				import hdrimage : Color;
 				import ray : Ray;
 				import renderer : FlatRenderer, OnOffRenderer, Renderer;
-				import shapes : Shape, Sphere, World;
-				import transformations : rotationZ, scaling, Transformation, translation;
-				import materials : Material, DiffuseBRDF, UniformPigment;
+				import shapes : AABox, Shape, Sphere, World;
+				import transformations : rotationZ, rotationY, scaling, Transformation, translation;
+				import materials : CheckeredPigment, Material, DiffuseBRDF, UniformPigment;
 
 				DemoParameters* parms;
 				try parms = new DemoParameters(
@@ -113,7 +113,13 @@ void main(string[] args)
 				DiffuseBRDF sphereBRDF = new DiffuseBRDF(p);
 				Material m = Material(sphereBRDF);
 
-				Shape[13] s = [new Sphere(translation(Vec(0.0, 0.0, -0.2)) * decimate, m),
+	Vec translVec = {1.0, 2.0, 4.0}, scaleVec = {2.0, 3.0, -0.8};
+    Transformation scale = scaling(scaleVec);
+    Transformation rotY = rotationY(30);
+    Transformation transl = translation(translVec);
+	Material boxM = {emittedRadiance : new CheckeredPigment(Color(1,0,0), Color(0,1,0))};
+
+				Shape[14] s = [new Sphere(translation(Vec(0.0, 0.0, -0.2)) * decimate, m),
 					new Sphere(translation(Vec(0.0, 0.2, 0.0)) * decimate, m),
 					new Sphere(translation(Vec(0.0, 0.4, 0.2)) * decimate, m),
 					new Sphere(translation(Vec(0.0, 0.4, 0.4)) * decimate, m),
@@ -125,7 +131,8 @@ void main(string[] args)
 					new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
 					new Sphere(translation(Vec(0.0, -0.2, 0.0)) * decimate, m),
 					new Sphere(translation(Vec(0.0, -0.4, 0.2)) * decimate, m),
-					new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m)];	
+					new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m),
+					new AABox(transl *rotY * scale, boxM)];	
 
 				World world = World(s);
 
@@ -151,7 +158,7 @@ void main(string[] args)
 
 				image.writePFMFile(parms.pfmOutput);
 				image.normalizeImage(0.1, 0.1);
-				//image.clampImage;
+				image.clampImage;
 				image.writePNG(parms.pngOutput.dup);
 			}
 		);
