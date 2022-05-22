@@ -289,34 +289,59 @@ unittest
 
 class AABox : Shape
 {
-    Point pMin, pMax;
-
     this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
-
-        pMin = t * Point(0.0, 0.0, 0.0);
-        pMax = t * Point(1.0, 1.0, 1.0);
-        if (pMin.x > pMax.x) swap(pMin.x, pMax.x);
-        if (pMin.y > pMax.y) swap(pMin.y, pMax.y);
-        if (pMin.z > pMax.z) swap(pMin.y, pMax.y);
     }
 
-    float[2] intersections(in Ray r) const
+    immutable(float[2]) oneDimIntersections(in float origin, in float direction) const
+    in (!areClose(direction, 0))
     {
-        float tx1 = pMin.x - r.origin.x / r.dir.x;
-        float tx2 = pMax.x - r.origin.x / r.dir.x;
-        if (r.dir.x < 0) swap(tx1, tx2);
+        float t1, t2;
+        if (direction > 0)
+        {
+            t1 = -origin / direction;
+            t2 = (1 - origin) / direction;
+        }
+        else
+        {
+            t1 = (1 - origin) / direction;
+            t2 = -origin / direction;
+        }
+        return [t1, t2];
+    }
 
-        float ty1 = pMin.y - r.origin.y / r.dir.y;
-        float ty2 = pMax.y - r.origin.y / r.dir.y;
-        if (r.dir.y < 0) swap(ty1, ty2);
+    immutable(float[2]) intersections(in Ray r) const
+    {
+        immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
+        immutable float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
+        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
+    }
 
-        float tz1 = pMin.z - r.origin.z / r.dir.z;
-        float tz2 = pMax.z - r.origin.z / r.dir.z;
-        if (r.dir.z < 0) swap(tz1, tz2);
+    immutable(Vec2d) boxUVPoint(in Point p) const
+    {
+        if (areClose(p.x, 0)) return Vec2d((1 + p.y) / 3, (2 + p.z) / 4);
+        else if (areClose(p.x, 1)) return Vec2d((1 + p.y) / 3, (1 - p.z) / 4);
+        else if (areClose(p.y, 0)) return Vec2d((1 - p.x) / 3, (2 + p.z) / 4);
+        else if (areClose(p.y, 1)) return Vec2d((2 + p.x) / 3, (2 + p.z) / 4);
+        else if (areClose(p.z, 0)) return Vec2d((1 + p.y) / 3, (2 - p.x) / 4);
+        else
+        {
+            assert(areClose(p.z, 1));
+            return Vec2d((1 + p.y) / 3, (3 + p.x) / 4);
+        }
+    }
 
-        return [max(tx1, ty1, tz1), min(tx2, ty2, tz2)];
+    immutable(Normal) boxNormal(in Point p, in Vec v) const
+    {
+        if (areClose(p.x, 0) || areClose(p.x, 1)) return Normal(v.x < 0 ? 1.0 : -1.0, 0.0, 0.0);
+        else if (areClose(p.y, 0) || areClose(p.y, 1)) return Normal(0.0, v.y < 0 ? 1.0 : -1.0, 0.0);
+        else
+        {
+            assert(areClose(p.z, 0) || areClose(p.z, 1));
+            return Normal(0.0, 0.0, v.z < 0 ? 1.0 : -1.0);
+        }
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r)
@@ -328,6 +353,7 @@ class AABox : Shape
             return hit;
 
         immutable float[2] t = intersections(invR);
+
         float firstHit;
         if (t[0] > t[1]) return hit;
         if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
@@ -335,13 +361,12 @@ class AABox : Shape
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
-        // Determine normal and surface point.
-        // hit = HitRecord(transf * hitPoint,
-        //     transf * Normal(0.0, 0.0, invR.dir.z < 0 ? 1.0 : -1.0),
-        //     Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
-        //     firstHit,
-        //     r,
-        //     this);
+        hit = HitRecord(transf * hitPoint,
+            transf * boxNormal(hitPoint, invR.dir),
+            boxUVPoint(hitPoint),
+            firstHit,
+            r,
+            this);
 
         return hit;
     }

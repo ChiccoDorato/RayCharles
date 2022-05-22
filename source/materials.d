@@ -133,6 +133,12 @@ class BRDF
     }
 
     abstract Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const;
+
+    // abstract Ray scatterRay(PCG pcg = new PCG(),
+    //     Vec incomingDir,
+    //     Point interactionPoint,
+    //     Normal n,
+    //     int depth) const;
 }
 
 class DiffuseBRDF : BRDF
