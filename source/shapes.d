@@ -7,7 +7,7 @@ import materials : Material;
 import ray;
 import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
-import transformations : Transformation, translation, rotationY;
+import transformations : scaling, Transformation, translation, rotationY;
 
 struct HitRecord
 {
@@ -295,8 +295,11 @@ class AABox : Shape
     }
 
     immutable(float[2]) oneDimIntersections(in float origin, in float direction) const
-    in (!areClose(direction, 0))
     {
+        if(areClose(direction, 0))
+            return (origin >= 0) && (origin <= 1) ?
+                [-float.infinity, float.infinity] : [float.infinity, -float.infinity];
+
         float t1, t2;
         if (direction > 0)
         {
@@ -313,30 +316,32 @@ class AABox : Shape
 
     immutable(float[2]) intersections(in Ray r) const
     {
-        immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
-        immutable float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
-        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
+        float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
+        float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
         return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
     }
 
     immutable(Vec2d) boxUVPoint(in Point p) const
     {
         if (areClose(p.x, 0)) return Vec2d((1 + p.y) / 3, (2 + p.z) / 4);
-        else if (areClose(p.x, 1)) return Vec2d((1 + p.y) / 3, (1 - p.z) / 4);
-        else if (areClose(p.y, 0)) return Vec2d((1 - p.x) / 3, (2 + p.z) / 4);
-        else if (areClose(p.y, 1)) return Vec2d((2 + p.x) / 3, (2 + p.z) / 4);
-        else if (areClose(p.z, 0)) return Vec2d((1 + p.y) / 3, (2 - p.x) / 4);
+        else if (areClose(p.x, 1.0)) return Vec2d((1 + p.y) / 3, (1 - p.z) / 4);
+        else if (areClose(p.y, 0.0)) return Vec2d((1 - p.x) / 3, (2 + p.z) / 4);
+        else if (areClose(p.y, 1.0)) return Vec2d((2 + p.x) / 3, (2 + p.z) / 4);
+        else if (areClose(p.z, 0.0)) return Vec2d((1 + p.y) / 3, (2 - p.x) / 4);
         else
         {
-            assert(areClose(p.z, 1));
+            assert(areClose(p.z, 1.0));
             return Vec2d((1 + p.y) / 3, (3 + p.x) / 4);
         }
     }
 
     immutable(Normal) boxNormal(in Point p, in Vec v) const
     {
-        if (areClose(p.x, 0) || areClose(p.x, 1)) return Normal(v.x < 0 ? 1.0 : -1.0, 0.0, 0.0);
-        else if (areClose(p.y, 0) || areClose(p.y, 1)) return Normal(0.0, v.y < 0 ? 1.0 : -1.0, 0.0);
+        if (areClose(p.x, 0) || areClose(p.x, 1))
+            return Normal(v.x < 0 ? 1.0 : -1.0, 0.0, 0.0);
+        else if (areClose(p.y, 0) || areClose(p.y, 1))
+            return Normal(0.0, v.y < 0 ? 1.0 : -1.0, 0.0);
         else
         {
             assert(areClose(p.z, 0) || areClose(p.z, 1));
@@ -349,9 +354,6 @@ class AABox : Shape
         Nullable!HitRecord hit;
 
         immutable Ray invR = transf.inverse * r;
-        if (areClose(invR.dir.x, 0) || areClose(invR.dir.y, 0) || areClose(invR.dir.z, 0))
-            return hit;
-
         immutable float[2] t = intersections(invR);
 
         float firstHit;
@@ -362,7 +364,7 @@ class AABox : Shape
 
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(transf * hitPoint,
-            transf * boxNormal(hitPoint, invR.dir),
+            (transf * boxNormal(hitPoint, invR.dir)).normalize,
             boxUVPoint(hitPoint),
             firstHit,
             r,
@@ -374,12 +376,119 @@ class AABox : Shape
     override bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
-        if (areClose(invR.dir.x, 0) || areClose(invR.dir.y, 0) || areClose(invR.dir.z, 0))
-            return false;
-
         immutable float[2] t = intersections(invR);
-        return (invR.tMin < t[0] && t[0] < t[1] && t[1] < invR.tMax) ? true : false;
+        if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
+        return (t[0] > invR.tMin) || (t[1] < invR.tMax) ? true : false;
     }
+}
+
+unittest
+{
+    AABox box = new AABox();
+
+    Ray r1 = {Point(-2.0, 0.5, 0.0), -vecX};
+    assert(!box.quickRayIntersection(r1));
+    Nullable!HitRecord h1 = box.rayIntersection(r1);
+    assert(h1.isNull);
+
+    Ray r2 = {Point(0.0, 0.3, 0.7), vecY};
+    assert(box.quickRayIntersection(r2));
+    HitRecord h2 = box.rayIntersection(r2).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 1.0, 0.7),
+        Normal(-1.0, 0.0, 0.0),
+        Vec2d(2.0 / 3.0, 0.675),
+        0.7,
+        r2,
+        box).recordIsClose(h2));
+
+    Ray r3 = {Point(-4.0, -1.0, -2.0), 8.0 * vecX + 3.0 * vecY + 6.0 * vecZ};
+    assert(box.quickRayIntersection(r3));
+    HitRecord h3 = box.rayIntersection(r3).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.5, 1.0),
+        Normal(-1.0, 0.0, 0.0),
+        Vec2d(0.5, 0.75),
+        0.5,
+        r3,
+        box).recordIsClose(h3));
+}
+
+unittest
+{
+    Vec translVec = {-1.0, 2.0, 4.0}, scaleVec = {2.0, 3.0, -0.8};
+    Transformation scale = scaling(scaleVec);
+    Transformation rotY = rotationY(-30);
+    Transformation transl = translation(translVec);
+
+    AABox box = new AABox(transl * scale);
+    Ray r1 = {Point(0.0, 3.0, 1.8), vecZ};
+    assert(box.quickRayIntersection(r1));
+
+    HitRecord h1 = box.rayIntersection(r1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 3.0, 3.2),
+        Normal(0.0, 0.0, -1.0),
+        Vec2d(4.0 / 9.0, 0.875),
+        1.4,
+        r1,
+        box).recordIsClose(h1));
+    
+    AABox rotBox = new AABox(transl * rotY * scale);
+    float z = 4.0 - sqrt(3.0) / 3.0;
+
+    Ray r2 = {Point(-1.0, 8.0, z), -vecY};
+    assert(!rotBox.quickRayIntersection(r2));
+    Nullable!HitRecord h2 = rotBox.rayIntersection(r2);
+    assert(h2.isNull);
+
+    Ray r3 = {Point(-0.66667, 8.0, z), -vecY};
+    assert(!rotBox.quickRayIntersection(r3));
+    Nullable!HitRecord h3 = rotBox.rayIntersection(r3);
+    assert(h3.isNull);
+
+    Ray r4 = {Point(-2.0 / 3.0, 8.0, z), -vecY};
+    assert(rotBox.quickRayIntersection(r4));
+    HitRecord h4 = rotBox.rayIntersection(r4).get(HitRecord());
+    assert(HitRecord(
+        Point(-2.0 / 3.0, 5.0, z),
+        Normal(-sqrt(3.0) / 2.0, 0.0, -0.5),
+        Vec2d(2.0 / 3.0, 17.0 / 24.0),
+        3.0,
+        r4,
+        rotBox).recordIsClose(h4));
+
+    Ray r5 = {Point(-0.5, 8.0, z), -vecY};
+    assert(rotBox.quickRayIntersection(r5));
+    HitRecord h5 = rotBox.rayIntersection(r5).get(HitRecord());
+    // assert(HitRecord(
+    //     Point(-0.5, 5.0, z),
+    //     Normal(0.0, 1.0, 0.0),
+    //     Vec2d(4.0 / 9.0, 0.875),
+    //     3.0,
+    //     r5,
+    //     rotBox).recordIsClose(h5));
+
+    Ray r6 = {Point(-2.0 / 5.0, 0.0, z), vecY};
+    assert(rotBox.quickRayIntersection(r6));
+    HitRecord h6 = rotBox.rayIntersection(r6).get(HitRecord());
+    // assert(HitRecord(
+    //     Point(-2.0 / 5.0, 2.0, z),
+    //     Normal(0.0, -1.0, 0.0),
+    //     Vec2d(4.0 / 9.0, 0.875),
+    //     2.0,
+    //     r6,
+    //     rotBox).recordIsClose(h6));
+
+    Ray r7 = {Point(0.40001, 8.0, z), -vecY};
+    assert(!rotBox.quickRayIntersection(r7));
+    Nullable!HitRecord h7 = rotBox.rayIntersection(r7);
+    assert(h7.isNull);
+
+    Ray r8 = {Point(1.0, 8.0, z), -vecY};
+    assert(!rotBox.quickRayIntersection(r8));
+    Nullable!HitRecord h8 = rotBox.rayIntersection(r8);
+    assert(h8.isNull);
 }
 
 struct World
