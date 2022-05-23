@@ -6,8 +6,8 @@ import std.array : split;
 import std.conv : to;
 import std.math : sqrt;
 
-mixin template toString(T)
 /// Convert an (x, y, z)-object into a string
+mixin template toString(T)
 {
     string toString()() const
     in (T.tupleof.length == 3, "toString accepts xyz types only.")
@@ -17,8 +17,8 @@ mixin template toString(T)
     }
 }
 
-mixin template xyzIsClose(T)
 /// Verify if two (x, y, z)-objects are close by calling the function areClose
+mixin template xyzIsClose(T)
 {
     immutable(bool) xyzIsClose(T)(in T v) const
     in (T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
@@ -37,8 +37,8 @@ mixin template sumDiff(T, R)
     }
 }*/
 
-mixin template neg(R)
 // Return an (x, y, z)-object with opposite coordinates (-x, -y, -z)
+mixin template neg(R)
 {
     R opUnary(string op)() const if (op == "-")
     in (R.tupleof.length == 3, "neg accepts xyz types only.")
@@ -56,8 +56,8 @@ mixin template neg(R)
     }
 }*/
 
-mixin template rightMul(R)
 // Multiply a factor alpha by an (x, y, z)-object
+mixin template rightMul(R)
 {
     R opBinaryRight(string op)(in float alfa) const if (op == "*")
     in (R.tupleof.length == 3, "rightMul accepts xyz types only.")
@@ -84,8 +84,8 @@ mixin template rightMul(R)
     }
 }*/
 
-mixin template squaredNorm(T)
 // Calculate the squared norm of an (x, y, z)-object
+mixin template squaredNorm(T)
 {
     float squaredNorm()() const
     in (T.tupleof.length == 3, "squaredNorm accepts xyz types only.")
@@ -94,8 +94,8 @@ mixin template squaredNorm(T)
     }
 }
 
-mixin template norm(T)
 // Calculate the norm of an (x, y, z)-object
+mixin template norm(T)
 {
     float norm()() const
     in (T.tupleof.length == 3, "norm accepts xyz types only.")
@@ -104,8 +104,8 @@ mixin template norm(T)
     }
 }
 
-mixin template normalize(R)
 // Normalize an (x, y, z)-object dividing it by its norm
+mixin template normalize(R)
 {
     R normalize()() const
     in (R.tupleof.length == 3, "normalize accepts xyz types only.")
@@ -114,8 +114,8 @@ mixin template normalize(R)
     }
 }
 
-mixin template convert(T, R)
 // Convert an (x, y, z)-object in a different one
+mixin template convert(T, R)
 {
     R convert() const
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "convert accepts xyz types only.")
@@ -125,8 +125,8 @@ mixin template convert(T, R)
 }
 
 ///******************** Vec ********************
-struct Vec
 /// struct for a 3D Vector
+struct Vec
 {
     float x, y, z;
 
@@ -134,50 +134,64 @@ struct Vec
     mixin xyzIsClose!Vec;
 
     /*mixin sumDiff!(Vec, Vec);*/
-    Vec opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     // Calculate sum (+) and difference (-) between two Vec
+    Vec opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     {
         return mixin("Vec(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
 
-    mixin neg!Vec;
     // Calculate the opposite Vec with coordinates (-x, -y, -z)
+    mixin neg!Vec;
 
     /*mixin mul!Vec;*/
 
-    Vec opBinary(string op)(in float alfa) const if (op == "*")
     // Calculate product (*) between a Vec and a floating point
+    Vec opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Vec(x * alfa, y * alfa, z * alfa);
     }
     
+    // Calculate product (*) between a floating point and a Vec 
     mixin rightMul!Vec;
 
     /*mixin dot!Vec;*/
+    // Calculate scalar product (*) between two Vec
     float opBinary(string op)(in Vec rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
+
     /*mixin dot!Normal;*/
+    // Calculate scalar product (*) between two Normal
     float opBinary(string op)(in Normal rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
+
     /*mixin cross!(Vec, Vec);*/
+    // Calculate cross product (^) between two Vec
     Vec opBinary(string op)(in Vec rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
+
     //mixin cross!(Normal, Vec);
+    // Calculate cross product (*) between a Normal and a Vec 
     Vec opBinary(string op)(in Normal rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
 
+    /// Calculate the squared norm of a Vec
     mixin squaredNorm!Vec;
+
+    /// Calculate the norm of a Vec
     mixin norm!Vec;
+
+    /// Normalize a Vec dividing it by its norm
     mixin normalize!Vec;
 
+    /// Convert a Vec into a Normal
     mixin convert!(Vec, Normal);
 }
 

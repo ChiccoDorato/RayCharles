@@ -10,8 +10,8 @@ import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationY;
 
 ///******************** HitRecord ********************
-struct HitRecord
 /// Struct HitRecord to keep in memory infos about intersection of a ray with an object 
+struct HitRecord
 {
     Point worldPoint;
     Normal normal;
@@ -20,8 +20,8 @@ struct HitRecord
     Ray ray;
     Shape shape;
 
-    immutable(bool) recordIsClose(in HitRecord hit) const
     /// Check if two HitRecord are close by calling the fuction areClose for every member
+    immutable(bool) recordIsClose(in HitRecord hit) const
     {
         return worldPoint.xyzIsClose(hit.worldPoint) && normal.xyzIsClose(hit.normal) &&
         surfacePoint.uvIsClose(hit.surfacePoint) && areClose(t, hit.t) && ray.rayIsClose(hit.ray);
@@ -29,8 +29,8 @@ struct HitRecord
 }
 
 ///******************** Shape ********************
-class Shape
 /// Abstract class for a generic Shape
+class Shape
 {
     Transformation transf;
     Material material;
@@ -48,17 +48,17 @@ class Shape
 }
 
 ///******************** Sphere ********************
-class Sphere : Shape
 /// Class for a 3D Sphere
+class Sphere : Shape
 {
-    this(in Transformation t = Transformation(), Material m = Material())
     /// Build a sphere - also with a tranformation and a material
+    this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
     }
 
-    immutable(Vec2d) sphereUVPoint(in Point p) const
     /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
+    immutable(Vec2d) sphereUVPoint(in Point p) const
     {
         float z = p.z;
         if (z < -1 && z > -1.001) z = -1;
@@ -69,15 +69,15 @@ class Sphere : Shape
         return immutable Vec2d(u, acos(z) / PI);
     }
 
-    immutable(Normal) sphereNormal(in Point p, in Vec v) const
     /// Create a Normal to a Vector in a Point of the Sphere
+    immutable(Normal) sphereNormal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, p.z);
         return p.convert * v < 0 ? n : -n;
     }
 
-    override Nullable!HitRecord rayIntersection(in Ray r)
     /// Check and record an intersection between a Ray and a Sphere
+    override Nullable!HitRecord rayIntersection(in Ray r)
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
@@ -109,8 +109,8 @@ class Sphere : Shape
         return hit;
     }
 
-    override bool quickRayIntersection(in Ray r) const
     /// Look up quickly for intersection between a Ray and a Shape
+    override bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
@@ -195,18 +195,17 @@ unittest
 }
 
 ///******************** Plane ********************
-class Plane : Shape
 /// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
-
+class Plane : Shape
 {
-    this(in Transformation t = Transformation(), Material m = Material())
     /// Build a plane - also with a tranformation and a material
+    this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
     }
 
-    override Nullable!HitRecord rayIntersection(in Ray r)
     /// Check and record an intersection between a Ray and a Plane
+    override Nullable!HitRecord rayIntersection(in Ray r)
     {
         Nullable!HitRecord hit;
 
@@ -226,8 +225,8 @@ class Plane : Shape
         return hit;
     }
 
-    override bool quickRayIntersection(in Ray r) const
     /// Look up quickly for an intersection between a Ray and a Plane
+    override bool quickRayIntersection(in Ray r) const
     {
         Ray invR = transf.inverse * r;
         if (areClose(invR.dir.z, 0)) return false;
@@ -318,11 +317,11 @@ unittest
 }
 
 ///******************** AABox ********************
-class AABox : Shape
 /// class for a 3D Axis Aligned Box
+class AABox : Shape
 {
-    this(in Transformation t = Transformation(), Material m = Material())
     /// build an AABox - also with a transformation and a material
+    this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
     }
