@@ -182,14 +182,14 @@ class DiffuseBRDF : BRDF
 }
 
 class SpecularBRDF : BRDF
-{   
+{
     float thresholdAngleRad;
 
     this(Pigment p = new UniformPigment(white))
     {
         super(p);
     }
-    
+
     this(Pigment p = new UniformPigment(white), float thresAngleRad = PI/ 1800.0)
     {
         this(p);
@@ -213,7 +213,7 @@ class SpecularBRDF : BRDF
     {
         immutable Vec rayDir = incomingDir.normalize;
         immutable Vec normal = n.convert.normalize;
-        float proDot = normal * rayDir;
+        immutable float proDot = normal * rayDir;
         return Ray(
             interactionPoint,
             rayDir - normal * 2.0 * proDot,
