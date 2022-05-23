@@ -2,7 +2,7 @@ module cameras;
 
 import geometry : Point, Vec, vecX, vecY;
 import hdrimage : areClose, Color, HDRImage;
-import ray;
+import ray : Ray;
 import transformations : rotationZ, Transformation, translation;
 
 class Camera

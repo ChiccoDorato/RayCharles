@@ -1,6 +1,7 @@
 module geometry;
 
 import hdrimage : areClose;
+import pcg : PCG;
 import std.array : split;
 import std.conv : to;
 import std.math : sqrt;
@@ -278,6 +279,8 @@ struct Normal
     mixin squaredNorm!Normal;
     mixin norm!Normal;
     mixin normalize!Normal;
+
+    mixin convert!(Normal, Vec);
 }
 
 struct Vec2d
@@ -306,7 +309,6 @@ in (areClose(n.squaredNorm, 1.0))
 
 unittest
 {
-    import pcg : PCG;
     PCG pcg = new PCG();
 
     Vec[3] base;

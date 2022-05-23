@@ -1,8 +1,10 @@
 module materials;
 
-import geometry : Normal, Vec, Vec2d;
+import geometry : createONBFromZ, Normal, Point, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
-import std.math : abs, acos, floor, PI;
+import std.math : abs, acos, cos, floor, PI, sin, sqrt;
+import pcg : PCG;
+import ray : Ray;
 
 immutable(bool) validParm(in float coordinate)
 {
@@ -160,11 +162,28 @@ class DiffuseBRDF : BRDF
     {
         return pigment.getColor(uv) * (reflectance / PI);
     }
+
+    override Ray scatterRay(PCG pcg,
+        in Vec incomingDir,
+        in Point interactionPoint,
+        in Normal n,
+        in int depth) const
+    {
+        immutable Vec[3] e = createONBFromZ(n);
+        immutable float cosThetaSq = pcg.randomFloat;
+        immutable float cosTheta = sqrt(cosThetaSq), sinTheta = sqrt(1.0 - cosThetaSq);
+        immutable float phi = 2.0 * PI * pcg.randomFloat;
+        return Ray(interactionPoint,
+            e[0] * cos(phi) * cosTheta + e[1] * sin(phi) * cosTheta + e[2] * sinTheta,
+            1e-3,
+            float.infinity,
+            depth);
+    }
 }
 
 class SpecularBRDF : BRDF
 {   
-    float thresholdAngle;
+    float thresholdAngleRad;
 
     this(Pigment p = new UniformPigment(white))
     {
@@ -179,10 +198,10 @@ class SpecularBRDF : BRDF
 
     override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
     {
-        immutable float thetaIn = acos(normal.convert * inDir);
-        immutable float thetaOut = acos(normal.convert * outDir);
+        immutable float thetaIn = acos(n * inDir);
+        immutable float thetaOut = acos(n * outDir);
 
-        if (abs(thetaIn - thetaOut) < thresholdAngleRad) return Pigment.getColor(uv);
+        if (abs(thetaIn - thetaOut) < thresholdAngleRad) return pigment.getColor(uv);
         else return Color();
     }
 
