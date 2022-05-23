@@ -1,8 +1,10 @@
 module materials;
 
-import geometry : Normal, Vec, Vec2d;
+import geometry : createONBFromZ, Normal, Point, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
-import std.math : floor, PI;
+import pcg : PCG;
+import ray : Ray;
+import std.math : cos, floor, PI, sin, sqrt;
 
 immutable(bool) validParm(in float coordinate)
 {
@@ -15,7 +17,6 @@ class Pigment
     in (validParm(uv.u) && validParm(uv.v));
 }
 
-import std.format;
 class UniformPigment : Pigment
 {
     Color color;
@@ -134,11 +135,11 @@ class BRDF
 
     abstract Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const;
 
-    // abstract Ray scatterRay(PCG pcg = new PCG(),
-    //     Vec incomingDir,
-    //     Point interactionPoint,
-    //     Normal n,
-    //     int depth) const;
+    abstract Ray scatterRay(PCG pcg,
+        in Vec incomingDir,
+        in Point interactionPoint,
+        in Normal n,
+        in int depth) const;
 }
 
 class DiffuseBRDF : BRDF
@@ -160,6 +161,23 @@ class DiffuseBRDF : BRDF
     override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
     {
         return pigment.getColor(uv) * (reflectance / PI);
+    }
+
+    override Ray scatterRay(PCG pcg,
+        in Vec incomingDir,
+        in Point interactionPoint,
+        in Normal n,
+        in int depth) const
+    {
+        immutable(Vec[3]) e = createONBFromZ(n);
+        immutable(float) cosThetaSq = pcg.randomFloat;
+        immutable(float) cosTheta = sqrt(cosThetaSq), sinTheta = sqrt(1.0 - cosThetaSq);
+        immutable(float) phi = 2.0 * PI * pcg.randomFloat;
+        return Ray(interactionPoint,
+            e[0] * cos(phi) * cosTheta + e[1] * sin(phi) * cosTheta + e[2] * sinTheta,
+            1e-3,
+            float.infinity,
+            depth);
     }
 }
 

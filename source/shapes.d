@@ -4,7 +4,7 @@ import std.algorithm : max, min, swap;
 import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import materials : Material;
-import ray;
+import ray : Ray;
 import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationY;

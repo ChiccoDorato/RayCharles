@@ -1,6 +1,7 @@
 module geometry;
 
 import hdrimage : areClose;
+import pcg : PCG;
 import std.array : split;
 import std.conv : to;
 import std.math : sqrt;
@@ -289,7 +290,6 @@ in (areClose(n.squaredNorm, 1.0))
 
 unittest
 {
-    import pcg : PCG;
     PCG pcg = new PCG();
 
     Vec[3] base;
