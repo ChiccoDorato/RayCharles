@@ -21,7 +21,7 @@ class UniformPigment : Pigment
 {
     Color color;
 
-    this(in Color col)
+    this(in Color col = Color())
     {
         color = col;
     }
@@ -146,15 +146,17 @@ class DiffuseBRDF : BRDF
 {
     float reflectance = 1.0;
 
-    this(Pigment p = new UniformPigment(white))
-    {
-        super(p);
-    }
-
     this(Pigment p = new UniformPigment(white), in float refl = 1.0)
     in (refl > 0.0)
     {
-        this(p);
+        super(p);
+        reflectance = refl;
+    }
+
+    this(in float refl)
+    in (refl > 0.0)
+    {
+        super();
         reflectance = refl;
     }
 
@@ -183,16 +185,19 @@ class DiffuseBRDF : BRDF
 
 class SpecularBRDF : BRDF
 {
-    float thresholdAngleRad;
+    float thresholdAngleRad = PI / 1800.0;
 
-    this(Pigment p = new UniformPigment(white))
+    this(Pigment p = new UniformPigment(white), in float thresAngleRad = PI / 1800.0)
+    in (thresAngleRad > 0.0)
     {
         super(p);
+        thresholdAngleRad = thresAngleRad;
     }
 
-    this(Pigment p = new UniformPigment(white), float thresAngleRad = PI/ 1800.0)
+    this(in float thresAngleRad)
+    in (thresAngleRad > 0.0)
     {
-        this(p);
+        super();
         thresholdAngleRad = thresAngleRad;
     }
 
@@ -226,5 +231,5 @@ class SpecularBRDF : BRDF
 struct Material
 {
     BRDF brdf = new DiffuseBRDF();
-    Pigment emittedRadiance = new UniformPigment(black);
+    Pigment emittedRadiance = new UniformPigment();
 }

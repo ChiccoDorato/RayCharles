@@ -7,7 +7,7 @@ import materials : Material;
 import ray : Ray;
 import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
-import transformations : scaling, Transformation, translation, rotationY;
+import transformations : scaling, Transformation, translation, rotationX, rotationY, rotationZ;
 
 ///******************** HitRecord ********************
 struct HitRecord
@@ -321,10 +321,31 @@ unittest
 class AABox : Shape
 /// class for a 3D Axis Aligned Box
 {
+    this()
+    {
+        super();
+    }
+
     this(in Transformation t = Transformation(), Material m = Material())
     /// build an AABox - also with a transformation and a material
     {
         super(t, m);
+    }
+
+    this(in Point min = Point(0.0, 0.0, 0.0), in Point max = Point(1.0, 1.0, 1.0), 
+        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
+        in float zAngleInDegrees = 0.0, Material m = Material())
+    {
+        Transformation scale = scaling(max - min);
+        Transformation transl = translation(min.convert);
+
+        Transformation rotation;
+        if (xAngleInDegrees % 360 != 0) rotation = rotationX(xAngleInDegrees) * rotation;
+        if (yAngleInDegrees % 360 != 0) rotation = rotationY(yAngleInDegrees) * rotation;
+        if (zAngleInDegrees % 360 != 0) rotation = rotationZ(zAngleInDegrees) * rotation;
+
+        transf = transl * rotation * scale;
+        material = m;
     }
 
     immutable(float[2]) oneDimIntersections(in float origin, in float direction) const 
@@ -449,13 +470,30 @@ unittest
 
 unittest
 {
+    Vec translVec = {1.0, 2.0, 4.0}, scaleVec = {-2.0, 3.0, 1.0};
+    Transformation scale = scaling(scaleVec);
+    Transformation rotY = rotationY(-30.0);
+    Transformation transl = translation(translVec);
+    AABox box = new AABox(transl * rotY * scale);
+
+    Point p1 = {1.0, 2.0, 4.0}, p2 = {-1.0, 5.0, 5.0};
+    AABox pointsConstructorBox = new AABox(p1, p2, 0.0, 330.0, 0.0);
+    assert(pointsConstructorBox.transf.transfIsClose(box.transf));
+}
+
+unittest
+{
     Vec translVec = {-1.0, 2.0, 4.0}, scaleVec = {2.0, 3.0, -0.8};
     Transformation scale = scaling(scaleVec);
-    Transformation rotY = rotationY(-30);
+    Transformation rotY = rotationY(-30.0);
     Transformation transl = translation(translVec);
     
     AABox box = new AABox(transl * rotY * scale);
     float z = 4.0 - sqrt(3.0) / 3.0;
+
+    Point p1 = {-1.0, 2.0, 4.0}, p2 = {1.0, 5.0, 3.2};
+    AABox pointsConstructorBox = new AABox(p1, p2, 0.0, -30.0, 0.0);
+    assert(pointsConstructorBox.transf.transfIsClose(box.transf));
 
     Ray r1 = {Point(-1.0, 8.0, z), -vecY};
     assert(!box.quickRayIntersection(r1));
