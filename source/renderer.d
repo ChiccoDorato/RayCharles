@@ -1,8 +1,8 @@
 module renderer;
 
 import cameras : ImageTracer, OrthogonalCamera, PerspectiveCamera;
-import geometry : Vec;
-import hdrimage : black, Color, HDRImage, white;
+import geometry : Point, Vec, vecX;
+import hdrimage : areClose, black, Color, HDRImage, white;
 import materials : DiffuseBRDF, Material, UniformPigment;
 import pcg : PCG;
 import ray : Ray;
@@ -134,7 +134,8 @@ class PathTracer : Renderer
     PCG pcg = new PCG();
     int numberOfRays = 10, maxDepth = 2, russianRouletteLimit = 3;
 
-    this(World w, in Color bgCol, PCG randomGenerator, int numOfRays, int depth, int RRLimit)
+    this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
+        in int numOfRays = 10, in int depth = 2, in int RRLimit = 3)
     {
         super(w, bgCol);
         pcg = randomGenerator;
@@ -145,7 +146,7 @@ class PathTracer : Renderer
 
     override Color call(in Ray ray)
     {
-        if (ray.depth > maxDepth) return Color();
+        if (ray.depth > maxDepth) return black;
 
         HitRecord hitRec = world.rayIntersection(ray).get(HitRecord());
         if (hitRec.t.isNaN) return backgroundColor;
@@ -178,5 +179,29 @@ class PathTracer : Renderer
         }
 
         return emittedRadiance + cumRadiance * (1.0 / numberOfRays);
+    }
+}
+
+unittest
+{
+    PCG pcg = new PCG();
+    for (ubyte i = 0; i < 5; ++i)
+    {
+        float emittedRadiance = pcg.randomFloat;
+        float reflectance = pcg.randomFloat * 0.9;
+        Material enclosureMaterial = Material(
+            new DiffuseBRDF(new UniformPigment(white * reflectance)),
+            new UniformPigment(white * emittedRadiance));
+        
+        World world = World([new Sphere(Transformation(), enclosureMaterial)]);
+        PathTracer pathTracer = new PathTracer(world, black, pcg, 1, 100, 101);
+
+        Ray ray = {Point(0.0, 0.0, 0.0), vecX};
+        Color color = pathTracer.call(ray);
+
+        float expected = emittedRadiance / (1.0 - reflectance);
+        assert(areClose(expected, color.r));
+        assert(areClose(expected, color.g));
+        assert(areClose(expected, color.b));
     }
 }
