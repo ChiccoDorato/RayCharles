@@ -453,75 +453,84 @@ unittest
     Transformation scale = scaling(scaleVec);
     Transformation rotY = rotationY(-30);
     Transformation transl = translation(translVec);
-
-    AABox box = new AABox(transl * scale);
-    Ray r1 = {Point(0.0, 3.0, 1.8), vecZ};
-    assert(box.quickRayIntersection(r1));
-
-    HitRecord h1 = box.rayIntersection(r1).get(HitRecord());
-    assert(HitRecord(
-        Point(0.0, 3.0, 3.2),
-        Normal(0.0, 0.0, -1.0),
-        Vec2d(4.0 / 9.0, 0.875),
-        1.4,
-        r1,
-        box).recordIsClose(h1));
     
-    AABox rotBox = new AABox(transl * rotY * scale);
+    AABox box = new AABox(transl * rotY * scale);
     float z = 4.0 - sqrt(3.0) / 3.0;
 
-    Ray r2 = {Point(-1.0, 8.0, z), -vecY};
-    assert(!rotBox.quickRayIntersection(r2));
-    Nullable!HitRecord h2 = rotBox.rayIntersection(r2);
+    Ray r1 = {Point(-1.0, 8.0, z), -vecY};
+    assert(!box.quickRayIntersection(r1));
+    Nullable!HitRecord h1 = box.rayIntersection(r1);
+    assert(h1.isNull);
+
+    Ray r2 = {Point(-0.66667, 8.0, z), -vecY};
+    assert(!box.quickRayIntersection(r2));
+    Nullable!HitRecord h2 = box.rayIntersection(r2);
     assert(h2.isNull);
 
-    Ray r3 = {Point(-0.66667, 8.0, z), -vecY};
-    assert(!rotBox.quickRayIntersection(r3));
-    Nullable!HitRecord h3 = rotBox.rayIntersection(r3);
-    assert(h3.isNull);
-
-    Ray r4 = {Point(-2.0 / 3.0, 8.0, z), -vecY};
-    assert(rotBox.quickRayIntersection(r4));
-    HitRecord h4 = rotBox.rayIntersection(r4).get(HitRecord());
+    Ray r3 = {Point(-2.0 / 3.0, 8.0, z), -vecY};
+    assert(box.quickRayIntersection(r3));
+    HitRecord h3 = box.rayIntersection(r3).get(HitRecord());
     assert(HitRecord(
         Point(-2.0 / 3.0, 5.0, z),
         Normal(-sqrt(3.0) / 2.0, 0.0, -0.5),
         Vec2d(2.0 / 3.0, 17.0 / 24.0),
         3.0,
+        r3,
+        box).recordIsClose(h3));
+
+    Ray r4 = {Point(-0.5, 8.0, z), -vecY};
+    assert(box.quickRayIntersection(r4));
+    HitRecord h4 = box.rayIntersection(r4).get(HitRecord());
+    assert(HitRecord(
+        Point(-0.5, 5.0, z),
+        Normal(0.0, 1.0, 0.0),
+        Vec2d((48.0 + sqrt(3.0)) / 72.0, 47.0 / 64.0),
+        3.0,
         r4,
-        rotBox).recordIsClose(h4));
+        box).recordIsClose(h4));
 
-    Ray r5 = {Point(-0.5, 8.0, z), -vecY};
-    assert(rotBox.quickRayIntersection(r5));
-    HitRecord h5 = rotBox.rayIntersection(r5).get(HitRecord());
-    // assert(HitRecord(
-    //     Point(-0.5, 5.0, z),
-    //     Normal(0.0, 1.0, 0.0),
-    //     Vec2d(4.0 / 9.0, 0.875),
-    //     3.0,
-    //     r5,
-    //     rotBox).recordIsClose(h5));
+    Ray r5 = {Point(-2.0 / 5.0, 0.0, z), vecY};
+    assert(box.quickRayIntersection(r5));
+    HitRecord h5 = box.rayIntersection(r5).get(HitRecord());
+    assert(HitRecord(
+        Point(-0.4, 2.0, z),
+        Normal(0.0, -1.0, 0.0),
+        Vec2d((15.0 - sqrt(3.0)) / 45.0, 0.75),
+        2.0,
+        r5,
+        box).recordIsClose(h5));
 
-    Ray r6 = {Point(-2.0 / 5.0, 0.0, z), vecY};
-    assert(rotBox.quickRayIntersection(r6));
-    HitRecord h6 = rotBox.rayIntersection(r6).get(HitRecord());
-    // assert(HitRecord(
-    //     Point(-2.0 / 5.0, 2.0, z),
-    //     Normal(0.0, -1.0, 0.0),
-    //     Vec2d(4.0 / 9.0, 0.875),
-    //     2.0,
-    //     r6,
-    //     rotBox).recordIsClose(h6));
+    Ray r6 = {Point(0.40001, 8.0, z), -vecY};
+    assert(!box.quickRayIntersection(r6));
+    Nullable!HitRecord h6 = box.rayIntersection(r6);
+    assert(h6.isNull);
 
-    Ray r7 = {Point(0.40001, 8.0, z), -vecY};
-    assert(!rotBox.quickRayIntersection(r7));
-    Nullable!HitRecord h7 = rotBox.rayIntersection(r7);
+    Ray r7 = {Point(1.0, 8.0, z), -vecY};
+    assert(!box.quickRayIntersection(r7));
+    Nullable!HitRecord h7 = box.rayIntersection(r7);
     assert(h7.isNull);
 
-    Ray r8 = {Point(1.0, 8.0, z), -vecY};
-    assert(!rotBox.quickRayIntersection(r8));
-    Nullable!HitRecord h8 = rotBox.rayIntersection(r8);
-    assert(h8.isNull);
+    Ray vertical1 = {Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.5), -vecZ};
+    assert(box.quickRayIntersection(vertical1));
+    HitRecord hVert1 = box.rayIntersection(vertical1).get(HitRecord());
+    assert(HitRecord(
+        Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.25),
+        Normal(-0.5, 0.0, sqrt(3.0) / 2.0),
+        Vec2d(8.0 / 15.0, 0.4375),
+        0.25,
+        vertical1,
+        box).recordIsClose(hVert1));
+
+    Ray vertical2 = {Point(sqrt(3.0) - 0.9, 3.0, 5.0 + 0.9 * sqrt(3.0)), -vecZ};
+    assert(box.quickRayIntersection(vertical2));
+    HitRecord hVert2 = box.rayIntersection(vertical2).get(HitRecord());
+    assert(HitRecord(
+        Point(sqrt(3.0) - 0.9, 3.0, 5.0 - 0.1 * sqrt(3.0)),
+        Normal(sqrt(3.0) / 2.0, 0.0, 0.5),
+        Vec2d(4.0 / 9.0, 0.1875),
+        sqrt(3.0),
+        vertical2,
+        box).recordIsClose(hVert2));
 }
 
 struct World
