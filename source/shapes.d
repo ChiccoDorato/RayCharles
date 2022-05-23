@@ -9,7 +9,9 @@ import std.math : acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationY;
 
+///******************** HitRecord ********************
 struct HitRecord
+/// Struct HitRecord to keep in memory infos about intersection of a ray with an object 
 {
     Point worldPoint;
     Normal normal;
@@ -19,13 +21,16 @@ struct HitRecord
     Shape shape;
 
     immutable(bool) recordIsClose(in HitRecord hit) const
+    /// Check if two HitRecord are close by calling the fuction areClose for every member
     {
         return worldPoint.xyzIsClose(hit.worldPoint) && normal.xyzIsClose(hit.normal) &&
         surfacePoint.uvIsClose(hit.surfacePoint) && areClose(t, hit.t) && ray.rayIsClose(hit.ray);
     }
 }
 
+///******************** Shape ********************
 class Shape
+/// Abstract class for a generic Shape
 {
     Transformation transf;
     Material material;
@@ -36,19 +41,24 @@ class Shape
         material = m;
     }
 
+    /// Abstract method - Check and record an intersection between a Ray and a Shape
     abstract Nullable!HitRecord rayIntersection(in Ray r);
-
+    /// Abstract method - Look up quickly for intersection between a Ray and a Shape
     abstract bool quickRayIntersection(in Ray r) const;
 }
 
+///******************** Sphere ********************
 class Sphere : Shape
+/// Class for a 3D Sphere
 {
     this(in Transformation t = Transformation(), Material m = Material())
+    /// Build a sphere - also with a tranformation and a material
     {
         super(t, m);
     }
 
     immutable(Vec2d) sphereUVPoint(in Point p) const
+    /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
     {
         float z = p.z;
         if (z < -1 && z > -1.001) z = -1;
@@ -60,12 +70,14 @@ class Sphere : Shape
     }
 
     immutable(Normal) sphereNormal(in Point p, in Vec v) const
+    /// Create a Normal to a Vector in a Point of the Sphere
     {
         immutable Normal n = Normal(p.x, p.y, p.z);
         return p.convert * v < 0 ? n : -n;
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r)
+    /// Check and record an intersection between a Ray and a Sphere
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
@@ -98,6 +110,7 @@ class Sphere : Shape
     }
 
     override bool quickRayIntersection(in Ray r) const
+    /// Look up quickly for intersection between a Ray and a Shape
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
@@ -115,14 +128,18 @@ class Sphere : Shape
     }
 }
 
+///
 unittest
 {   
     Sphere s = new Sphere();
 
+    // rayIntersection with the Sphere
     assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
     Ray r1 = {Point(0.0, 0.0, 2.0), -vecZ};
     HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+
+    // recordIsClose
     assert(HitRecord(
         Point(0.0, 0.0, 1.0),
         Normal(0.0, 0.0, 1.0),
@@ -149,14 +166,13 @@ unittest
         r3).recordIsClose(h3));
 }
 
+/// 
 unittest
 {
     Sphere s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
 
-    // Check if the sphere was actually translated by trying to hit the untrasformed shape.
+    // Verify if the Sphere is correctly translated
     assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
-
-    // Check if the inverse transformation was wrongly applied.
     assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
 
     Ray r1 = {Point(10.0, 0.0, 2.0), -vecZ};
@@ -167,7 +183,7 @@ unittest
         Vec2d(0.0, 0.0),
         1.0,
         r1).recordIsClose(h1));
-    
+
     Ray r2 = {Point(13.0, 0.0, 0.0), -vecX};
     HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
     assert(HitRecord(
@@ -178,15 +194,19 @@ unittest
         r2).recordIsClose(h2));
 }
 
-// A 3D infinite plane parallel to the x and y axis and passing through the origin.
+///******************** Plane ********************
 class Plane : Shape
+/// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
+
 {
     this(in Transformation t = Transformation(), Material m = Material())
+    /// Build a plane - also with a tranformation and a material
     {
         super(t, m);
     }
 
     override Nullable!HitRecord rayIntersection(in Ray r)
+    /// Check and record an intersection between a Ray and a Plane
     {
         Nullable!HitRecord hit;
 
@@ -207,6 +227,7 @@ class Plane : Shape
     }
 
     override bool quickRayIntersection(in Ray r) const
+    /// Look up quickly for an intersection between a Ray and a Plane
     {
         Ray invR = transf.inverse * r;
         if (areClose(invR.dir.z, 0)) return false;
@@ -218,6 +239,7 @@ class Plane : Shape
     }
 }
 
+///
 unittest
 {
     Plane p = new Plane();
@@ -233,6 +255,8 @@ unittest
 
     Ray r2 = {Point(0.0, 0.0, 1.0), vecZ};
     Nullable!HitRecord h2 = p.rayIntersection(r2);
+
+    // rayIntersection with the Plane
     assert(h2.isNull);
 
     Ray r3 = {Point(0.0, 0.0, 1.0), vecX};
@@ -244,12 +268,15 @@ unittest
     assert(h4.isNull);
 }
 
- unittest
+///
+unittest
 {
     Plane p = new Plane(rotationY(90.0));
 
     Ray r1 = {Point(1.0, 0.0, 0.0), -vecX};
     HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
+
+    // Verify if the Plane is correctly rotated
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -270,12 +297,15 @@ unittest
     assert(h4.isNull);
 }
 
+///
 unittest
 {
     Plane p = new Plane();
 
     Ray r1 = {Point(0.0, 0.0, 1.0), -vecZ};
     HitRecord h1 = p.rayIntersection(r1).get;
+
+    // uvIsClose 
     assert(h1.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
 
     Ray r2 = {Point(0.25, 0.75, 1), -vecZ};
@@ -287,14 +317,17 @@ unittest
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
 
+///******************** AABox ********************
 class AABox : Shape
+/// class for a 3D Axis Aligned Box
 {
     this(in Transformation t = Transformation(), Material m = Material())
+    /// build an AABox - also with a transformation and a material
     {
         super(t, m);
     }
 
-    immutable(float[2]) oneDimIntersections(in float origin, in float direction) const
+    immutable(float[2]) oneDimIntersections(in float origin, in float direction) const 
     {
         if(areClose(direction, 0))
             return (origin >= 0) && (origin <= 1) ?

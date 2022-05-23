@@ -11,42 +11,51 @@ import std.format : format;
 import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
 import std.system : endian;
-
+ 
 immutable(bool) areClose(in float x, in float y, in float epsilon = 1e-5)
+/// Verify if the difference between two floating point x and y is smaller than epsilon 
 {
 	return abs(x - y) < epsilon;
 }
 
+///******************** Color ********************
 struct Color
+/// Stucture representing a Color with three floating point members red (r), green (g) and blue (b)
 {
 	float r = 0.0, g = 0.0, b = 0.0;
 
 	Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
+	/// Return the sum (+), the difference (-) or the product (*) between two colors
 	{
 		mixin("return Color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
 	}
 
 	Color opBinary(string op)(in float alfa) const if (op == "*")
+	/// Return the product between a floating point alpha on the left-hand side and a Color
 	{
 		mixin("return Color(r*alfa, g*alfa, b*alfa);");
 	}
 
 	Color opBinaryRight(string op)(in float alfa) const if (op == "*")
+	/// Return the product between a floating point alpha on the right-hand side and a Color
 	{
 		mixin("return Color(alfa*r, alfa*g, alfa*b);");
 	}
 
 	string colorToString() const
+	/// Return the three components of a Color in a string
 	{
 		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
 	}
 
 	immutable(bool) colorIsClose(in Color c) const
+	/// Verify if two Colors are close by calling the fuction areClose for every components 
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
 	immutable(float) luminosity() const
+	/// Return the luminosity of a specific Color
 	{
 		return (max(r, g, b) + min(r, g, b)) / 2.0;
 	}
@@ -54,25 +63,53 @@ struct Color
 
 immutable(Color) black = Color(), white = Color(1.0, 1.0, 1.0);
 
+///
+unittest
+{
+	string[2] files = ["reference_le.pfm", "reference_be.pfm"];
+
+	foreach (string fileName; files)
+	{
+		HDRImage img = new HDRImage(fileName);
+
+		assert(img.width == 3);
+		assert(img.height == 2);
+
+		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
+		assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
+		assert(img.getPixel(0,1).colorIsClose(Color(1.0e2, 2.0e2, 3.0e2)));
+		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
+		assert(img.getPixel(2,1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
+	}
+}
+
+///
 unittest
 {
 	Color c1 = {1.0, 2.0, 3.0}, c2 = {5.0, 7.0, 9.0};
 
+	// colorIsClose
 	assert(c1.colorIsClose(Color(0.999999, 2.0, 3.0)));
 
+	// Operations sum (+), difference (-) and product (*) between two colors
 	assert((c1 + c2).colorIsClose(Color(6.0, 9.0, 12.0)));
 	assert((c1 - c2).colorIsClose(Color(-4.0, -5.0, -6.0)));
 	assert((c1 * c2).colorIsClose(Color(5.0, 14.0, 27.0)));
 
+	// Product of a Color with a scalar
 	assert((c1 * 2.0).colorIsClose(Color(2.0, 4.0, 6.0)));
 	assert((3.0 * c1).colorIsClose(Color(3.0, 6.0, 9.0)));
 		
 	Color c3 = {9.0, 5.0, 7.0};
+	// luminosity
 	assert(areClose(2.0, c1.luminosity));
 	assert(areClose(7.0, c3.luminosity));
 }
 
 class InvalidPFMFileFormat : Exception
+/// Class used to throw exceptions in case of compilation errors
 {
     this(string msg, string file = __FILE__, size_t line = __LINE__)
     {
@@ -81,6 +118,7 @@ class InvalidPFMFileFormat : Exception
 }
 
 immutable(ubyte[]) readLine(in ubyte[] stream, uint startingPosition)
+/// Read a line from an array of ubyte, given a starting position
 {
 	ubyte[] line;
 	for (uint i = startingPosition; i < stream.length; ++i)
@@ -91,15 +129,19 @@ immutable(ubyte[]) readLine(in ubyte[] stream, uint startingPosition)
 	return line.idup;
 }
 
+///
 unittest
 {
 	ubyte[] line = [72, 101, 108, 108, 111, 10, 119, 111, 114, 108, 100];
+
+	// ReadLine
 	assert(readLine(line, 0) == [72, 101, 108, 108, 111, 10]);
 	assert(readLine(line, 6) == [119, 111, 114, 108, 100]);
 	assert(line.readLine(11) == []);
 }
 
 immutable(int[2]) parseImgSize(in ubyte[] imgSize)
+/// Check the width and the height of the image, throw an exception if something is wrong.
 {
 	enforce!InvalidPFMFileFormat(imgSize.length > 0, "image dimensions are not indicated");
 
@@ -126,9 +168,11 @@ immutable(int[2]) parseImgSize(in ubyte[] imgSize)
 		throw new InvalidPFMFileFormat("invalid width and/or height (not an integer)");
 }
 
+///
 unittest
 {
 	ubyte[] dimensionsLine = [51, 32, 50, 10];
+	// parseImgSize
 	assert(parseImgSize(dimensionsLine) == [3, 2]);
 
 	ubyte[] emptyArray;
@@ -142,6 +186,7 @@ unittest
 }
 
 immutable(float) parseEndiannessLine(in ubyte[] endiannessLine)
+/// Check if the correct Endianness is used, throw an exception if wrong.
 {
 	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "endianness is not indicated");
 	// Sempre problema se ASCII esteso.
@@ -157,7 +202,7 @@ immutable(float) parseEndiannessLine(in ubyte[] endiannessLine)
 	catch (ConvException exc)
 		throw new InvalidPFMFileFormat("invalid endianness (not a floating point)");
 }
-
+///
 unittest
 {
 	ubyte[] positiveNumber = [48, 55, 46, 50, 10], negativeNumber = [45, 56, 49, 10];
@@ -175,6 +220,7 @@ unittest
 }
 
 float readFloat(in ubyte[] stream, int startingPosition, in float endiannessValue)
+/// Read a floating point number from an array of ubyte.
 in (
 	stream.length - startingPosition > 3,
 	format("Less than 4 bytes in %s from index %s", stream, startingPosition)
@@ -188,7 +234,7 @@ in (!areClose(endiannessValue, 0, 1e-20), "Endianness cannot be too close to zer
 		nativeValue = nativeValue.swapEndian;
 	return *cast(float*)(&nativeValue);
 }
-
+///
 unittest
 {
 	ubyte[] test = [30, 20, 70, 55, 108, 99, 10, 7];
@@ -198,16 +244,20 @@ unittest
 }
 
 float clamp(float x)
+/// Return the clamped floating point number
 {
 	return x / (1.0 + x);
 }
 
+///******************** HDRImage ********************
 class HDRImage
+/// Class of an High Dynamic Range Image
 {
 	immutable int width, height;
 	Color[] pixels;
 	
 	this(in int w, in int h)
+	/// Build an HDRImage from two integers: width (w) and height (h)
 	{
 		width = w;
 		height = h;
@@ -215,6 +265,7 @@ class HDRImage
 	}
 
 	this(in ubyte[] stream)
+	/// Build an HDRImage from an array of ubyte
 	{
 		int streamPosition = 0;
 
@@ -252,34 +303,40 @@ class HDRImage
 	}
 
 	this(in string fileName)
+	/// Build an HDRImage from a file
 	{
 		immutable(ubyte[]) stream = cast(immutable(ubyte[]))(fileName.read);
 		this(stream);
 	}
 
 	immutable(bool) validCoordinates(in int x, in int y) const
+	/// Check if the two integer coordinates (x and y) are inside the surface of the HDRImage 
 	{
 		return x >= 0 && x < width && y >= 0 && y < height;
 	}
 
 	int pixelOffset(in int x, in int y) const
+	/// Return the position of a Pixel given the two integer coordinates (x and y)
 	{
 		return y * width + x;
 	}
-
+	
 	Color getPixel(in int x, in int y) const
+	/// Return the Color of a Pixel if it is inside the HDRImage
 	in (validCoordinates(x, y))
 	{
 		return pixels[pixelOffset(x, y)];
 	}
 
 	void setPixel(in int x, in int y, Color c)
+	/// Set the Color given in a specific Pixel defined by two integer coordinates (x and y) 
 	in (validCoordinates(x, y))
 	{
 		pixels[pixelOffset(x, y)] = c;
 	}
-
+	
 	immutable(ubyte[]) writePFM(in Endian endianness = Endian.littleEndian) const
+	/// Write a PFM file with Endianness "little Endian" from an array of ubyte
 	{
 		string endiannessStr;
 		if (endianness == Endian.bigEndian) endiannessStr = "1.0";
@@ -312,6 +369,7 @@ class HDRImage
 	}
 
 	void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
+	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
 	{
 		if (fileName == [])
 		{
@@ -329,6 +387,7 @@ class HDRImage
 	}
 
 	void writePNG(char[] fileName, in float gamma = 1.0) const
+	/// Write a PNG file with a given name and with a fixed gamma parameter
 	{
 		if (fileName == [])
 		{
@@ -352,6 +411,7 @@ class HDRImage
 	}
 
 	immutable(float) averageLuminosity(in float delta=1e-10) const
+	/// Return the average luminosity of an HDRImage
 	{
 		float lumSum = 0.0;
         foreach (p; pixels[]) lumSum += log10(delta + p.luminosity);
@@ -359,12 +419,15 @@ class HDRImage
 	}
 
 	void normalizeImage(in float factor, float luminosity = NaN(0x3FFFFF))
+	/// Normalize each pixel of an HDRImage
+	/// Parameters: factor, luminosity
 	{
 		if (luminosity.isNaN()) luminosity = averageLuminosity();
 		for (int i = 0; i < pixels.length; ++i) pixels[i] = pixels[i] * (factor / luminosity);
 	}
 	
 	void clampImage()
+	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
 	{
 		for (int i = 0; i < pixels.length; ++i)
 		{
@@ -375,10 +438,12 @@ class HDRImage
 	}
 }
 
+///
 unittest
 {
 	HDRImage img = new HDRImage(7,4);
 
+	// validCoordinates
 	assert(img.validCoordinates(0, 0)); 
 	assert(img.validCoordinates(6, 3));
 	assert(!img.validCoordinates(-1, 0));
@@ -386,9 +451,11 @@ unittest
 	assert(!img.validCoordinates(7, 0));
 	assert(!img.validCoordinates(0, 4));
 
+	// pixelOffset
 	assert(img.pixelOffset(3, 2) == 17);
 }
 
+///
 unittest
 {
 	HDRImage img = new HDRImage(2,1);
@@ -397,14 +464,19 @@ unittest
 	img.setPixel(1, 0, c2);
 		
 	writeln(img.averageLuminosity(0.0));
+
+	// averageLuminosity
 	assert(areClose(100.0, img.averageLuminosity(0.0)));
 		
 	Color c3 = {0.5e2, 1.0e2, 1.5e2}, c4 = {0.5e4, 1.0e4, 1.5e4};
 	img.normalizeImage(1000.0, 100.0);
+
+	// colorIsClose
 	assert(img.getPixel(0, 0).colorIsClose(c3));
 	assert(img.getPixel(1, 0).colorIsClose(c4));
 }
 
+///
 unittest
 {
 	HDRImage img = new HDRImage(2, 1);
@@ -414,15 +486,16 @@ unittest
 	img.setPixel(1, 0, c2);
 	img.clampImage();
 		
-	// Check RGB boundaries
 	foreach (pixel; img.pixels)
 	{
+		// Check RGB boundaries
 		assert(pixel.r >= 0 && pixel.r <= 1);
 		assert(pixel.g >= 0 && pixel.g <= 1);
 		assert(pixel.b >= 0 && pixel.b <= 1);
 	}
 }
 
+///
 unittest
 {
 	HDRImage img = new HDRImage(3,2);
@@ -451,10 +524,12 @@ unittest
 	0x20, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x42, 0x70, 0x00, 0x00, 0x42,
 	0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00];
 	
+	// writePFM
 	assert(img.writePFM == LEreferenceBytes);
 	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
 }
 
+///
 unittest
 {
 	string[2] files = ["reference_le.pfm", "reference_be.pfm"];
@@ -466,6 +541,7 @@ unittest
 		assert(img.width == 3);
 		assert(img.height == 2);
 
+		// getPixel
 		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
 		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
         assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
