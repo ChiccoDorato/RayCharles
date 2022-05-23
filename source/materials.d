@@ -2,7 +2,7 @@ module materials;
 
 import geometry : Normal, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
-import std.math : floor, PI;
+import std.math : abs, acos, floor, PI;
 
 immutable(bool) validParm(in float coordinate)
 {
@@ -15,7 +15,6 @@ class Pigment
     in (validParm(uv.u) && validParm(uv.v));
 }
 
-import std.format;
 class UniformPigment : Pigment
 {
     Color color;
@@ -134,11 +133,11 @@ class BRDF
 
     abstract Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const;
 
-    // abstract Ray scatterRay(PCG pcg = new PCG(),
-    //     Vec incomingDir,
-    //     Point interactionPoint,
-    //     Normal n,
-    //     int depth) const;
+    abstract Ray scatterRay(PCG pcg,
+        in Vec incomingDir,
+        in Point interactionPoint,
+        in Normal n,
+        in int depth) const;
 }
 
 class DiffuseBRDF : BRDF
@@ -160,6 +159,48 @@ class DiffuseBRDF : BRDF
     override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
     {
         return pigment.getColor(uv) * (reflectance / PI);
+    }
+}
+
+class SpecularBRDF : BRDF
+{   
+    float thresholdAngle;
+
+    this(Pigment p = new UniformPigment(white))
+    {
+        super(p);
+    }
+    
+    this(Pigment p = new UniformPigment(white), float thresAngleRad = PI/ 1800.0)
+    {
+        this(p);
+        thresholdAngleRad = thresAngleRad;
+    }
+
+    override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
+    {
+        immutable float thetaIn = acos(normal.convert * inDir);
+        immutable float thetaOut = acos(normal.convert * outDir);
+
+        if (abs(thetaIn - thetaOut) < thresholdAngleRad) return Pigment.getColor(uv);
+        else return Color();
+    }
+
+    override Ray scatterRay(PCG pcg,
+        in Vec incomingDir,
+        in Point interactionPoint,
+        in Normal n,
+        in int depth) const
+    {
+        immutable Vec rayDir = incomingDir.normalize;
+        immutable Vec normal = n.convert.normalize;
+        float proDot = normal * rayDir;
+        return Ray(
+            interactionPoint,
+            rayDir - normal * 2.0 * proDot,
+            1e-5,
+            float.infinity,
+            depth);
     }
 }
 
