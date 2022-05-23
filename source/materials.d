@@ -169,10 +169,10 @@ class DiffuseBRDF : BRDF
         in Normal n,
         in int depth) const
     {
-        immutable(Vec[3]) e = createONBFromZ(n);
-        immutable(float) cosThetaSq = pcg.randomFloat;
-        immutable(float) cosTheta = sqrt(cosThetaSq), sinTheta = sqrt(1.0 - cosThetaSq);
-        immutable(float) phi = 2.0 * PI * pcg.randomFloat;
+        immutable Vec[3] e = createONBFromZ(n);
+        immutable float cosThetaSq = pcg.randomFloat;
+        immutable float cosTheta = sqrt(cosThetaSq), sinTheta = sqrt(1.0 - cosThetaSq);
+        immutable float phi = 2.0 * PI * pcg.randomFloat;
         return Ray(interactionPoint,
             e[0] * cos(phi) * cosTheta + e[1] * sin(phi) * cosTheta + e[2] * sinTheta,
             1e-3,
