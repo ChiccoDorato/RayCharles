@@ -1,7 +1,7 @@
 module geometry;
 
 import hdrimage : areClose;
-import pcg : PCG;
+import pcg;
 import std.array : split;
 import std.conv : to;
 import std.math : sqrt;

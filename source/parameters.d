@@ -62,11 +62,12 @@ struct DemoParameters
 	string renderer;
 	immutable float angle;
 	string pfmOutput, pngOutput;
+	int initialState, initialSequence;
 	immutable bool orthogonal;
 
 	this(in string[] args)
 	{		
-		assert(args.length == 7);
+		assert(args.length == 9);
 
 		try
 		{
@@ -84,8 +85,8 @@ struct DemoParameters
 		catch (ConvException exc)
 			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
 
-		enforce!InvalidDemoParms(args[2] == "flat" || args[2] == "on-off",
-			"Option algorithm must be one of the following values: flat, on-off");
+		enforce!InvalidDemoParms(args[2] == "flat" || args[2] == "on-off" || args[2] == "path",
+			"Option algorithm must be one of the following values: flat, on-off, path");
 		renderer = args[2];
 
 		try
@@ -98,7 +99,24 @@ struct DemoParameters
 
 		pfmOutput = args[4];
 		pngOutput = args[5];
-		if (args[6] != "") orthogonal = true;
+
+		try
+		{
+			initialState = to!int(args[6]);
+			enforce!InvalidDemoParms(initialState > 0, format("Invalid initialState [%s]", args[6]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid initialState [%s]", args[6]));
+
+		try
+		{
+			initialSequence = to!int(args[7]);
+			enforce!InvalidDemoParms(initialSequence > 0, format("Invalid initialSequence [%s]", args[7]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid initialSequence [%s]", args[7]));
+		
+		if (args[8] != "") orthogonal = true;
 	}
 
 	immutable(float) aspRat()

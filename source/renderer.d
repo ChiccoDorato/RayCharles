@@ -4,8 +4,8 @@ import cameras : ImageTracer, OrthogonalCamera, PerspectiveCamera;
 import geometry : Point, Vec, vecX;
 import hdrimage : areClose, black, Color, HDRImage, white;
 import materials : DiffuseBRDF, Material, UniformPigment;
-import pcg : PCG;
-import ray : Ray;
+import pcg;
+import ray;
 import shapes : HitRecord, Sphere, World;
 import std.algorithm : max;
 import std.math : isNaN;
@@ -173,7 +173,7 @@ class PathTracer : Renderer
                     hitRec.worldPoint,
                     hitRec.normal,
                     ray.depth + 1);
-                Color newRadiance = call(newRay);
+                Color newRadiance = this.call(newRay);
                 cumRadiance = cumRadiance + hitCol * newRadiance;
             }
         }

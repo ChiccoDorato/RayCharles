@@ -3,8 +3,8 @@ module materials;
 import geometry : createONBFromZ, Normal, Point, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
 import std.math : abs, acos, cos, floor, PI, sin, sqrt;
-import pcg : PCG;
-import ray : Ray;
+import pcg;
+import ray;
 
 immutable(bool) validParm(in float coordinate)
 {
