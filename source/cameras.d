@@ -5,24 +5,30 @@ import hdrimage : areClose, Color, HDRImage;
 import ray : Ray;
 import transformations : rotationZ, Transformation, translation;
 
+///******************** Camera ********************
+/// Class representing a 3D observer
 class Camera
 {   
     float d; // Screen-observer distance
     float aspectRatio;
     Transformation transformation;  
-     
+
+    /// Abstract method: Shoot a rays in a given 2D Point (u, v) on the surface of the image 
     abstract Ray fireRay(in float u, in float v) const;
 }
 
+///******************** OrthogonalCamera ********************
+/// Class representing a 3D observer with line of sight orthogonal to the surface observed
 class OrthogonalCamera : Camera
-{
+{   
+    /// Build a default orthogonal camera with unitary aspect ratio and Identity transformation applied
     this(in float aspRat = 1.0, in Transformation transf = Transformation())
     in (aspRat > 0)
     {
         aspectRatio = aspRat;
         transformation = transf;
     }
-
+    /// Shoot a rays in a given 2D Point (u, v) on the surface of the image
     override Ray fireRay(in float u, in float v) const
     {
         Ray r = {Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX};
@@ -32,6 +38,7 @@ class OrthogonalCamera : Camera
     }
 }
 
+///
 unittest
 {
     OrthogonalCamera cam = new OrthogonalCamera(2.0);
@@ -41,25 +48,29 @@ unittest
     Ray r3 = cam.fireRay(0.0, 1.0);
     Ray r4 = cam.fireRay(1.0, 1.0);
 
-    // Rays are parallel if their cross product vanishes
+    // Verify that Rays are parallel: their cross product vanishes
     assert(areClose(0.0, (r1.dir ^ r2.dir).squaredNorm));
     assert(areClose(0.0, (r1.dir ^ r3.dir).squaredNorm));
     assert(areClose(0.0, (r1.dir ^ r4.dir).squaredNorm));
 
-   // Rays hitting the corners have the right coordinates
+   // Verify that Rays hitting the corners have the right coordinates
     assert(r1.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
     assert(r2.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
     assert(r3.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
     assert(r4.at(1.0).xyzIsClose(Point(0.0, -2.0, 1.0)));
 }
 
+///
 unittest
 {
     Camera cam = new OrthogonalCamera(1.0, translation(-vecY * 2.0) * rotationZ(90));
     Ray r = cam.fireRay(0.5, 0.5);
+    // fireRay
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
+///******************** PerspectiveCamera ********************
+/// Class representing a 3D observer with line of sight perspective
  class PerspectiveCamera : Camera 
 {
     this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation())

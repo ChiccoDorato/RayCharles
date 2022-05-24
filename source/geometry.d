@@ -37,7 +37,7 @@ mixin template sumDiff(T, R)
     }
 }*/
 
-// Return an (x, y, z)-object with opposite coordinates (-x, -y, -z)
+/// Return an (x, y, z)-object with opposite coordinates (-x, -y, -z)
 mixin template neg(R)
 {
     R opUnary(string op)() const if (op == "-")
@@ -56,7 +56,7 @@ mixin template neg(R)
     }
 }*/
 
-// Multiply a factor alpha by an (x, y, z)-object
+/// Multiply a factor alpha by an (x, y, z)-object
 mixin template rightMul(R)
 {
     R opBinaryRight(string op)(in float alfa) const if (op == "*")
@@ -84,7 +84,7 @@ mixin template rightMul(R)
     }
 }*/
 
-// Calculate the squared norm of an (x, y, z)-object
+/// Calculate the squared norm of an (x, y, z)-object
 mixin template squaredNorm(T)
 {
     float squaredNorm()() const
@@ -94,7 +94,7 @@ mixin template squaredNorm(T)
     }
 }
 
-// Calculate the norm of an (x, y, z)-object
+/// Calculate the norm of an (x, y, z)-object
 mixin template norm(T)
 {
     float norm()() const
@@ -104,7 +104,7 @@ mixin template norm(T)
     }
 }
 
-// Normalize an (x, y, z)-object dividing it by its norm
+/// Normalize an (x, y, z)-object dividing it by its norm
 mixin template normalize(R)
 {
     R normalize()() const
@@ -114,7 +114,7 @@ mixin template normalize(R)
     }
 }
 
-// Convert an (x, y, z)-object in a different one
+/// Convert an (x, y, z)-object in a different one
 mixin template convert(T, R)
 {
     R convert() const
@@ -134,49 +134,49 @@ struct Vec
     mixin xyzIsClose!Vec;
 
     /*mixin sumDiff!(Vec, Vec);*/
-    // Calculate sum (+) and difference (-) between two Vec
+    /// Operations: Sum (+) and Difference (-) between two Vec
     Vec opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     {
         return mixin("Vec(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
 
-    // Calculate the opposite Vec with coordinates (-x, -y, -z)
+    /// Calculate the opposite Vec with coordinates (-x, -y, -z)
     mixin neg!Vec;
 
     /*mixin mul!Vec;*/
 
-    // Calculate product (*) between a Vec and a floating point
+    /// Product (*) between a Vec and a floating point
     Vec opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Vec(x * alfa, y * alfa, z * alfa);
     }
     
-    // Calculate product (*) between a floating point and a Vec 
+    /// Product (*) between a floating point and a Vec 
     mixin rightMul!Vec;
 
     /*mixin dot!Vec;*/
-    // Calculate scalar product (*) between two Vec
+    /// Calculate scalar product (*) between two Vec
     float opBinary(string op)(in Vec rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
     /*mixin dot!Normal;*/
-    // Calculate scalar product (*) between two Normal
+    /// Scalar product (*) between two Normal
     float opBinary(string op)(in Normal rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
     /*mixin cross!(Vec, Vec);*/
-    // Calculate cross product (^) between two Vec
+    /// Cross product (^) between two Vec
     Vec opBinary(string op)(in Vec rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
 
-    //mixin cross!(Normal, Vec);
-    // Calculate cross product (*) between a Normal and a Vec 
+    /*mixin cross!(Normal, Vec);*/
+    /// Cross product (*) between a Normal and a Vec 
     Vec opBinary(string op)(in Normal rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
@@ -195,6 +195,7 @@ struct Vec
     mixin convert!(Vec, Normal);
 }
 
+/// Cartesian Versors in x, y and z direction
 immutable(Vec) vecX = Vec(1.0, 0.0, 0.0),
     vecY = Vec(0.0, 1.0, 0.0),
     vecZ = Vec(0.0, 0.0, 1.0);
@@ -202,111 +203,146 @@ immutable(Vec) vecX = Vec(1.0, 0.0, 0.0),
 unittest
 {
     Vec a = {1.0, 2.0, 3.0}, b = {4.0, 6.0, 8.0};
-
+    // xyzIsClose
     assert(a.xyzIsClose(a));
     assert(!a.xyzIsClose(b));
 
+    // Negative Vec
     assert((-a).xyzIsClose(Vec(-1.0, -2.0, -3.0)));
+    // Sum (+) and Difference (-) between two Vec
     assert((a + b).xyzIsClose(Vec(5.0, 8.0, 11.0)));
     assert((b - a).xyzIsClose(Vec(3.0, 4.0, 5.0)));
-
+    // Product Vec with a floating point on the right-hand side and on the left-hand side
     assert((a * 2).xyzIsClose(Vec(2.0, 4.0, 6.0)));
     assert((-4 * a).xyzIsClose(Vec(-4.0, -8.0, -12.0)));
-
+    // Dot (*) and Cross (^) product
     assert((a * b).areClose(40.0));
     assert((a ^ b).xyzIsClose(Vec(-2.0, 4.0, -2.0)));
     assert((b ^ a).xyzIsClose(Vec(2.0, -4.0, 2.0)));
-
+    // squaredNorm and norm
     assert(areClose(a.squaredNorm, 14.0));
     assert(areClose(a.norm * a.norm, 14.0));
 }
 
+///******************** Point ********************
+/// struct for a 3D Point
 struct Point
 {
     float x, y, z;
 
+    /// Convert a Point into a string
     mixin toString!Point;
+    /// Verify if two Point are close calling the function areClose on every component (x, y, z)
     mixin xyzIsClose!Point;
     
     //mixin sumDiff!(Point, Vec);
+    // Operations: Sum (+) and Difference (-) between two Point returning a Point
     Point opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
     {
         return mixin("Point(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
     }
+    // Difference (-) between two Point returning a Vec
     Vec opBinary(string op)(in Point rhs) const if (op == "-")
     {
         return Vec(x - rhs.x, y - rhs.y, z - rhs.z);
     }
 
+    /// Calculate the opposite Point with coordinates (-x, -y, -z)
     mixin neg!Point;
+
     //mixin mul!Point;
+    /// Product (*) between a Point and a floating point
     Point opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Point(x * alfa, y * alfa, z * alfa);
     }
+    /// Product (*) between a floating point and a Vec on the right-hand side
     mixin rightMul!Point;
-
+    /// Convert a Point into a Vec
     mixin convert!(Point, Vec);
 }
 
+///
 unittest
 {
     Point p1 = {1.0, 2.0, 3.0}, p2 = {4.0, 6.0, 8.0};
+    // xyzIsClose
     assert(p1.xyzIsClose(p1));
     assert(!p1.xyzIsClose(p2));
-
+    // Operations: Product (*) between a Point and a floating point (left/right-hand side)
     assert((-p1 * 2).xyzIsClose(Point(-2.0, -4.0, -6.0)));
     assert((0.5 * p2).xyzIsClose(Point(2.0, 3.0, 4.0)));
 
     Vec v = {4.0, 6.0, 8.0};
+    // Operations: Sum (+) and Difference (-) between a Point and a Vec, Difference between two Point
     assert((p1 + v).xyzIsClose(Point(5.0, 8.0, 11.0)));
     assert((p1 - v).xyzIsClose(Point(-3.0, -4.0, -5.0)));
     assert((p2 - p1).xyzIsClose(Vec(3.0, 4.0, 5.0)));
 }
 
+///******************** Normal ********************
+/// struct for a 3D Normal
 struct Normal
 {
     float x, y, z;
 
+    /// Convert a Normal into a string
     mixin toString!Normal;
+    /// Verify if two Normal are close calling the function areClose on every component (x, y, z)
     mixin xyzIsClose!Normal;
 
+    /// Calculate the opposite Normal with coordinates (-x, -y, -z)
     mixin neg!Normal;
+
     //mixin mul!Normal;
+    /// Product (*) between a Normal and a floating point
     Normal opBinary(string op)(in float alfa) const if (op == "*")
     {
         return Normal(x * alfa, y * alfa, z * alfa);
     }
+
+    /// Product (*) between a floating point and a Normal on the right-hand side
     mixin rightMul!Normal;
 
     //mixin dot!Vec;
+    /// Scalar product (*) between a Normal and a Vec
     float opBinary(string op)(in Vec rhs) const if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
+
     //mixin cross!(Normal, Vec);
+    /// Cross product (^) between two Normal returning a Vec
     Vec opBinary(string op)(in Normal rhs) const if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
 
+    /// Calculate the squared norm of a Normal
     mixin squaredNorm!Normal;
+    /// Calculate the norm of a Normal
     mixin norm!Normal;
+    /// Normalize a Normal dividing it by its norm
     mixin normalize!Normal;
 
+    /// Convert a Normal into a Vec
     mixin convert!(Normal, Vec);
 }
 
+///******************** Vec2d ********************
+/// struct for a 2D Vec
 struct Vec2d
 {
     float u, v;
 
+    /// Verify if two Vec2d are close calling the function areClose on every component (u, v)
     immutable(bool) uvIsClose(in Vec2d v2d) const
     {
         return areClose(u, v2d.u) && areClose(v, v2d.v);
     }
 }
 
+/// Return an array of Vec generatig a 3D Orthonormal Base
 Vec[3] createONBFromZ(in Normal n)
 in (areClose(n.squaredNorm, 1.0))
 {
@@ -331,16 +367,20 @@ unittest
         Normal n = Normal(pcg.randomFloat, pcg.randomFloat, pcg.randomFloat).normalize;
         base = createONBFromZ(n);
 
+        // Verify that the z axis is aligned with the normal
         assert(base[2].xyzIsClose(n));
 
+        // Verify the correct normalization
         assert(areClose(base[0].squaredNorm, 1));
         assert(areClose(base[1].squaredNorm, 1));
         assert(areClose(base[2].squaredNorm, 1));
 
+        // Verify that the base is orthogonal
         assert(areClose(base[0]*base[1], 0));
         assert(areClose(base[1]*base[2], 0));
         assert(areClose(base[2]*base[0], 0));
 
+        // Verify that the cyclic cross product of two Vec of the base give the third 
         assert((base[0]^base[1]).xyzIsClose(base[2]));
         assert((base[1]^base[2]).xyzIsClose(base[0]));
         assert((base[2]^base[0]).xyzIsClose(base[1]));
