@@ -1,4 +1,4 @@
-module renderer;
+module renderers;
 
 import cameras : ImageTracer, OrthogonalCamera, PerspectiveCamera;
 import geometry : Point, Vec, vecX;

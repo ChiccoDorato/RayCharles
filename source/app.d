@@ -73,8 +73,8 @@ void main(string[] args)
 				HDRImage image = new HDRImage(parms.pfmInput);
 				writeln("File "~parms.pfmInput~" has been read from disk");
 
-				image.normalizeImage(parms.factor);
-				image.clampImage;
+				//image.normalizeImage(parms.factor);
+				//image.clampImage;
 
 				image.writePNG(parms.pngOutput.dup, parms.gamma);
 				writeln("File "~parms.pngOutput~" has been written to disk");
@@ -93,7 +93,7 @@ void main(string[] args)
 			import materials : CheckeredPigment, DiffuseBRDF, Material, SpecularBRDF, UniformPigment;
 			import pcg;
 			import ray;
-			import renderer;
+			import renderers;
 			import shapes;
 			import transformations : rotationZ, scaling, Transformation, translation;
 			
@@ -114,34 +114,13 @@ void main(string[] args)
 				return;
 			}
 
-			// immutable Transformation decimate = scaling(Vec(0.05, 0.05, 0.05));
+			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
+			Camera camera;
+			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
+			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
-			// immutable Color sphereColor = Color(0.8, 0.02, 0.02);
-			// UniformPigment p = new UniformPigment(sphereColor);
-			// DiffuseBRDF sphereBRDF = new DiffuseBRDF(p);
-			// Material m = Material(sphereBRDF);
-
-			// Vec translVec = {1.0, 2.0, 4.0}, scaleVec = {2.0, 3.0, -0.8};
-			// Transformation scale = scaling(scaleVec);
-			// Transformation rotY = rotationY(30);
-			// Transformation transl = translation(translVec);
-			// Material boxM = {emittedRadiance : new CheckeredPigment(Color(1,0,0), Color(0,1,0))};
-
-			// Heart here <3
-			/* Shape[14] s = [new Sphere(translation(Vec(0.0, 0.0, -0.2)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.2, 0.0)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.4, 0.2)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.4, 0.4)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.3, 0.5)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.1, 0.5)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
-				new Sphere(translation(Vec(0.0, -0.1, 0.5)) * decimate, m),
-				new Sphere(translation(Vec(0.0, -0.3, 0.5)) * decimate, m),
-				new Sphere(translation(Vec(0.0, 0.0, 0.4)) * decimate, m),
-				new Sphere(translation(Vec(0.0, -0.2, 0.0)) * decimate, m),
-				new Sphere(translation(Vec(0.0, -0.4, 0.2)) * decimate, m),
-				new Sphere(translation(Vec(0.0, -0.4, 0.4)) * decimate, m),
-				new AABox(transl *rotY * scale, boxM)];*/
+			HDRImage image = new HDRImage(parms.width, parms.height);
+			ImageTracer tracer = ImageTracer(image, camera);
 
 			immutable Color skyColor = black;
 			UniformPigment skyPig = new UniformPigment(skyColor);
@@ -151,46 +130,34 @@ void main(string[] args)
 			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4,));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
 
-			immutable Color groundColor1 = Color(0.3, 0.5, 0.1),
-				groundColor2 = Color(0.1, 0.2, 0.5);
+			immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
 			Material groundMaterial = Material(groundBRDF);
 
-			immutable Color sphereColor = Color(0.3, 0.4, 0.8);
+			immutable Color sphereColor = {0.3, 0.4, 0.8};
 			UniformPigment spherePig = new UniformPigment(sphereColor);
 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
 			Material sphereMaterial = Material(sphereBRDF);
 
-			immutable Color mirrorColor = Color(0.6, 0.2, 0.3);
+			immutable Color mirrorColor = {0.6, 0.2, 0.3};
 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
 			Material mirrorMaterial = Material(mirrorBRDF);
 			
-
-			Shape [4] s = [new Sphere(skyTransl * skyScale, skyMaterial),
+			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
 				new Sphere(translation(vecZ), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)];
-			World world = World(s);
-
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 0.0));
-			Camera camera;
-			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
-			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
-
-			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera);
+				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
 
 			Renderer renderer;
-			if (parms.renderer == "flat") renderer = new FlatRenderer(world);				
+			if (parms.renderer == "flat") renderer = new FlatRenderer(world);
 			else if (parms.renderer == "on-off") renderer = new OnOffRenderer(world);
-			// else
-			// {
-			// 	PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-			// 	renderer = new PathTracer(world, black, randomGenerator, 10, 1, 3);
-			// }
-
+			else
+			{
+				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
+				renderer = new PathTracer(world, black, randomGenerator);
+			}
 			tracer.fireAllRays((Ray r) => renderer.call(r));
 
 			image.writePFMFile(parms.pfmOutput);

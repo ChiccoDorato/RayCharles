@@ -344,7 +344,7 @@ struct Vec2d
 
 /// Return an array of Vec generatig a 3D Orthonormal Base
 Vec[3] createONBFromZ(in Normal n)
-in (areClose(n.squaredNorm, 1.0))
+in (areClose(n.squaredNorm, 1.0, 8.0 * 1e-5))
 {
     float sign;
     n.z > 0.0 ? (sign = 1.0) : (sign = -1.0); 
