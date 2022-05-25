@@ -109,7 +109,7 @@ void main(string[] args)
 			import renderers;
 			import shapes;
 			import transformations : rotationZ, scaling, Transformation, translation;
-			
+
 			DemoParameters* parms;
 			try parms = new DemoParameters(
 				[rayC.option("width"),
