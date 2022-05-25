@@ -8,7 +8,7 @@ import std.math : isFinite;
 
 class InvalidPfm2pngParms : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
     {
         super(msg, file, line);
     }
@@ -17,7 +17,7 @@ class InvalidPfm2pngParms : Exception
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
-	float factor, gamma;
+	immutable float factor, gamma;
 
 	this(in string[] args)
 	{	
@@ -30,7 +30,7 @@ struct Pfm2pngParameters
 
 		try
 		{
-			factor = to!float(args[2]);
+			factor = to!(immutable(float))(args[2]);
 			enforce!InvalidPfm2pngParms(isFinite(factor) && factor > 0,
 				"Factor must be a positive number");
 		}
@@ -39,7 +39,7 @@ struct Pfm2pngParameters
 
 		try
 		{
-			gamma = to!float(args[3]);
+			gamma = to!(immutable(float))(args[3]);
 			enforce!InvalidPfm2pngParms(isFinite(gamma) && gamma > 0,
 				"Gamma must be a positive number");
 		}
@@ -50,7 +50,7 @@ struct Pfm2pngParameters
 
 class InvalidDemoParms : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
     {
         super(msg, file, line);
     }
@@ -58,14 +58,16 @@ class InvalidDemoParms : Exception
 
 struct DemoParameters
 {
-	int width, height;
-	float angle;
+	immutable int width, height;
+	string renderer;
+	immutable float angle;
 	string pfmOutput, pngOutput;
-	bool orthogonal;
+	int initialState, initialSequence;
+	immutable bool orthogonal;
 
-	this(in string[] args)
+	this(in string[] args) pure
 	{		
-		assert(args.length == 6);
+		assert(args.length == 9);
 
 		try
 		{
@@ -82,21 +84,42 @@ struct DemoParameters
 		}
 		catch (ConvException exc)
 			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
-		
+
+		enforce!InvalidDemoParms(args[2] == "flat" || args[2] == "on-off" || args[2] == "path",
+			"Option algorithm must be one of the following values: flat, on-off, path");
+		renderer = args[2];
+
 		try
 		{
-			angle = to!float(args[2]);
-			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[2]));
+			angle = to!(immutable(float))(args[3]);
+			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[3]));
 		}
 		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid angle [%s]", args[2]));
+			throw new InvalidDemoParms(format("Invalid angle [%s]", args[3]));
+
+		pfmOutput = args[4];
+		pngOutput = args[5];
+
+		try
+		{
+			initialState = to!int(args[6]);
+			enforce!InvalidDemoParms(initialState > 0, format("Invalid initialState [%s]", args[6]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid initialState [%s]", args[6]));
+
+		try
+		{
+			initialSequence = to!int(args[7]);
+			enforce!InvalidDemoParms(initialSequence > 0, format("Invalid initialSequence [%s]", args[7]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid initialSequence [%s]", args[7]));
 		
-		pfmOutput = args[3];
-		pngOutput = args[4];
-		if (args[5] != "") orthogonal = true;
+		if (args[8] != "") orthogonal = true;
 	}
 
-	immutable(float) aspRat()
+	immutable(float) aspRat() pure nothrow
 	{
 		return cast(float)(width) / height;
 	}
