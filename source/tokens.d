@@ -1,10 +1,10 @@
 module tokens;
 
-import std.array : Appender;
-
-union SourceLocation
+struct SourceLocation
 {
-    //
+    string fileName;
+    uint line;
+    uint col;
 }
 
 struct InputStream 
