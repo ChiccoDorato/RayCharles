@@ -1,0 +1,6 @@
+module tokens;
+
+union SourceLocation
+{
+    //
+}
