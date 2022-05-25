@@ -21,7 +21,7 @@ struct HitRecord
     Shape shape;
 
     /// Check if two HitRecord are close by calling the fuction areClose for every member
-    immutable(bool) recordIsClose(in HitRecord hit) const
+    immutable(bool) recordIsClose(in HitRecord hit) const pure nothrow
     {
         return worldPoint.xyzIsClose(hit.worldPoint) && normal.xyzIsClose(hit.normal) &&
         surfacePoint.uvIsClose(hit.surfacePoint) && areClose(t, hit.t) && ray.rayIsClose(hit.ray);

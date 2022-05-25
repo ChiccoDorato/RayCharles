@@ -9,18 +9,18 @@ import std.math : sqrt;
 /// Convert an (x, y, z)-object into a string
 mixin template toString(T)
 {
-    string toString()() const
+    string toString()() const pure nothrow
     in (T.tupleof.length == 3, "toString accepts xyz types only.")
     {
         string[] typePath = to!string(typeid(T)).split(".");
-        return typePath[$-1]~"(x="~to!string(x)~", y="~to!string(y)~", z="~to!string(z)~")";
+        return typePath[$-1] ~ "(x=" ~ to!string(x) ~ ", y=" ~ to!string(y) ~ ", z=" ~ to!string(z) ~ ")";
     }
 }
 
 /// Verify if two (x, y, z)-objects are close by calling the function areClose
 mixin template xyzIsClose(T)
 {
-    immutable(bool) xyzIsClose(T)(in T v) const
+    immutable(bool) xyzIsClose(T)(in T v) const pure nothrow
     in (T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
     {
         return areClose(x, v.x) && areClose(y, v.y) && areClose(z, v.z);
@@ -30,17 +30,17 @@ mixin template xyzIsClose(T)
 /* 
 mixin template sumDiff(T, R)
 {
-    R opBinary(string op)(in T rhs) const if (op == "+" || op == "-")
+    R opBinary(string op)(in T rhs) const pure nothrow if (op == "+" || op == "-")
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "sumDiff accepts xyz types only.")
     {
-        return mixin("R(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
+        return mixin("R(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y, z" ~ op ~ "rhs.z)");
     }
 }*/
 
 /// Return an (x, y, z)-object with opposite coordinates (-x, -y, -z)
 mixin template neg(R)
 {
-    R opUnary(string op)() const if (op == "-")
+    R opUnary(string op)() const pure nothrow if (op == "-")
     in (R.tupleof.length == 3, "neg accepts xyz types only.")
     {
         return R(-x, -y, -z);
@@ -49,7 +49,7 @@ mixin template neg(R)
 
 /*mixin template mul(R)
 {
-    R opBinary(string op)(in float alfa) const if (op == "*")
+    R opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
     in (R.tupleof.length == 3, "mul accepts xyz types only.")
     {
         return R(x * alfa, y * alfa, z * alfa);
@@ -59,7 +59,7 @@ mixin template neg(R)
 /// Multiply a factor alpha by an (x, y, z)-object
 mixin template rightMul(R)
 {
-    R opBinaryRight(string op)(in float alfa) const if (op == "*")
+    R opBinaryRight(string op)(in float alfa) const pure nothrow if (op == "*")
     in (R.tupleof.length == 3, "rightMul accepts xyz types only.")
     {
         return R(alfa * x, alfa * y, alfa * z);
@@ -68,7 +68,7 @@ mixin template rightMul(R)
 
 /*mixin template dot(T)
 {
-    float opBinary(string op)(in T rhs) const if (op == "*")
+    float opBinary(string op)(in T rhs) const pure nothrow if (op == "*")
     in (T.tupleof.length == 3, "dot accepts xyz types only.")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
@@ -77,7 +77,7 @@ mixin template rightMul(R)
 
 /*mixin template cross(T, R)
 {
-    R opBinary(string op)(in T rhs) const if (op == "^")
+    R opBinary(string op)(in T rhs) const pure nothrow if (op == "^")
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "cross accepts xyz types only.")
     {
         return mixin("R(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x)");
@@ -87,7 +87,7 @@ mixin template rightMul(R)
 /// Calculate the squared norm of an (x, y, z)-object
 mixin template squaredNorm(T)
 {
-    float squaredNorm()() const
+    float squaredNorm()() const pure nothrow
     in (T.tupleof.length == 3, "squaredNorm accepts xyz types only.")
     {
         return x * x + y * y + z * z;
@@ -97,7 +97,7 @@ mixin template squaredNorm(T)
 /// Calculate the norm of an (x, y, z)-object
 mixin template norm(T)
 {
-    float norm()() const
+    float norm()() const pure nothrow
     in (T.tupleof.length == 3, "norm accepts xyz types only.")
     {
         return sqrt(squaredNorm());
@@ -107,7 +107,7 @@ mixin template norm(T)
 /// Normalize an (x, y, z)-object dividing it by its norm
 mixin template normalize(R)
 {
-    R normalize()() const
+    R normalize()() const pure nothrow
     in (R.tupleof.length == 3, "normalize accepts xyz types only.")
     {
         return 1.0 / norm() * this;
@@ -117,7 +117,7 @@ mixin template normalize(R)
 /// Convert an (x, y, z)-object in a different one
 mixin template convert(T, R)
 {
-    R convert() const
+    R convert() const pure nothrow
     in (T.tupleof.length == 3 && R.tupleof.length == 3, "convert accepts xyz types only.")
     {
         return R(x, y, z);
@@ -135,9 +135,9 @@ struct Vec
 
     /*mixin sumDiff!(Vec, Vec);*/
     /// Operations: Sum (+) and Difference (-) between two Vec
-    Vec opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
+    Vec opBinary(string op)(in Vec rhs) const pure nothrow if (op == "+" || op == "-")
     {
-        return mixin("Vec(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
+        return mixin("Vec(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y, z" ~ op ~ "rhs.z)");
     }
 
     /// Calculate the opposite Vec with coordinates (-x, -y, -z)
@@ -146,7 +146,7 @@ struct Vec
     /*mixin mul!Vec;*/
 
     /// Product (*) between a Vec and a floating point
-    Vec opBinary(string op)(in float alfa) const if (op == "*")
+    Vec opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
     {
         return Vec(x * alfa, y * alfa, z * alfa);
     }
@@ -156,28 +156,28 @@ struct Vec
 
     /*mixin dot!Vec;*/
     /// Calculate scalar product (*) between two Vec
-    float opBinary(string op)(in Vec rhs) const if (op == "*")
+    float opBinary(string op)(in Vec rhs) const pure nothrow if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
     /*mixin dot!Normal;*/
     /// Scalar product (*) between two Normal
-    float opBinary(string op)(in Normal rhs) const if (op == "*")
+    float opBinary(string op)(in Normal rhs) const pure nothrow if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
     /*mixin cross!(Vec, Vec);*/
     /// Cross product (^) between two Vec
-    Vec opBinary(string op)(in Vec rhs) const if (op == "^")
+    Vec opBinary(string op)(in Vec rhs) const pure nothrow if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
 
     /*mixin cross!(Normal, Vec);*/
     /// Cross product (*) between a Normal and a Vec 
-    Vec opBinary(string op)(in Normal rhs) const if (op == "^")
+    Vec opBinary(string op)(in Normal rhs) const pure nothrow if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
@@ -196,9 +196,7 @@ struct Vec
 }
 
 /// Cartesian Versors in x, y and z direction
-immutable(Vec) vecX = Vec(1.0, 0.0, 0.0),
-    vecY = Vec(0.0, 1.0, 0.0),
-    vecZ = Vec(0.0, 0.0, 1.0);
+immutable(Vec) vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
 
 unittest
 {
@@ -237,12 +235,12 @@ struct Point
     
     //mixin sumDiff!(Point, Vec);
     // Operations: Sum (+) and Difference (-) between two Point returning a Point
-    Point opBinary(string op)(in Vec rhs) const if (op == "+" || op == "-")
+    Point opBinary(string op)(in Vec rhs) const pure nothrow if (op == "+" || op == "-")
     {
-        return mixin("Point(x"~op~"rhs.x, y"~op~"rhs.y, z"~op~"rhs.z)");
+        return mixin("Point(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y, z" ~ op ~ "rhs.z)");
     }
     // Difference (-) between two Point returning a Vec
-    Vec opBinary(string op)(in Point rhs) const if (op == "-")
+    Vec opBinary(string op)(in Point rhs) const pure nothrow if (op == "-")
     {
         return Vec(x - rhs.x, y - rhs.y, z - rhs.z);
     }
@@ -252,7 +250,7 @@ struct Point
 
     //mixin mul!Point;
     /// Product (*) between a Point and a floating point
-    Point opBinary(string op)(in float alfa) const if (op == "*")
+    Point opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
     {
         return Point(x * alfa, y * alfa, z * alfa);
     }
@@ -296,7 +294,7 @@ struct Normal
 
     //mixin mul!Normal;
     /// Product (*) between a Normal and a floating point
-    Normal opBinary(string op)(in float alfa) const if (op == "*")
+    Normal opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
     {
         return Normal(x * alfa, y * alfa, z * alfa);
     }
@@ -306,14 +304,14 @@ struct Normal
 
     //mixin dot!Vec;
     /// Scalar product (*) between a Normal and a Vec
-    float opBinary(string op)(in Vec rhs) const if (op == "*")
+    float opBinary(string op)(in Vec rhs) const pure nothrow if (op == "*")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
 
     //mixin cross!(Normal, Vec);
     /// Cross product (^) between two Normal returning a Vec
-    Vec opBinary(string op)(in Normal rhs) const if (op == "^")
+    Vec opBinary(string op)(in Normal rhs) const pure nothrow if (op == "^")
     {
         return Vec(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
     }
@@ -336,25 +334,27 @@ struct Vec2d
     float u, v;
 
     /// Verify if two Vec2d are close calling the function areClose on every component (u, v)
-    immutable(bool) uvIsClose(in Vec2d v2d) const
+    immutable(bool) uvIsClose(in Vec2d v2d) const pure nothrow
     {
         return areClose(u, v2d.u) && areClose(v, v2d.v);
     }
 }
 
 /// Return an array of Vec generatig a 3D Orthonormal Base
-Vec[3] createONBFromZ(in Normal n)
-in (areClose(n.squaredNorm, 1.0, 8.0 * 1e-5))
+Vec[3] createONBFromZ(in Normal n) pure nothrow
 {
+    Normal normN = n;
+    if (!areClose(n.squaredNorm, 1.0, 1e-4)) normN = n.normalize;
+
     float sign;
-    n.z > 0.0 ? (sign = 1.0) : (sign = -1.0); 
-    immutable float a = -1.0 / (sign + n.z);
-    immutable float b = n.x * n.y * a;
+    normN.z > 0.0 ? (sign = 1.0) : (sign = -1.0); 
+    immutable float a = -1.0 / (sign + normN.z);
+    immutable float b = normN.x * normN.y * a;
 
-    immutable Vec e1 = Vec(1.0 + sign * n.x * n.x * a, sign * b, -sign * n.x);
-    immutable Vec e2 = Vec(b, sign + n.y * n.y * a, -n.y);
+    immutable Vec e1 = Vec(1.0 + sign * normN.x * normN.x * a, sign * b, -sign * normN.x);
+    immutable Vec e2 = Vec(b, sign + normN.y * normN.y * a, -normN.y);
 
-    return [e1, e2, Vec(n.x, n.y, n.z)];
+    return [e1, e2, Vec(normN.x, normN.y, normN.z)];
 }
 
 unittest

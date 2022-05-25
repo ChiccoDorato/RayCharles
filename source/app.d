@@ -1,4 +1,5 @@
 import commandr;
+import core.time;
 import hdrimage : HDRImage, InvalidPFMFileFormat;
 import parameters;
 import std.file : FileException;
@@ -70,14 +71,26 @@ void main(string[] args)
 
 			try
 			{
+				MonoTime startReading = MonoTime.currTime;
 				HDRImage image = new HDRImage(parms.pfmInput);
-				writeln("File "~parms.pfmInput~" has been read from disk");
+				MonoTime endReading = MonoTime.currTime;
+				Duration timeElapsedForReading = endReading - startReading;
+				writeln("File " ~ parms.pfmInput ~ " has been read from disk");
 
-				//image.normalizeImage(parms.factor);
-				//image.clampImage;
+				MonoTime startPixelOps = MonoTime.currTime;
+				image.normalizeImage(parms.factor);
+				image.clampImage;
+				MonoTime endPixelOps = MonoTime.currTime;
+				Duration timeElapsedForPixelOps = endPixelOps - startPixelOps;
 
+				MonoTime startWriting = MonoTime.currTime;
 				image.writePNG(parms.pngOutput.dup, parms.gamma);
-				writeln("File "~parms.pngOutput~" has been written to disk");
+				MonoTime endWriting = MonoTime.currTime;
+				Duration timeElapsedForWriting = endWriting - startWriting;
+				writeln("File " ~ parms.pngOutput ~ " has been written to disk");
+
+				writeln("\nReading\t\t\t", timeElapsedForReading, "\nPixel operations\t",
+					timeElapsedForPixelOps, "\nWriting\t\t\t", timeElapsedForWriting);
 			}
 			catch (InvalidPFMFileFormat exc)
 			{
@@ -158,11 +171,13 @@ void main(string[] args)
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
 				renderer = new PathTracer(world, black, randomGenerator);
 			}
+			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));
+			MonoTime endRendering = MonoTime.currTime;
+			Duration timeElapsed = endRendering - startRendering;
+			writeln("Rendering completed in ", timeElapsed);
 
 			image.writePFMFile(parms.pfmOutput);
-			image.normalizeImage(0.1, 0.1);
-			image.clampImage;
 			image.writePNG(parms.pngOutput.dup);
 		});
 }

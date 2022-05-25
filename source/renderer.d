@@ -153,12 +153,12 @@ class PathTracer : Renderer
 
         Material hitMat = hitRec.shape.material;
         Color hitCol = hitMat.brdf.pigment.getColor(hitRec.surfacePoint);
-        float hitColLum = max(hitCol.r, hitCol.g, hitCol.b);
-        Color emittedRadiance = hitMat.emittedRadiance.getColor(hitRec.surfacePoint);
+        immutable float hitColLum = max(hitCol.r, hitCol.g, hitCol.b);
+        immutable Color emittedRadiance = hitMat.emittedRadiance.getColor(hitRec.surfacePoint);
 
         if (ray.depth >= russianRouletteLimit)
         {
-            float q = max(0.05, 1.0 - hitColLum);
+            immutable float q = max(0.05, 1.0 - hitColLum);
             if (pcg.randomFloat > q) hitCol = hitCol * (1.0 / (1.0 - q));
             else return emittedRadiance;
         }

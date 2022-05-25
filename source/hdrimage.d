@@ -13,7 +13,7 @@ import std.stdio : File, writeln;
 import std.system : endian;
 
 /// Verify if the difference between two floating point x and y is smaller than epsilon 
-immutable(bool) areClose(in float x, in float y, in float epsilon = 1e-5)
+immutable(bool) areClose(in float x, in float y, in float epsilon = 1e-5) pure nothrow
 {
 	return abs(x - y) < epsilon;
 }
@@ -27,35 +27,35 @@ struct Color
 	/// Return the sum (+), the difference (-) or the product (*) between two colors
 	Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
 	{
-		mixin("return Color(r"~op~"rhs.r, g"~op~"rhs.g, b"~op~"rhs.b);");
+		mixin("return Color(r" ~ op ~ "rhs.r, g" ~ op ~ "rhs.g, b" ~ op ~ "rhs.b);");
 	}
 
 	/// Return the product between a floating point alpha on the left-hand side and a Color
-	Color opBinary(string op)(in float alfa) const if (op == "*")
+	Color opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
 	{
 		mixin("return Color(r*alfa, g*alfa, b*alfa);");
 	}
 
 	/// Return the product between a floating point alpha on the right-hand side and a Color
-	Color opBinaryRight(string op)(in float alfa) const if (op == "*")
+	Color opBinaryRight(string op)(in float alfa) const pure nothrow if (op == "*")
 	{
 		mixin("return Color(alfa*r, alfa*g, alfa*b);");
 	}
 
 	/// Return the three components of a Color in a string
-	string colorToString() const
+	string colorToString() const pure
 	{
-		return "<r: "~to!string(r)~", g: "~to!string(g)~", b: "~to!string(b)~">";
+		return "<r: " ~ to!string(r) ~ ", g: " ~ to!string(g) ~ ", b: " ~ to!string(b) ~ ">";
 	}
 
 	/// Verify if two Colors are close by calling the fuction areClose for every components 
-	immutable(bool) colorIsClose(in Color c) const
+	immutable(bool) colorIsClose(in Color c) const pure nothrow
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
 
 	/// Return the luminosity of a specific Color
-	immutable(float) luminosity() const
+	immutable(float) luminosity() const pure nothrow
 	{
 		return (max(r, g, b) + min(r, g, b)) / 2.0;
 	}
@@ -111,14 +111,14 @@ unittest
 /// Class used to throw exceptions in case of compilation errors
 class InvalidPFMFileFormat : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
     {
         super(msg, file, line);
     }
 }
 
 /// Read a line from an array of ubyte, given a starting position
-immutable(ubyte[]) readLine(in ubyte[] stream, uint startingPosition)
+immutable(ubyte[]) readLine(in ubyte[] stream, in uint startingPosition) pure nothrow
 {
 	ubyte[] line;
 	for (uint i = startingPosition; i < stream.length; ++i)
@@ -141,7 +141,7 @@ unittest
 }
 
 /// Check the width and the height of the image, throw an exception if something is wrong.
-immutable(int[2]) parseImgSize(in ubyte[] imgSize)
+immutable(int[2]) parseImgSize(in ubyte[] imgSize) pure
 {
 	enforce!InvalidPFMFileFormat(imgSize.length > 0, "image dimensions are not indicated");
 
@@ -186,7 +186,7 @@ unittest
 }
 
 /// Check if the correct Endianness is used, throw an exception if wrong.
-immutable(float) parseEndiannessLine(in ubyte[] endiannessLine)
+immutable(float) parseEndiannessLine(in ubyte[] endiannessLine) pure
 {
 	enforce!InvalidPFMFileFormat(endiannessLine.length > 0, "endianness is not indicated");
 	// Sempre problema se ASCII esteso.
@@ -220,11 +220,9 @@ unittest
 }
 
 /// Read a floating point number from an array of ubyte.
-float readFloat(in ubyte[] stream, int startingPosition, in float endiannessValue)
-in (
-	stream.length - startingPosition > 3,
-	format("Less than 4 bytes in %s from index %s", stream, startingPosition)
-	)
+float readFloat(in ubyte[] stream, in int startingPosition, in float endiannessValue) pure
+in (stream.length - startingPosition > 3,
+	format("Less than 4 bytes in %s from index %s", stream, startingPosition))
 in (!areClose(endiannessValue, 0, 1e-20), "Endianness cannot be too close to zero")
 {
 	uint nativeValue = *cast(uint*)(stream.ptr + startingPosition);
@@ -245,7 +243,8 @@ unittest
 }
 
 /// Return the clamped floating point number
-float clamp(float x)
+float clamp(float x) pure nothrow
+in (x >= 0)
 {
 	return x / (1.0 + x);
 }
@@ -258,7 +257,8 @@ class HDRImage
 	Color[] pixels;
 	
 	/// Build an HDRImage from two integers: width (w) and height (h)
-	this(in int w, in int h)
+	this(in int w, in int h) pure
+	in (w > 0 && h > 0)
 	{
 		width = w;
 		height = h;
@@ -266,7 +266,7 @@ class HDRImage
 	}
 
 	/// Build an HDRImage from an array of ubyte
-	this(in ubyte[] stream)
+	this(in ubyte[] stream) pure
 	{
 		int streamPosition = 0;
 
@@ -311,40 +311,40 @@ class HDRImage
 	}
 
 	/// Check if the two integer coordinates (x and y) are inside the surface of the HDRImage 
-	immutable(bool) validCoordinates(in int x, in int y) const
+	immutable(bool) validCoordinates(in int x, in int y) const pure nothrow
 	{
 		return x >= 0 && x < width && y >= 0 && y < height;
 	}
 
 	/// Return the position of a Pixel given the two integer coordinates (x and y)
-	int pixelOffset(in int x, in int y) const
+	int pixelOffset(in int x, in int y) const pure nothrow
 	{
 		return y * width + x;
 	}
 	
 	/// Return the Color of a Pixel if it is inside the HDRImage
-	Color getPixel(in int x, in int y) const
+	Color getPixel(in int x, in int y) const pure nothrow
 	in (validCoordinates(x, y))
 	{
 		return pixels[pixelOffset(x, y)];
 	}
 
 	/// Set the Color given in a specific Pixel defined by two integer coordinates (x and y) 
-	void setPixel(in int x, in int y, Color c)
+	void setPixel(in int x, in int y, Color c) pure nothrow
 	in (validCoordinates(x, y))
 	{
 		pixels[pixelOffset(x, y)] = c;
 	}
 	
 	/// Write a PFM file with Endianness "little Endian" from an array of ubyte
-	immutable(ubyte[]) writePFM(in Endian endianness = Endian.littleEndian) const
+	immutable(ubyte[]) writePFM(in Endian endianness = Endian.littleEndian) const pure nothrow
 	{
 		string endiannessStr;
 		if (endianness == Endian.bigEndian) endiannessStr = "1.0";
 		else endiannessStr = "-1.0";
 
 		Appender!(ubyte[]) pfm = appender!(ubyte[]);
-		pfm.put(cast(ubyte[])("PF\n"~to!string(width)~" "~to!string(height)~"\n"~endiannessStr~"\n"));
+		pfm.put(cast(ubyte[])("PF\n" ~ to!string(width) ~ " " ~ to!string(height) ~ "\n" ~ endiannessStr ~ "\n"));
 
 		Color col;
 		for (int i = height - 1; i > -1; --i)
@@ -412,7 +412,7 @@ class HDRImage
 	}
 
 	/// Return the average luminosity of an HDRImage
-	immutable(float) averageLuminosity(in float delta=1e-10) const
+	immutable(float) averageLuminosity(in float delta=1e-10) const pure nothrow
 	{
 		float lumSum = 0.0;
         foreach (p; pixels[]) lumSum += log10(delta + p.luminosity);
@@ -420,14 +420,14 @@ class HDRImage
 	}
 
 	/// Normalize each pixel of an HDRImage multiplying by the ratio: factor / luminosity
-	void normalizeImage(in float factor, float luminosity = NaN(0x3FFFFF))
+	void normalizeImage(in float factor, float luminosity = NaN(0x3FFFFF)) pure nothrow
 	{
-		if (luminosity.isNaN()) luminosity = averageLuminosity();
+		if (luminosity.isNaN()) luminosity = averageLuminosity;
 		for (int i = 0; i < pixels.length; ++i) pixels[i] = pixels[i] * (factor / luminosity);
 	}
 
 	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
-	void clampImage()
+	void clampImage() pure nothrow
 	{
 		for (int i = 0; i < pixels.length; ++i)
 		{

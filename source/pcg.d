@@ -4,7 +4,7 @@ class PCG
 {
     ulong state, inc;
 
-    this(in ulong initState = 42, in ulong initSeq = 54)
+    this(in ulong initState = 42, in ulong initSeq = 54) pure nothrow
     {
         inc = (initSeq << 1) | 1;
         this.random();
@@ -12,7 +12,7 @@ class PCG
         this.random();
     }
 
-    uint random()
+    uint random() pure nothrow
     {
         immutable ulong oldState = state;
         state = oldState * 6_364_136_223_846_793_005 + inc;
@@ -23,7 +23,7 @@ class PCG
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
-    float randomFloat()
+    float randomFloat() pure nothrow
     {
         return cast(float)(random) / uint.max;
     }
