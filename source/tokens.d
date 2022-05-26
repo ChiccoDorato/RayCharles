@@ -1,5 +1,7 @@
 /* module tokens;
 
+import std.typecons : Nullable;
+
 struct SourceLocation
 {
     string fileName;
@@ -10,13 +12,13 @@ struct SourceLocation
 struct InputStream 
 {
     char[] stream;
-    uint index = 0;
+    uint index;
     char savedChar;
     SourceLocation location, savedLocation;
     ubyte tabulations;
 
-    this(in char[] s, in string fileName = "", in ubyte tab = 4) pure nothrow
-    in (stream.length !=0)
+    this(char[] s, in string fileName = "", in ubyte tab = 4) pure nothrow
+    in (stream.length != 0)
     in (tab == 4 || tab == 8)
     {
         stream = s;
@@ -25,11 +27,11 @@ struct InputStream
         savedLocation = location;
         tabulations = tab;
     }
-    
+
     void updatePos(in char c) pure nothrow
     {
         if (c == char.init) return;
-        if (c == '\n') 
+        if (c == '\n')
         {
             ++location.line;
             location.col = 1;
@@ -38,29 +40,31 @@ struct InputStream
         else ++location.col;
     }
 
-    char read() pure nothrow
+    char readChar() pure nothrow
     {
         char c;
-        if(savedChar == char.init)
+        if (savedChar == char.init)
         {
             c = stream[index];
             ++index;
         }
-        else   
+        else
         {
             c = savedChar;
             savedChar = char.init;
         }
-    
+
         savedLocation = location;
         updatePos(c);
+
+        return c;
     }
 
     void unreadChar(in char c) pure nothrow
-    in(c == char.init)
+    in (savedChar == char.init)
     {
         savedChar = c;
         location = savedLocation;
         --index;
     }
-} */
+}
