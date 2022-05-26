@@ -6,14 +6,14 @@ import std.math : abs, acos, cos, floor, PI, sin, sqrt;
 import pcg;
 import ray;
 
-immutable(bool) validParm(in float coordinate) pure nothrow
+pure nothrow bool validParm(in float coordinate)
 {
     return coordinate >= 0 && coordinate <= 1;
 }
 
 class Pigment
 {
-    abstract Color getColor(in Vec2d uv) const pure nothrow
+    abstract pure nothrow Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v));
 }
 
@@ -21,12 +21,12 @@ class UniformPigment : Pigment
 {
     Color color;
 
-    this(in Color col = Color()) pure nothrow
+    pure nothrow this(in Color col = Color())
     {
         color = col;
     }
 
-    override Color getColor(in Vec2d uv) const pure nothrow
+    override pure nothrow Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
         return color;
@@ -49,20 +49,20 @@ class CheckeredPigment : Pigment
     Color color1, color2;
     int numberOfSteps = 10;
 
-    this(in Color c1, in Color c2) pure nothrow
+    pure nothrow this(in Color c1, in Color c2)
     {
         color1 = c1;
         color2 = c2;
     }
 
-    this(in Color c1, in Color c2, in int nSteps) pure nothrow
+    pure nothrow this(in Color c1, in Color c2, in int nSteps)
     in (nSteps >= 0)
     {
         this(c1, c2);
         numberOfSteps = nSteps;
     }
 
-    override Color getColor(in Vec2d uv) const pure nothrow
+    override pure nothrow Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
         immutable int u = cast(int)(floor(uv.u * numberOfSteps));
@@ -89,12 +89,12 @@ class ImagePigment : Pigment
 {
     HDRImage image;
 
-    this(HDRImage img) pure nothrow
+    pure nothrow this(HDRImage img)
     {
         image = img;
     }
 
-    override Color getColor(in Vec2d uv) const pure nothrow
+    override pure nothrow Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
         int col = cast(int)(uv.u * image.width);
@@ -128,48 +128,48 @@ class BRDF
 {
     Pigment pigment;
 
-    this(Pigment p = new UniformPigment(white)) pure nothrow
+    pure nothrow this(Pigment p = new UniformPigment(white))
     {
         pigment = p;
     }
 
-    abstract Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const pure nothrow;
+    abstract pure nothrow Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const;
 
-    abstract Ray scatterRay(PCG pcg,
+    abstract pure nothrow Ray scatterRay(PCG pcg,
         in Vec incomingDir,
         in Point interactionPoint,
         in Normal n,
-        in int depth) const pure nothrow;
+        in int depth) const;
 }
 
 class DiffuseBRDF : BRDF
 {
     float reflectance = 1.0;
 
-    this(Pigment p = new UniformPigment(white), in float refl = 1.0) pure nothrow
+    pure nothrow this(Pigment p = new UniformPigment(white), in float refl = 1.0)
     in (refl > 0.0)
     {
         super(p);
         reflectance = refl;
     }
 
-    this(in float refl) pure nothrow
+    pure nothrow this(in float refl)
     in (refl > 0.0)
     {
         super();
         reflectance = refl;
     }
 
-    override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const pure nothrow
+    override pure nothrow Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
     {
         return pigment.getColor(uv) * (reflectance / PI);
     }
 
-    override Ray scatterRay(PCG pcg,
+    override pure nothrow Ray scatterRay(PCG pcg,
         in Vec incomingDir,
         in Point interactionPoint,
         in Normal n,
-        in int depth) const pure nothrow
+        in int depth) const
     {
         immutable Vec[3] e = createONBFromZ(n);
         immutable float cosThetaSq = pcg.randomFloat;
@@ -187,21 +187,21 @@ class SpecularBRDF : BRDF
 {
     float thresholdAngleRad = PI / 1800.0;
 
-    this(Pigment p = new UniformPigment(white), in float thresAngleRad = PI / 1800.0) pure nothrow
+    pure nothrow this(Pigment p = new UniformPigment(white), in float thresAngleRad = PI / 1800.0)
     in (thresAngleRad > 0.0)
     {
         super(p);
         thresholdAngleRad = thresAngleRad;
     }
 
-    this(in float thresAngleRad) pure nothrow
+    pure nothrow this(in float thresAngleRad)
     in (thresAngleRad > 0.0)
     {
         super();
         thresholdAngleRad = thresAngleRad;
     }
 
-    override Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const pure nothrow
+    override pure nothrow Color eval(in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv) const
     {
         immutable float thetaIn = acos(n * inDir);
         immutable float thetaOut = acos(n * outDir);
@@ -210,11 +210,11 @@ class SpecularBRDF : BRDF
         else return Color();
     }
 
-    override Ray scatterRay(PCG pcg,
+    override pure nothrow Ray scatterRay(PCG pcg,
         in Vec incomingDir,
         in Point interactionPoint,
         in Normal n,
-        in int depth) const pure nothrow
+        in int depth) const
     {
         immutable Vec rayDir = incomingDir.normalize;
         immutable Vec normal = n.convert.normalize;

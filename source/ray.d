@@ -12,13 +12,13 @@ struct Ray
     int depth = 0;
 
     /// Return the position of a Point at a given t
-    immutable(Point) at(in float t) const pure nothrow
+    pure nothrow Point at(in float t) const
     {
         return origin + t * dir;
     }
 
     /// Verify if two Ray are close
-    immutable(bool) rayIsClose(in Ray rhs) const pure nothrow
+    pure nothrow bool rayIsClose(in Ray rhs) const
     {
         return origin.xyzIsClose(rhs.origin) && dir.xyzIsClose(rhs.dir);
     }

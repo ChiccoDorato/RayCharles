@@ -8,7 +8,7 @@ import std.math : isFinite;
 
 class InvalidPfm2pngParms : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+    pure this(string msg, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line);
     }
@@ -50,7 +50,7 @@ struct Pfm2pngParameters
 
 class InvalidDemoParms : Exception
 {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+    pure this(string msg, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line);
     }
@@ -65,7 +65,7 @@ struct DemoParameters
 	int initialState, initialSequence;
 	immutable bool orthogonal;
 
-	this(in string[] args) pure
+	pure this(in string[] args)
 	{		
 		assert(args.length == 9);
 
@@ -119,7 +119,7 @@ struct DemoParameters
 		if (args[8] != "") orthogonal = true;
 	}
 
-	immutable(float) aspRat() pure nothrow
+	pure nothrow float aspRat()
 	{
 		return cast(float)(width) / height;
 	}

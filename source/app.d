@@ -140,7 +140,7 @@ void main(string[] args)
 			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
 			UniformPigment skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
 			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
-			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4,));
+			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
 
 			immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
@@ -169,7 +169,7 @@ void main(string[] args)
 			else
 			{
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-				renderer = new PathTracer(world, black, randomGenerator);
+				renderer = new PathTracer(world, black, randomGenerator, 10, 3, 4);
 			}
 			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));
