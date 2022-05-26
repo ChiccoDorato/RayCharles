@@ -103,7 +103,7 @@ void main(string[] args)
 			import cameras : Camera, ImageTracer, OrthogonalCamera, PerspectiveCamera;
 			import geometry : Vec, vecZ;
 			import hdrimage : black, Color, white;
-			import materials : CheckeredPigment, DiffuseBRDF, Material, SpecularBRDF, UniformPigment;
+			import materials : CheckeredPigment, DiffuseBRDF, ImagePigment, Material, SpecularBRDF, UniformPigment;
 			import pcg;
 			import ray;
 			import renderers;
@@ -127,7 +127,7 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
+			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-4.0, 0.0, 1.4));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
@@ -135,14 +135,17 @@ void main(string[] args)
 			HDRImage image = new HDRImage(parms.width, parms.height);
 			ImageTracer tracer = ImageTracer(image, camera);
 
+/// A Plane as a sky
 			immutable Color skyColor = black;
 			UniformPigment skyPig = new UniformPigment(skyColor);
 			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
-			UniformPigment skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
+			UniformPigment skyEmittedRadiance = new UniformPigment(Color(0.7, 0.7, 0.3));
 			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
 			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
-
+/// ***********************************************************************************************
+/// Decomment here to have the image required as homework 
+/// ***********************************************************************************************
 			immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
@@ -163,13 +166,60 @@ void main(string[] args)
 				new Sphere(translation(vecZ), sphereMaterial),
 				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
 
+/// ***********************************************************************************************
+/// De comment here for the wood
+/// ***********************************************************************************************
+// 			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
+// 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
+// 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
+// 			Material groundMaterial = Material(groundBRDF);
+
+// 			immutable Color mirrorColor = {0.1, 0.4, 0.7};
+// 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
+// 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
+// 			Material mirrorMaterial = Material(mirrorBRDF);
+
+// // This is a tree
+// 			HDRImage cylinderImg = new HDRImage("corteccia.pfm");
+// 			ImagePigment cylinderPig = new ImagePigment(cylinderImg);
+// 			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
+// 			Material cylinderMaterial = Material(cylinderBRDF);
+
+// 			HDRImage sphereImg = new HDRImage("foglie.pfm");
+// 			ImagePigment spherePig = new ImagePigment(sphereImg);
+// 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
+// 			Material sphereMaterial = Material(sphereBRDF);
+
+
+// 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
+// 			 	new Plane(Transformation(), groundMaterial),
+// 				// the tree
+// 				new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+
+// 				new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+
+// 				new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+
+// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
+// 			]);
+///************************************************************************************************************
+			// Renderer: flat, on-off, path
 			Renderer renderer;
 			if (parms.renderer == "flat") renderer = new FlatRenderer(world);
 			else if (parms.renderer == "on-off") renderer = new OnOffRenderer(world);
 			else
 			{
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-				renderer = new PathTracer(world, black, randomGenerator, 10, 3, 4);
+				renderer = new PathTracer(world, black, randomGenerator, 10, 2, 3);
 			}
 			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));
