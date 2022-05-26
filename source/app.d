@@ -127,7 +127,7 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-4.0, 0.0, 1.4));
+			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
@@ -139,7 +139,7 @@ void main(string[] args)
 			immutable Color skyColor = black;
 			UniformPigment skyPig = new UniformPigment(skyColor);
 			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
-			UniformPigment skyEmittedRadiance = new UniformPigment(Color(0.7, 0.7, 0.3));
+			UniformPigment skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
 			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
 			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
@@ -161,13 +161,13 @@ void main(string[] args)
 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
 			Material mirrorMaterial = Material(mirrorBRDF);
 			
-			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
+			World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
 				new Sphere(translation(vecZ), sphereMaterial),
 				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
 
 /// ***********************************************************************************************
-/// De comment here for the wood
+/// Decomment here for the wood
 /// ***********************************************************************************************
 // 			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
 // 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
@@ -190,7 +190,6 @@ void main(string[] args)
 // 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
 // 			Material sphereMaterial = Material(sphereBRDF);
 
-
 // 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
 // 			 	new Plane(Transformation(), groundMaterial),
 // 				// the tree
@@ -209,9 +208,9 @@ void main(string[] args)
 // 			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 // 			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
-// 			]);
+// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)]);
 ///************************************************************************************************************
+
 			// Renderer: flat, on-off, path
 			Renderer renderer;
 			if (parms.renderer == "flat") renderer = new FlatRenderer(world);
