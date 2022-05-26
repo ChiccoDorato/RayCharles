@@ -569,9 +569,11 @@ unittest
 class Cylinder : Shape
 {
     float r, phiMax, zMax, zMin;
+
     /// Build a Cylinder - also with a tranformation and a material
     pure nothrow this(in Transformation t = Transformation(), Material m = Material(),
     float radius = 1, float maxPhi = 2 * PI, float maxZ = 2.0, float minZ = 0.0)
+    in (!areClose(maxZ, minZ))
     {
         super(t, m);
         r = radius;
@@ -593,7 +595,7 @@ class Cylinder : Shape
     /// Create a Normal to a Vector in a Point of the Cylinder surface
     pure nothrow Normal cylinderNormal(in Point p, in Vec v) const
     {
-        immutable Normal n = Normal(p.x, p.y, 0);
+        immutable Normal n = Normal(p.x, p.y, 0.0);
         return p.convert * v < 0 ? n : -n;
     }
 

@@ -341,12 +341,12 @@ class HDRImage
 	{
 		immutable ubyte[3] magic = [80, 70, 10], endOfHeader = [49, 46, 48];
 		immutable ubyte space = 32, endLine = 10;
-		char[] charWidth = to!(char[])(width), charHeight = to!(char[])(height);
+		ubyte[] byteWidth = cast(ubyte[])(to!(char[])(width)), byteHeight = cast(ubyte[])(to!(char[])(height));
 
 		Appender!(ubyte[]) pfm = appender!(ubyte[]);
-		pfm.put(magic ~ cast(ubyte[])(charWidth) ~ space ~ cast(ubyte[])(charHeight) ~ endLine);
-		if (endianness == Endian.littleEndian) pfm.put(ubyte(45));
-		pfm.put(endOfHeader ~ endLine);
+		if (endianness == Endian.littleEndian)
+			pfm.put(magic ~ byteWidth ~ space ~ byteHeight ~ endLine ~ ubyte(45) ~ endOfHeader ~ endLine);
+		else pfm.put(magic ~ byteWidth ~ space ~ byteHeight ~ endLine ~ endOfHeader ~ endLine);
 
 		Color col;
 		for (int i = height - 1; i > -1; --i)
@@ -372,7 +372,7 @@ class HDRImage
 	}
 
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
-	@safe void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
+	/* @safe */ void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
 	{
 		if (fileName == [])
 		{
@@ -508,7 +508,7 @@ unittest
 	img.setPixel(1, 1, Color(4.0e2, 5.0e2, 6.0e2));
 	img.setPixel(2, 1, Color(7.0e2, 8.0e2, 9.0e2));
 
-	ubyte[] LEreferenceBytes = [
+	ubyte[84] leReferenceBytes = [
 	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x2d, 0x31, 0x2e, 0x30, 0x0a,
 	0x00, 0x00, 0xc8, 0x42, 0x00, 0x00, 0x48, 0x43, 0x00, 0x00, 0x96, 0x43,
 	0x00, 0x00, 0xc8, 0x43, 0x00, 0x00, 0xfa, 0x43, 0x00, 0x00, 0x16, 0x44,
@@ -517,7 +517,7 @@ unittest
 	0x00, 0x00, 0x20, 0x42, 0x00, 0x00, 0x48, 0x42, 0x00, 0x00, 0x70, 0x42,
 	0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42];
 
-	ubyte[] BEreferenceBytes = [
+	ubyte[83] beReferenceBytes = [
 	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x31, 0x2e, 0x30, 0x0a, 0x42,
 	0xc8, 0x00, 0x00, 0x43, 0x48, 0x00, 0x00, 0x43, 0x96, 0x00, 0x00, 0x43,
 	0xc8, 0x00, 0x00, 0x43, 0xfa, 0x00, 0x00, 0x44, 0x16, 0x00, 0x00, 0x44,
@@ -527,8 +527,8 @@ unittest
 	0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00];
 	
 	// writePFM
-	assert(img.writePFM == LEreferenceBytes);
-	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
+	assert(img.writePFM == leReferenceBytes);
+	assert(img.writePFM(Endian.bigEndian) == beReferenceBytes);
 }
 
 ///
