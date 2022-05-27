@@ -12,13 +12,13 @@ struct Ray
     int depth = 0;
 
     /// Return the position of a Point at a given t
-    pure nothrow Point at(in float t) const
+    pure nothrow @nogc @safe Point at(in float t) const
     {
         return origin + t * dir;
     }
 
     /// Verify if two Ray are close
-    pure nothrow bool rayIsClose(in Ray rhs) const
+    pure nothrow @nogc @safe bool rayIsClose(in Ray rhs) const
     {
         return origin.xyzIsClose(rhs.origin) && dir.xyzIsClose(rhs.dir);
     }
