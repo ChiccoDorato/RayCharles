@@ -12,13 +12,13 @@ struct Transformation
 	float[4][4] m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 	float[4][4] invM = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 
-	pure nothrow this(in float[4][4] matrix, in float[4][4] invMatrix)
+	pure nothrow @nogc @safe this(in float[4][4] matrix, in float[4][4] invMatrix)
     {
 		m = matrix;
 		invM = invMatrix;
 	}
 
-	pure nothrow float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
+	pure nothrow @nogc @safe float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
     {
 		float[4][4] prod = 0;
 		for (ubyte i = 0; i < 4; ++i)
@@ -27,7 +27,7 @@ struct Transformation
 		return prod;
 	}
 
-    pure nothrow bool matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
+    pure nothrow @nogc @safe bool matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
     {
         for (ubyte i = 0; i < 4; ++i)
             for (ubyte j = 0; j < 4; ++j)
@@ -35,27 +35,27 @@ struct Transformation
         return true;
     }
 
-    pure nothrow bool transfIsClose(in Transformation t, in float epsilon=1e-5) const
+    pure nothrow @nogc @safe bool transfIsClose(in Transformation t, in float epsilon=1e-5) const
     {
         return matrixIsClose(m, t.m, epsilon) && matrixIsClose(invM, t.invM, epsilon);
     }
 
-	pure nothrow bool isConsistent(in float epsilon=1e-5) const
+	pure nothrow @nogc @safe bool isConsistent(in float epsilon=1e-5) const
     {
 		return matrixIsClose(matProd(m, invM), id4, epsilon);
 	}
 
-	pure nothrow Transformation inverse() const
+	pure nothrow @nogc @safe Transformation inverse() const
     {
 		return Transformation(invM, m);
 	}
 
-	pure nothrow Transformation opBinary(string op)(in Transformation rhs) const if (op == "*")
+	pure nothrow @nogc @safe Transformation opBinary(string op)(in Transformation rhs) const if (op == "*")
     {
 		return Transformation(matProd(m, rhs.m), matProd(rhs.invM, invM));
 	}
 
-	pure nothrow Point opBinary(string op)(in Point rhs) const if (op == "*")
+	pure nothrow @nogc @safe Point opBinary(string op)(in Point rhs) const if (op == "*")
     {
 		immutable Point p = Point(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2] + m[0][3],
             rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2] + m[1][3],
@@ -66,21 +66,21 @@ struct Transformation
 		return p * (1 / lambda);
 	}
 
-	pure nothrow Vec opBinary(string op)(in Vec rhs) const if (op == "*")
+	pure nothrow @nogc @safe Vec opBinary(string op)(in Vec rhs) const if (op == "*")
     {
 		return Vec(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2],
             rhs.x * m[1][0] + rhs.y * m[1][1] + rhs.z * m[1][2],
             rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2]);
 	}
 
-    pure nothrow Normal opBinary(string op)(in Normal rhs) const if (op == "*")
+    pure nothrow @nogc @safe Normal opBinary(string op)(in Normal rhs) const if (op == "*")
     {
 		return Normal(rhs.x * invM[0][0] + rhs.y * invM[1][0] + rhs.z * invM[2][0],
             rhs.x * invM[0][1] + rhs.y * invM[1][1] + rhs.z * invM[2][1],
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
 
-    pure nothrow Ray opBinary(string op)(in Ray rhs) const if (op == "*")
+    pure nothrow @nogc @safe Ray opBinary(string op)(in Ray rhs) const if (op == "*")
     {
         return Ray(this * rhs.origin, this * rhs.dir, rhs.tMin, rhs.tMax, rhs.depth);
     }
@@ -192,7 +192,7 @@ unittest
 }
 
 // Function that creates translation of a given vector.
-pure nothrow Transformation translation(in Vec v)
+pure nothrow @nogc @safe Transformation translation(in Vec v)
 {
 	immutable float[4][4] m = [[1.0, 0.0, 0.0, v.x],
 		[0.0, 1.0, 0.0, v.y],
@@ -220,7 +220,7 @@ unittest
     assert(prod.transfIsClose(expected));
 }
 
-pure nothrow Transformation rotationX(in float angleInDegrees)
+pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180),
         cosine = cos(angleInDegrees * PI / 180);
@@ -235,7 +235,7 @@ pure nothrow Transformation rotationX(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
-pure nothrow Transformation rotationY(in float angleInDegrees)
+pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
     immutable float[4][4] m = [[cosine, 0.0, sine, 0.0],
@@ -249,7 +249,7 @@ pure nothrow Transformation rotationY(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
-pure nothrow Transformation rotationZ(in float angleInDegrees)
+pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
     immutable float[4][4] m = [[cosine, -sine, 0.0, 0.0],
@@ -274,7 +274,7 @@ unittest
     assert((rotationZ(90) * vecX).xyzIsClose(vecY));
 }
 
-pure nothrow Transformation scaling(in Vec v)
+pure nothrow @nogc @safe Transformation scaling(in Vec v)
 {
 	immutable float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
 		[0.0, v.y, 0.0, 0.0],

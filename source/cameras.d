@@ -15,7 +15,7 @@ class Camera
     Transformation transformation;  
 
     /// Abstract method: Shoot a rays in a given 2D Point (u, v) on the surface of the image 
-    abstract pure nothrow Ray fireRay(in float u, in float v) const;
+    abstract pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const;
 }
 
 ///******************** OrthogonalCamera ********************
@@ -23,7 +23,7 @@ class Camera
 class OrthogonalCamera : Camera
 {   
     /// Build an orthogonal camera - Default: unitary aspect ratio and Identity transformation applied
-    pure nothrow this(in float aspRat = 1.0, in Transformation transf = Transformation())
+    pure nothrow @nogc @safe this(in float aspRat = 1.0, in Transformation transf = Transformation())
     in (aspRat > 0)
     {
         aspectRatio = aspRat;
@@ -31,7 +31,7 @@ class OrthogonalCamera : Camera
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
-    override pure nothrow Ray fireRay(in float u, in float v) const
+    override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
     {
         Ray r = {Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX};
         r = transformation * r;
@@ -76,7 +76,7 @@ unittest
  class PerspectiveCamera : Camera 
 {
     /// Build a perspective camera - Default: unitary aspect ratio and Identity transformation applied
-    pure nothrow this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation())
+    pure nothrow @nogc @safe this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation())
     in (dist > 0)
     in (aspRat > 0)
     {
@@ -86,7 +86,7 @@ unittest
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
-    override pure nothrow Ray fireRay(in float u, in float v) const
+    override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
     {
         Ray r = {Point(-d, 0.0, 0.0), Vec(d, (1.0 - 2 * u) * aspectRatio, 2 * v - 1)};
         r = transformation * r;
@@ -134,14 +134,14 @@ struct ImageTracer
     Camera camera;
 
     /// Build an ImageTracer given an HDRImage and a Camera
-    pure nothrow this(HDRImage img, Camera cam)
+    pure nothrow @safe this(HDRImage img, Camera cam)
     {
         image = img;
         camera = cam;
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
-    pure nothrow Ray fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
+    pure nothrow @nogc @safe Ray fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
     in (col + uPixel >= 0 && col + uPixel <= image.width)
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {

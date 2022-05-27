@@ -160,8 +160,8 @@ pure @safe int[2] parseImgSize(in ubyte[] imgSize)
 	{
 		immutable int w = to!int(widthArray);
 		immutable int h = to!int(heightArray);
-		if (w < 0 || h < 0)
-			throw new InvalidPFMFileFormat("invalid width and/or height (negative)");
+		if (w <= 0 || h <= 0)
+			throw new InvalidPFMFileFormat("invalid width and/or height (non positive)");
 		return [w, h];
 	}
 	catch (ConvException exc)
@@ -178,10 +178,12 @@ unittest
 	ubyte[] emptyArray;
 	assertThrown!InvalidPFMFileFormat(parseImgSize(emptyArray));
 
-	ubyte[] floatDimensions = [50, 46, 32, 51, 10], negativeDimensions = [45, 50, 32, 52, 10];
+	ubyte[] floatDimension = [50, 46, 32, 51, 10];
+	ubyte[] zeroDimension = [52, 32, 48, 10], negativeDimension = [45, 50, 32, 52, 10];
 	ubyte[] manyDimensions = [53, 32, 53, 32, 49, 10];
-	assertThrown!InvalidPFMFileFormat(parseImgSize(floatDimensions));
-	assertThrown!InvalidPFMFileFormat(parseImgSize(negativeDimensions));
+	assertThrown!InvalidPFMFileFormat(parseImgSize(floatDimension));
+	assertThrown!InvalidPFMFileFormat(parseImgSize(zeroDimension));
+	assertThrown!InvalidPFMFileFormat(parseImgSize(negativeDimension));
 	assertThrown!InvalidPFMFileFormat(parseImgSize(manyDimensions));
 }
 

@@ -9,7 +9,7 @@ import std.math : sqrt;
 /// Convert an (x, y, z)-object into a string
 mixin template toString(T)
 {
-    @safe string toString()() const
+    nothrow @safe string toString()() const
     in (T.tupleof.length == 3, "toString accepts xyz types only.")
     {
         string[] typePath = to!string(typeid(T)).split(".");

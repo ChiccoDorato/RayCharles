@@ -15,7 +15,7 @@ struct InputStream
     SourceLocation location, savedLocation;
     ubyte tabulations;
 
-    pure nothrow this(char[] s, in string fileName = "", in ubyte tab = 4)
+    pure nothrow @safe this(char[] s, in string fileName = "", in ubyte tab = 4)
     in (stream.length != 0)
     in (tab == 4 || tab == 8)
     {
