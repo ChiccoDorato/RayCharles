@@ -146,71 +146,71 @@ void main(string[] args)
 /// ***********************************************************************************************
 /// Decomment here to have the image required as homework 
 /// ***********************************************************************************************
-			immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
+			// immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
+			// CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
+			// DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
+			// Material groundMaterial = Material(groundBRDF);
+
+			// immutable Color sphereColor = {0.3, 0.4, 0.8};
+			// UniformPigment spherePig = new UniformPigment(sphereColor);
+			// DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
+			// Material sphereMaterial = Material(sphereBRDF);
+
+			// immutable Color mirrorColor = {0.6, 0.2, 0.3};
+			// UniformPigment mirrorPig = new UniformPigment(mirrorColor);
+			// SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
+			// Material mirrorMaterial = Material(mirrorBRDF);
+			
+			// World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
+			// 	new Plane(Transformation(), groundMaterial),
+			// 	new Sphere(translation(vecZ), sphereMaterial),
+			// 	new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
+                                                                                                                                                                          
+/// ***********************************************************************************************
+/// De comment here for the wood
+/// ***********************************************************************************************
+			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
 			Material groundMaterial = Material(groundBRDF);
 
-			immutable Color sphereColor = {0.3, 0.4, 0.8};
-			UniformPigment spherePig = new UniformPigment(sphereColor);
-			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-			Material sphereMaterial = Material(sphereBRDF);
-
-			immutable Color mirrorColor = {0.6, 0.2, 0.3};
+			immutable Color mirrorColor = {0.1, 0.4, 0.7};
 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
 			Material mirrorMaterial = Material(mirrorBRDF);
-			
+
+// This is a tree
+			HDRImage cylinderImg = new HDRImage("corteccia.pfm");
+			ImagePigment cylinderPig = new ImagePigment(cylinderImg);
+			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
+			Material cylinderMaterial = Material(cylinderBRDF);
+
+			HDRImage sphereImg = new HDRImage("foglie.pfm");
+			ImagePigment spherePig = new ImagePigment(sphereImg);
+			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
+			Material sphereMaterial = Material(sphereBRDF);
+
+
 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
-				new Plane(Transformation(), groundMaterial),
-				new Sphere(translation(vecZ), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
+			 	new Plane(Transformation(), groundMaterial),
+				// the tree
+				new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+				new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			 	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			 	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-/// ***********************************************************************************************
-/// De comment here for the wood
-/// ***********************************************************************************************
-// 			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
-// 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
-// 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
-// 			Material groundMaterial = Material(groundBRDF);
+				new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
+				new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			 	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			 	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// 			immutable Color mirrorColor = {0.1, 0.4, 0.7};
-// 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
-// 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
-// 			Material mirrorMaterial = Material(mirrorBRDF);
+				new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+				new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// // This is a tree
-// 			HDRImage cylinderImg = new HDRImage("corteccia.pfm");
-// 			ImagePigment cylinderPig = new ImagePigment(cylinderImg);
-// 			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-// 			Material cylinderMaterial = Material(cylinderBRDF);
-
-// 			HDRImage sphereImg = new HDRImage("foglie.pfm");
-// 			ImagePigment spherePig = new ImagePigment(sphereImg);
-// 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-// 			Material sphereMaterial = Material(sphereBRDF);
-
-
-// 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
-// 			 	new Plane(Transformation(), groundMaterial),
-// 				// the tree
-// 				new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-// 				new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-// 				new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
-// 			]);
+				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
+			]);
 ///************************************************************************************************************
 			// Renderer: flat, on-off, path
 			Renderer renderer;
