@@ -127,7 +127,7 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-4.0, 0.0, 1.4));
+			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
@@ -139,9 +139,9 @@ void main(string[] args)
 			immutable Color skyColor = black;
 			UniformPigment skyPig = new UniformPigment(skyColor);
 			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
-			UniformPigment skyEmittedRadiance = new UniformPigment(Color(0.7, 0.7, 0.3));
+			UniformPigment skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
 			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
-			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4,));
+			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
 /// ***********************************************************************************************
 /// Decomment here to have the image required as homework 
@@ -212,6 +212,7 @@ void main(string[] args)
 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
 			]);
 ///************************************************************************************************************
+
 			// Renderer: flat, on-off, path
 			Renderer renderer;
 			if (parms.renderer == "flat") renderer = new FlatRenderer(world);

@@ -17,36 +17,36 @@ class Renderer
     World world;
     Color backgroundColor;
 
-    this(World w)
+    pure nothrow this(World w)
     {
         world = w;
     }
 
-    this(World w, in Color bgCol)
+    pure nothrow this(World w, in Color bgCol)
     {
         this(w);
         backgroundColor = bgCol;
     }
 
-    abstract Color call(in Ray r);
+    abstract pure nothrow Color call(in Ray r);
 }
 
 class OnOffRenderer : Renderer
 {
     Color color = white;
 
-    this(World w)
+    pure nothrow this(World w)
     {
         super(w);
     }
 
-    this(World w, in Color bgCol, in Color col)
+    pure nothrow this(World w, in Color bgCol, in Color col)
     {
         super(w, bgCol);
         color = col;
     }
 
-    override Color call(in Ray r)
+    override pure nothrow Color call(in Ray r)
     {
         return world.rayIntersection(r).isNull ? backgroundColor : color;
     }
@@ -80,17 +80,17 @@ unittest
 
 class FlatRenderer : Renderer
 {
-    this(World w)
+    pure nothrow this(World w)
     {
         super(w);
     }
 
-    this(World w, in Color bgCol)
+    pure nothrow this(World w, in Color bgCol)
     {
         super(w, bgCol);
     }
 
-    override Color call(in Ray r)
+    override pure nothrow Color call(in Ray r)
     {
         Nullable!HitRecord hit = world.rayIntersection(r);
         if (hit.isNull) return backgroundColor;
@@ -134,7 +134,7 @@ class PathTracer : Renderer
     PCG pcg = new PCG();
     int numberOfRays = 10, maxDepth = 2, russianRouletteLimit = 3;
 
-    this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
+    pure nothrow this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
         in int numOfRays = 10, in int depth = 2, in int RRLimit = 3)
     {
         super(w, bgCol);
@@ -144,7 +144,7 @@ class PathTracer : Renderer
         russianRouletteLimit = RRLimit;
     }
 
-    override Color call(in Ray ray)
+    override pure nothrow Color call(in Ray ray)
     {
         if (ray.depth > maxDepth) return black;
 
