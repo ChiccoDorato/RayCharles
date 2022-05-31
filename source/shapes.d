@@ -63,11 +63,11 @@ class Sphere : Shape
         float z = p.z;
         if (z < -1 && z > -1.001) z = -1;
         if (z > 1 && z < 1.001) z = 1;
- 
+
         float u = atan2(p.y, p.x) / (2.0 * PI);
-        if (areClose(p.y, 0)) u = abs(u);
-        else if (p.y < 0) ++u;
+        if (p.y == 0) u = abs(u);
         else if (p.x < 0) u += 0.5;
+        else if (p.y < 0) ++u;
         return Vec2d(u, acos(z) / PI);
     }
 
@@ -131,7 +131,7 @@ class Sphere : Shape
 
 ///
 unittest
-{   
+{
     Sphere s = new Sphere();
 
     // rayIntersection with the Sphere
@@ -625,9 +625,9 @@ class Cylinder : Shape
     pure nothrow @nogc @safe Vec2d cylinderUVPoint(in Point p) const
     {
         float u = atan2(p.y, p.x) / (2.0 * PI);
-        if (areClose(p.y, 0)) u = abs(u);
-        else if (p.y < 0) ++u;
+        if (p.y == 0) u = abs(u);
         else if (p.x < 0) u += 0.5;
+        else if (p.y < 0) ++u;
         return Vec2d(u, p.z);
     }
 
