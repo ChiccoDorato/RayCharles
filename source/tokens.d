@@ -65,9 +65,4 @@ struct InputStream
         location = savedLocation;
         --index;
     }
-<<<<<<< HEAD
 }
-*/
-=======
-}
->>>>>>> 5bc956870b76d54f1738c17eac6334f36c53c9a7

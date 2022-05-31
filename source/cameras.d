@@ -2,6 +2,7 @@ module cameras;
 
 import geometry : Point, Vec, vecX, vecY;
 import hdrimage : areClose, Color, HDRImage;
+import pcg;
 import ray;
 import transformations : rotationZ, Transformation, translation;
 
@@ -132,12 +133,17 @@ struct ImageTracer
 {
     HDRImage image;
     Camera camera;
+    uint samplesPerPixel;
+    PCG pcg;
 
-    /// Build an ImageTracer given an HDRImage and a Camera
-    pure nothrow @safe this(HDRImage img, Camera cam)
+    /// Build an ImageTracer with the anti-aliasing to remove the Moire effect
+    // when samplesPerPixel > 0 stratified sampling is applied to every pixel using the random generator
+    pure nothrow @safe this(HDRImage img, Camera cam, uint samPP = 0, PCG pcg = new PCG())
     {
         image = img;
         camera = cam;
+        samplesPerPixel = samPP;
+        pcg = pcg;
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
@@ -147,7 +153,7 @@ struct ImageTracer
     {
         immutable float u = (col + uPixel) / image.width;
         immutable float v = 1.0 - (row + vPixel) / image.height;
-        return camera.fireRay(u, v);
+        return camera.fireRay(u, v); 
     }
 
     /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
@@ -156,8 +162,28 @@ struct ImageTracer
         Color color;
         for (uint row = 0; row < image.height; ++row){
             for (uint col = 0; col < image.width; ++col){
-                color = solveRendering(fireRay(col, row));
-                image.setPixel(col, row, color);
+                Color colSum = Color(0.0, 0.0, 0.0);
+
+                if (samplesPerPixel > 0)
+                {
+                    for (uint interPixelRow = 0; interPixelRow < samplesPerPixel; interPixelRow++)
+                    {
+                        for (uint interPixelCol = 0; interPixelCol < samplesPerPixel; interPixelCol++)
+                        {
+                            immutable float u = (interPixelCol + pcg.randomFloat) / samplesPerPixel;
+                            immutable float v = (interPixelRow + pcg.randomFloat) / samplesPerPixel;
+                            Ray ray = fireRay(col, row, u, v);
+                            colSum = colSum + solveRendering(ray);
+                            
+                            image.setPixel(col, row, colSum * (1 / (samplesPerPixel * samplesPerPixel)));
+                        }
+                    }
+                }
+                else 
+                {
+                Ray ray = fireRay(col, row);
+                image.setPixel(col, row, solveRendering(ray));
+                }
             }
         }
     }
