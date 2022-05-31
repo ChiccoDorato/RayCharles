@@ -3,7 +3,7 @@ module transformations;
 import geometry : Normal, Point, Vec, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import ray;
-import std.math : cos, PI, sin;
+import std.math : cos, PI, sin, sqrt;
 
 immutable float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 
@@ -222,8 +222,21 @@ unittest
 
 pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 {
-    immutable float sine = sin(angleInDegrees * PI / 180),
-        cosine = cos(angleInDegrees * PI / 180);
+    immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
+        [0.0, cosine, -sine, 0.0],
+        [0.0, sine, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    immutable float[4][4] invM = [[1.0, 0.0, 0.0, 0.0],
+        [0.0, cosine, sine, 0.0],
+        [0.0, -sine, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
+pure nothrow @nogc @safe Transformation rotationX(in float cosine, in float sine)
+in (areClose(cosine * cosine + sine * sine, 1.0))
+{
     immutable float[4][4] m = [[1.0, 0.0, 0.0, 0.0],
         [0.0, cosine, -sine, 0.0],
         [0.0, sine, cosine, 0.0],
@@ -249,9 +262,37 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
+pure nothrow @nogc @safe Transformation rotationY(in float cosine, in float sine)
+in (areClose(cosine * cosine + sine * sine, 1.0))
+{
+    immutable float[4][4] m = [[cosine, 0.0, sine, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [-sine, 0.0, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    immutable float[4][4] invM = [[cosine, 0.0, -sine, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [sine, 0.0, cosine, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
 pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
+    immutable float[4][4] m = [[cosine, -sine, 0.0, 0.0],
+        [sine, cosine, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    immutable float[4][4] invM = [[cosine, sine, 0.0, 0.0],
+        [-sine, cosine, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0]];
+    return Transformation(m, invM);
+}
+
+pure nothrow @nogc @safe Transformation rotationZ(in float cosine, in float sine)
+in (areClose(cosine * cosine + sine * sine, 1.0))
+{
     immutable float[4][4] m = [[cosine, -sine, 0.0, 0.0],
         [sine, cosine, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
@@ -272,6 +313,10 @@ unittest
     assert((rotationX(90) * vecY).xyzIsClose(vecZ));
     assert((rotationY(90) * vecZ).xyzIsClose(vecX));
     assert((rotationZ(90) * vecX).xyzIsClose(vecY));
+
+    assert(rotationX(sqrt(3.0) / 2.0, 0.5).transfIsClose(rotationX(30.0)));
+    assert(rotationY(sqrt(2.0) / 2.0, sqrt(2.0) / 2.0).transfIsClose(rotationY(45.0)));
+    assert(rotationZ(1.0, 0.0).transfIsClose(rotationZ(360.0)));
 }
 
 pure nothrow @nogc @safe Transformation scaling(in Vec v)

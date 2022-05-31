@@ -349,20 +349,20 @@ struct Vec2d
 }
 
 /// Return an array of Vec generatig a 3D Orthonormal Base
-pure nothrow @nogc @safe Vec[3] createONBFromZ(in Normal n)
+pure nothrow @nogc @safe Vec[3] createONBFromZ(Normal n)
 {
-    Normal normN = n;
-    if (!areClose(n.squaredNorm, 1.0, 1e-4)) normN = n.normalize;
+    immutable float sqNorm = n.squaredNorm;
+    if (!areClose(sqNorm, 1.0, 1e-4)) n = n * (1.0 / sqrt(sqNorm));
 
     float sign;
-    normN.z > 0.0 ? (sign = 1.0) : (sign = -1.0); 
-    immutable float a = -1.0 / (sign + normN.z);
-    immutable float b = normN.x * normN.y * a;
+    n.z > 0.0 ? (sign = 1.0) : (sign = -1.0);
+    immutable float a = -1.0 / (sign + n.z);
+    immutable float b = n.x * n.y * a;
 
-    immutable Vec e1 = Vec(1.0 + sign * normN.x * normN.x * a, sign * b, -sign * normN.x);
-    immutable Vec e2 = Vec(b, sign + normN.y * normN.y * a, -normN.y);
+    immutable Vec e1 = Vec(1.0 + sign * n.x * n.x * a, sign * b, -sign * n.x);
+    immutable Vec e2 = Vec(b, sign + n.y * n.y * a, -n.y);
 
-    return [e1, e2, Vec(normN.x, normN.y, normN.z)];
+    return [e1, e2, Vec(n.x, n.y, n.z)];
 }
 
 unittest
