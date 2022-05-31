@@ -5,7 +5,7 @@ import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import materials : Material;
 import ray;
-import std.math : acos, atan2, floor, PI, sqrt;
+import std.math : abs, acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationX, rotationY, rotationZ;
 
@@ -65,7 +65,9 @@ class Sphere : Shape
         if (z > 1 && z < 1.001) z = 1;
  
         float u = atan2(p.y, p.x) / (2.0 * PI);
-        if (u < 0) ++u; // ? Anche per cilindro, secondo me non ha senso
+        if (areClose(p.y, 0)) u = abs(u);
+        else if (p.y < 0) ++u;
+        else if (p.x < 0) u += 0.5;
         return Vec2d(u, acos(z) / PI);
     }
 
@@ -623,7 +625,9 @@ class Cylinder : Shape
     pure nothrow @nogc @safe Vec2d cylinderUVPoint(in Point p) const
     {
         float u = atan2(p.y, p.x) / (2.0 * PI);
-        if (u < 0.0) ++u; // ? Anche per sfera
+        if (areClose(p.y, 0)) u = abs(u);
+        else if (p.y < 0) ++u;
+        else if (p.x < 0) u += 0.5;
         return Vec2d(u, p.z);
     }
 
