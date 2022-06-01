@@ -113,6 +113,7 @@ void main(string[] args)
 			import ray;
 			import renderers;
 			import shapes;
+			import std.math : sqrt;
 			import transformations : rotationZ, scaling, Transformation, translation;
 
 			DemoParameters* parms;
@@ -133,14 +134,15 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
+			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-2.0, 0.0, 1.0));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
 			int samplesPerPixel = parms.samplesPerPixel;
+			int samplesPerSide = cast(int)(sqrt(cast(float)(samplesPerPixel)));
 			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera, samplesPerPixel);
+			ImageTracer tracer = ImageTracer(image, camera, samplesPerSide);
 
 /// A Plane as a sky
 			immutable Color skyColor = black;
@@ -170,8 +172,9 @@ void main(string[] args)
 			
 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
-				new Sphere(translation(vecZ), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
+				//new Sphere(translation(vecZ), sphereMaterial),
+				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial),
+				new Cylinder(translation(Vec(0.0, 0.0, 0.0)), sphereMaterial)]);
                                                                                                                                                                           
 /// ***********************************************************************************************
 /// De comment here for the wood

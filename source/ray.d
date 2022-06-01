@@ -2,8 +2,8 @@ module ray;
 
 import geometry : Point, Vec, xyzIsClose; 
 
-///******************** Ray ********************
-/// struct a 3D Ray
+//******************** Ray ********************
+/// struct of a 3D Ray
 struct Ray
 {
     Point origin;

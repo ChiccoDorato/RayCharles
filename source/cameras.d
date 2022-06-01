@@ -133,16 +133,16 @@ struct ImageTracer
 {
     HDRImage image;
     Camera camera;
-    uint samplesPerPixel;
+    uint samplesPerSide;
     PCG pcg;
 
     /// Build an ImageTracer with the anti-aliasing to remove the Moire effect
     // when samplesPerPixel > 0 stratified sampling is applied to every pixel using the random generator
-    pure nothrow @safe this(HDRImage img, Camera cam, uint samPP = 0, PCG pcg = new PCG())
+    pure nothrow @safe this(HDRImage img, Camera cam, uint samPS = 0, PCG pcg = new PCG())
     {
         image = img;
         camera = cam;
-        samplesPerPixel = samPP;
+        samplesPerSide = samPS;
         pcg = pcg;
     }
 
@@ -153,7 +153,7 @@ struct ImageTracer
     {
         immutable float u = (col + uPixel) / image.width;
         immutable float v = 1.0 - (row + vPixel) / image.height;
-        return camera.fireRay(u, v); 
+        return camera.fireRay(u, v);
     }
 
     /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
@@ -162,31 +162,41 @@ struct ImageTracer
         Color color;
         for (uint row = 0; row < image.height; ++row){
             for (uint col = 0; col < image.width; ++col){
-                Color colSum = Color(0.0, 0.0, 0.0);
-
-                if (samplesPerPixel > 0)
-                {
-                    for (uint interPixelRow = 0; interPixelRow < samplesPerPixel; interPixelRow++)
-                    {
-                        for (uint interPixelCol = 0; interPixelCol < samplesPerPixel; interPixelCol++)
-                        {
-                            immutable float u = (interPixelCol + pcg.randomFloat) / samplesPerPixel;
-                            immutable float v = (interPixelRow + pcg.randomFloat) / samplesPerPixel;
-                            Ray ray = fireRay(col, row, u, v);
-                            colSum = colSum + solveRendering(ray);
-                            
-                            image.setPixel(col, row, colSum * (1 / (samplesPerPixel * samplesPerPixel)));
-                        }
-                    }
-                }
-                else 
-                {
-                Ray ray = fireRay(col, row);
-                image.setPixel(col, row, solveRendering(ray));
-                }
+                color = solveRendering(fireRay(col, row));
+                image.setPixel(col, row, color);
             }
         }
     }
+    // /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
+    // void fireAllRays(in Color delegate(Ray) solveRendering)
+    // {
+    //     for (uint row = 0; row < image.height; ++row){
+    //         for (uint col = 0; col < image.width; ++col){
+    //             Color colSum = Color(0.0, 0.0, 0.0);
+
+    //             if (samplesPerSide > 0)
+    //             {
+    //                 for (uint interPixelRow = 0; interPixelRow < samplesPerSide; interPixelRow++)
+    //                 {
+    //                     for (uint interPixelCol = 0; interPixelCol < samplesPerSide; interPixelCol++)
+    //                     {
+    //                         immutable float u = (interPixelCol + pcg.randomFloat) / samplesPerSide;
+    //                         immutable float v = (interPixelRow + pcg.randomFloat) / samplesPerSide;
+    //                         Ray ray = fireRay(col, row, u, v);
+    //                         colSum = colSum + solveRendering(ray);
+                            
+    //                         image.setPixel(col, row, colSum * (1 / (samplesPerSide * samplesPerSide)));
+    //                     }
+    //                 }
+    //             }
+    //             else 
+    //             {
+    //             Ray ray = fireRay(col, row);
+    //             image.setPixel(col, row, solveRendering(ray));
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 /// Test xyzIsClose of the Tracer
