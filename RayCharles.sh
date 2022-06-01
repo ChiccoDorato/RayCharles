@@ -8,7 +8,7 @@ fi
 for angle in $(seq 0 359); do
     # Angle with three digits, e.g. angle="1" → angleNNN="001"
     angleNNN=$(printf "%03d" $angle)
-    ./RayCharles demo --width=640 --height=480 --angleDeg $angle --pngOutput=AnimationFrames/img$angleNNN.png
+    ./RayCharles demo --algorithm=path -samPP=4 --width=640 --height=480 --angleDeg $angle --pngOutput=AnimationFrames/img$angleNNN.png
 done
 
 # -r 30: Number of frames per second
