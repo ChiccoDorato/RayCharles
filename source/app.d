@@ -9,6 +9,7 @@ import std.stdio : writeln;
 void main(string[] args)
 { 
 	auto rayC = new Program("RayCharles", "1.0")
+	///********************* pfm2png ********************
 		.add(new Command("pfm2png")
 			.add(new Argument("pfmInputFileName",
 				"name of the pfm file to convert"))
@@ -20,6 +21,7 @@ void main(string[] args)
 			.add(new Option("g", "gamma",
 				"gamma correction value. Default: 1.0")
 				.defaultValue("1.0")))
+	///********************* demo ********************
 		.add(new Command("demo")
 			.add(new Option("W", "width",
 				"width in pixels of the image to render. Default: 640")
@@ -43,8 +45,11 @@ void main(string[] args)
 				"initial seed for the random generator. Default: 45")
 				.defaultValue("45"))
 			.add(new Option("initSeq", "initialSequence",
-				"Identifier of the sequence produced by a random generator. Default: 54")
+				"identifier of the sequence produced by a random generator. Default: 54")
 				.defaultValue("54"))
+			.add(new Option("samPP", "samplesPerPixel",
+				"number of samples per Pixel. Default: 0")
+				.defaultValue("0"))
 			.add(new Flag("o", "orthogonal",
 				"use an orthogonal camera. Default: perspective camera")))
 		.parse(args);
@@ -121,6 +126,7 @@ void main(string[] args)
 				rayC.option("pngOutput"),
 				rayC.option("initialState"),
 				rayC.option("initialSequence"),
+				rayC.option("samplesPerPixel"),
 				rayC.flag("orthogonal") == true ? "o" : ""]);
 			catch (InvalidDemoParms exc)
 			{
@@ -133,8 +139,10 @@ void main(string[] args)
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
+			int samplesPerPixel = parms.samplesPerPixel;
+			int samplesPerSide = cast(int)(sqrt(cast(float)(samplesPerPixel)));
 			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera);
+			ImageTracer tracer = ImageTracer(image, camera, samplesPerSide);
 
 /// A Plane as a sky
 			UniformPigment skyPig = new UniformPigment(black);
@@ -182,48 +190,48 @@ void main(string[] args)
 /// ***********************************************************************************************
 /// Decomment here for the wood
 /// ***********************************************************************************************
-			// immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
-			// CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
-			// DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
-			// Material groundMaterial = Material(groundBRDF);
+// 			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
+// 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
+// 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
+// 			Material groundMaterial = Material(groundBRDF);
 
-			// immutable Color mirrorColor = {0.1, 0.4, 0.7};
-			// UniformPigment mirrorPig = new UniformPigment(mirrorColor);
-			// SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
-			// Material mirrorMaterial = Material(mirrorBRDF);
+// 			immutable Color mirrorColor = {0.1, 0.4, 0.7};
+// 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
+// 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
+// 			Material mirrorMaterial = Material(mirrorBRDF);
 
-			// // This is a tree
-			// HDRImage cylinderImg = new HDRImage("corteccia.pfm");
-			// ImagePigment cylinderPig = new ImagePigment(cylinderImg);
-			// DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-			// Material cylinderMaterial = Material(cylinderBRDF);
+//          // This is a tree
+// 			HDRImage cylinderImg = new HDRImage("corteccia.pfm");
+// 			ImagePigment cylinderPig = new ImagePigment(cylinderImg);
+// 			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
+// 			Material cylinderMaterial = Material(cylinderBRDF);
 
-			// HDRImage sphereImg = new HDRImage("foglie.pfm");
-			// ImagePigment spherePig = new ImagePigment(sphereImg);
-			// DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-			// Material sphereMaterial = Material(sphereBRDF);
+// 			HDRImage sphereImg = new HDRImage("foglie.pfm");
+// 			ImagePigment spherePig = new ImagePigment(sphereImg);
+// 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
+// 			Material sphereMaterial = Material(sphereBRDF);
 
-			// World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
-			//  	new Plane(Transformation(), groundMaterial),
+// 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
+// 			 	new Plane(Transformation(), groundMaterial),
 
-			// 	new Cylinder(translation(Vec(2.0, 2.0, 0.0)) * scaling(Vec(0.4, 0.4, 2.0)), cylinderMaterial),
-			// 	new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 				new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-			// 	new Cylinder(translation(Vec(-2.0, -2.0, 0.0)) * scaling(Vec(0.4, 0.4, 2.0)), cylinderMaterial),
-			// 	new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 				new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-			// 	new Cylinder(translation(Vec(-2.0, 2.0, 0.0)) * scaling(Vec(0.4, 0.4, 2.0)), cylinderMaterial),
-			// 	new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 				new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+// 				new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+// 			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-			// 	new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)]);
+// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
+// 			]);
 ///************************************************************************************************************
-
 			// Renderer: flat, on-off, path
 			Renderer renderer;
 			if (parms.renderer == "flat") renderer = new FlatRenderer(world);

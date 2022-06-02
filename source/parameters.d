@@ -4,7 +4,7 @@ import std.conv;
 import std.exception : enforce;
 import std.file : isFile;
 import std.format : format;
-import std.math : isFinite;
+import std.math : isFinite, sqrt;
 
 class InvalidPfm2pngParms : Exception
 {
@@ -64,10 +64,11 @@ struct DemoParameters
 	string pfmOutput, pngOutput;
 	int initialState, initialSequence;
 	immutable bool orthogonal;
+	int samplesPerPixel;
 
 	pure @safe this(in string[] args)
 	{		
-		assert(args.length == 9);
+		assert(args.length == 10);
 
 		try
 		{
@@ -115,8 +116,23 @@ struct DemoParameters
 		}
 		catch (ConvException exc)
 			throw new InvalidDemoParms(format("Invalid initialSequence [%s]", args[7]));
+
+		try
+		{	
+			samplesPerPixel = to!int(args[8]);
+			enforce!InvalidDemoParms(samplesPerPixel > 0, format("Invalid samplesPerPixel [%s]", args[8]));
+
+			int samplesPerSide = to!int(sqrt(cast(float)(samplesPerPixel)));
+			bool squared = true;
+			if ((samplesPerSide * samplesPerSide) != samplesPerPixel) squared = false;
+			
+			enforce!InvalidDemoParms(squared == true,
+			format("Invalid samplesPerPixel [%s], it must be a perfect square i.e. 4,9,16", args[8]));
+		}
+		catch (ConvException exc)
+			throw new InvalidDemoParms(format("Invalid samplesPerPixel [%s], it must be a perfect square i.e. 4,9,16", args[8]));
 		
-		if (args[8] != "") orthogonal = true;
+		if (args[9] != "") orthogonal = true;
 	}
 
 	pure nothrow @nogc @safe float aspRat()

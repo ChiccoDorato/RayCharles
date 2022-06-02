@@ -561,7 +561,7 @@ unittest
         box).recordIsClose(hVert2));
 }
 
-///******************** CylinderShell ********************
+// ******************** CylinderShell ********************
 /// Class for a 3D Cylinder shell (lateral suface) aligned with the z axis
 class CylinderShell : Shape
 {
@@ -711,7 +711,7 @@ unittest
     writeln(uv1, "  ", uv2, "  ", uv3);
 }
 
-///******************** Cylinder ********************
+// ******************** Cylinder ********************
 /// Class for a 3D Cylinder aligned with the z axis
 class Cylinder : CylinderShell
 {

@@ -10,7 +10,11 @@ dub run
 for angle in $(seq 0 359); do
     # Angle with three digits, e.g. angle="1" → angleNNN="001"
     angleNNN=$(printf "%03d" $angle)
+<<<<<<< HEAD
     ./RayCharles demo --algorithm flat --angleDeg $angle --pngOutput=AnimationFrames/img$angleNNN.png
+=======
+    ./RayCharles demo --algorithm=path -samPP=4 --width=640 --height=480 --angleDeg $angle --pngOutput=AnimationFrames/img$angleNNN.png
+>>>>>>> fa3882af90e048980acfd7dd4d8cb0b4e5118255
 done
 
 # -r 30: Number of frames per second
