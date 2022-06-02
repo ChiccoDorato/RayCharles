@@ -108,7 +108,8 @@ void main(string[] args)
 			import ray;
 			import renderers;
 			import shapes;
-			import transformations : rotationZ, scaling, Transformation, translation;
+			import std.math : cos, PI, sin;
+			import transformations;
 
 			DemoParameters* parms;
 			try parms = new DemoParameters(
@@ -127,7 +128,7 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationZ(parms.angle) * translation(Vec(-1.0, 0.0, 1.0));
+			Transformation cameraTr = rotationY(30) * rotationZ(parms.angle) * translation(Vec(-5.8, 0.0, 3.0));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
@@ -136,10 +137,9 @@ void main(string[] args)
 			ImageTracer tracer = ImageTracer(image, camera);
 
 /// A Plane as a sky
-			immutable Color skyColor = black;
-			UniformPigment skyPig = new UniformPigment(skyColor);
+			UniformPigment skyPig = new UniformPigment(black);
 			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
-			UniformPigment skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
+			UniformPigment skyEmittedRadiance = new UniformPigment(Color(0.62, 0.68, 0.73));
 			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
 			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
 			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
@@ -151,7 +151,17 @@ void main(string[] args)
 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
 			Material groundMaterial = Material(groundBRDF);
 
-			immutable Color sphereColor = {0.3, 0.4, 0.8};
+			immutable Color cylinderColor = {0.69, 0.8, 0.46};
+			UniformPigment cyliderPig = new UniformPigment(cylinderColor);
+			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cyliderPig);
+			Material cylinderMaterial = Material(cylinderBRDF);
+
+			immutable Color shellColor = {0.3, 0.3, 0.78};
+			UniformPigment shellPig = new UniformPigment(shellColor);
+			DiffuseBRDF shellBRDF = new DiffuseBRDF(shellPig);
+			Material shellMaterial = Material(shellBRDF);
+
+			immutable Color sphereColor = {0.8, 0.75, 0.3};
 			UniformPigment spherePig = new UniformPigment(sphereColor);
 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
 			Material sphereMaterial = Material(sphereBRDF);
@@ -163,8 +173,11 @@ void main(string[] args)
 			
 			World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
-				new Sphere(translation(vecZ), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)]);
+				new Cylinder(translation(Vec(0.0, -0.65, 0.0)) * scaling(Vec(0.64, 0.64, 2.0)), cylinderMaterial),
+				new CylinderShell(translation(Vec(0.8, 0.6, 0.0)) * rotationY(-4) * scaling(Vec(0.38, 0.4, 3.0)), shellMaterial),
+				new Sphere(translation(Vec(0.0, -1.0, 3.2)) * scaling(Vec(0.76, 0.76, 0.76)), sphereMaterial),
+				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
+				]);
 
 /// ***********************************************************************************************
 /// Decomment here for the wood
