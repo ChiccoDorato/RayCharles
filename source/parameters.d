@@ -137,16 +137,16 @@ struct DemoParameters
 		try
 		{	
 			immutable int samplesPerPixel = to!int(args[10]);
-			enforce!InvalidDemoParms(samplesPerPixel >= 0,
-				format("Invalid samplesPerPixel [%s]. It must be a perfect square.", args[10]));
+			enforce!InvalidDemoParms(samplesPerPixel >= 0, format(
+				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
 
 			samplesPerSide = cast(immutable int)(sqrt(cast(double)samplesPerPixel));
-			enforce!InvalidDemoParms((samplesPerSide * samplesPerSide) == samplesPerPixel,
-			format("Invalid samplesPerPixel [%s]. It must be a perfect square.", args[10]));
+			enforce!InvalidDemoParms((samplesPerSide * samplesPerSide) == samplesPerPixel, format(
+				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
 		}
 		catch (ConvException exc)
-			throw new InvalidDemoParms(
-				format("Invalid samplesPerPixel [%s]. It must be a perfect square.", args[10]));
+			throw new InvalidDemoParms(format(
+				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
 		
 		if (args[11] != "") orthogonal = true;
 	}
