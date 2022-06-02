@@ -61,7 +61,7 @@ struct Color
 	}
 }
 
-immutable(Color) black = Color(), white = Color(1.0, 1.0, 1.0);
+immutable Color black = Color(), white = Color(1.0, 1.0, 1.0);
 
 ///
 unittest

@@ -47,8 +47,14 @@ void main(string[] args)
 			.add(new Option("initSeq", "initialSequence",
 				"identifier of the sequence produced by a random generator. Default: 54")
 				.defaultValue("54"))
-			.add(new Option("samPP", "samplesPerPixel",
-				"number of samples per Pixel. Default: 0")
+			.add(new Option("n", "numberOfRays",
+				"number of rays departing from each surface point. Effective only when --algorithm=path. Default: 10")
+				.defaultValue("10"))
+			.add(new Option("d", "depth",
+				"maximum number of rays reflections. Effective only when --algorithm=path. Default: 2")
+				.defaultValue("2"))
+			.add(new Option("spp", "samplesPerPixel",
+				"number of samples per pixel. It must be a perfect square. Default: 0")
 				.defaultValue("0"))
 			.add(new Flag("o", "orthogonal",
 				"use an orthogonal camera. Default: perspective camera")))
@@ -126,6 +132,8 @@ void main(string[] args)
 				rayC.option("pngOutput"),
 				rayC.option("initialState"),
 				rayC.option("initialSequence"),
+				rayC.option("numberOfRays"),
+				rayC.option("depth"),
 				rayC.option("samplesPerPixel"),
 				rayC.flag("orthogonal") == true ? "o" : ""]);
 			catch (InvalidDemoParms exc)
@@ -139,10 +147,8 @@ void main(string[] args)
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
-			int samplesPerPixel = parms.samplesPerPixel;
-			int samplesPerSide = cast(int)(sqrt(cast(float)(samplesPerPixel)));
 			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera, samplesPerSide);
+			ImageTracer tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
 /// A Plane as a sky
 			UniformPigment skyPig = new UniformPigment(black);
@@ -239,7 +245,7 @@ void main(string[] args)
 			else
 			{
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-				renderer = new PathTracer(world, black, randomGenerator, 10, 2, 3);
+				renderer = new PathTracer(world, black, randomGenerator, parms.numberOfRays, parms.depth, 3);
 			}
 			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));

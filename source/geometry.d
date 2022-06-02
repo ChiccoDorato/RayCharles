@@ -197,7 +197,7 @@ struct Vec
 }
 
 /// Cartesian Versors in x, y and z direction
-immutable(Vec) vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
+immutable Vec vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
 
 unittest
 {
