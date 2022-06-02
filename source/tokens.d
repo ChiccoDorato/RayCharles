@@ -26,7 +26,7 @@ struct InputStream
         tabulations = tab;
     }
 
-    pure nothrow void updatePos(in char c)
+    pure nothrow @nogc @safe void updatePos(in char c)
     {
         if (c == char.init) return;
         if (c == '\n')
@@ -38,7 +38,7 @@ struct InputStream
         else ++location.col;
     }
 
-    pure nothrow char readChar()
+    pure nothrow @nogc @safe char readChar()
     {
         char c;
         if (savedChar == char.init)
@@ -58,7 +58,7 @@ struct InputStream
         return c;
     }
 
-    pure nothrow void unreadChar(in char c)
+    pure nothrow @nogc @safe void unreadChar(in char c)
     in (savedChar == char.init)
     {
         savedChar = c;

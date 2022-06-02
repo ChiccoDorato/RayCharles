@@ -5,7 +5,7 @@ import geometry : Normal, Point, Vec, Vec2d, vecX, vecY, vecZ;
 import hdrimage : areClose;
 import materials : Material;
 import ray;
-import std.math : acos, atan2, floor, PI, sqrt;
+import std.math : abs, acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationX, rotationY, rotationZ;
 
@@ -63,10 +63,9 @@ class Sphere : Shape
         float z = p.z;
         if (z < -1 && z > -1.001) z = -1;
         if (z > 1 && z < 1.001) z = 1;
- 
-        float u = atan2(p.y, p.x) / (2.0 * PI);
-        if (u < 0) ++u;
-        return Vec2d(u, acos(z) / PI);
+
+        immutable float u = atan2(p.y, p.x) / (2.0 * PI);
+        return Vec2d(u < 0 ? u + 1 : u, acos(z) / PI);
     }
 
     /// Create a Normal to a Vector in a Point of the Sphere
@@ -81,13 +80,14 @@ class Sphere : Shape
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
+
         immutable float halfB = originVec * invR.dir;
         immutable float a = invR.dir.squaredNorm;
         immutable float c = originVec.squaredNorm - 1.0;
         immutable float reducedDelta = halfB * halfB - a * c;
 
         Nullable!HitRecord hit;
-        if (reducedDelta < 0) return hit;
+        if (reducedDelta < 0.0) return hit;
 
         immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
         immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
@@ -98,9 +98,7 @@ class Sphere : Shape
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
-
-        hit = HitRecord(
-            transf * hitPoint,
+        hit = HitRecord(transf * hitPoint,
             transf * sphereNormal(hitPoint, invR.dir),
             sphereUVPoint(hitPoint),
             firstHit,
@@ -114,23 +112,23 @@ class Sphere : Shape
     {
         immutable Ray invR = transf.inverse * r;
         immutable Vec originVec = invR.origin.convert;
+
         immutable float halfB = originVec * invR.dir;
         immutable float a = invR.dir.squaredNorm;
         immutable float c = originVec.squaredNorm - 1.0;
-
         immutable float reducedDelta = halfB * halfB - a * c;
-        if (reducedDelta <= 0.0) return false;
+
+        if (reducedDelta < 0.0) return false;
 
         immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
         immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-
         return (t1 > invR.tMin && t1 < invR.tMax) || (t2 > invR.tMin && t2 < invR.tMax);
     }
 }
 
 ///
 unittest
-{   
+{
     Sphere s = new Sphere();
 
     // rayIntersection with the Sphere
@@ -342,7 +340,7 @@ class AABox : Shape
         material = m;
     }
 
-    pure nothrow @nogc @safe float[2] oneDimIntersections(in float origin, in float direction) const 
+    pure nothrow @nogc @safe float[2] box1DIntersections(in float origin, in float direction) const 
     {
         if(areClose(direction, 0))
             return (origin >= 0) && (origin <= 1) ?
@@ -362,11 +360,11 @@ class AABox : Shape
         return [t1, t2];
     }
 
-    pure nothrow @nogc @safe float[2] intersections(in Ray r) const
+    pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
     {
-        float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
-        float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
-        float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        float[2] tX = box1DIntersections(r.origin.x, r.dir.x);
+        float[2] tY = box1DIntersections(r.origin.y, r.dir.y);
+        float[2] tZ = box1DIntersections(r.origin.z, r.dir.z);
         return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
     }
 
@@ -402,7 +400,7 @@ class AABox : Shape
         Nullable!HitRecord hit;
 
         immutable Ray invR = transf.inverse * r;
-        immutable float[2] t = intersections(invR);
+        immutable float[2] t = boxIntersections(invR);
 
         float firstHit;
         if (t[0] > t[1]) return hit;
@@ -412,7 +410,7 @@ class AABox : Shape
 
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(transf * hitPoint,
-            (transf * boxNormal(hitPoint, invR.dir)).normalize,
+            transf * boxNormal(hitPoint, invR.dir),
             boxUVPoint(hitPoint),
             firstHit,
             r,
@@ -424,7 +422,7 @@ class AABox : Shape
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
-        immutable float[2] t = intersections(invR);
+        immutable float[2] t = boxIntersections(invR);
         if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
         return (t[0] > invR.tMin) || (t[1] < invR.tMax) ? true : false;
     }
@@ -503,7 +501,7 @@ unittest
     HitRecord h3 = box.rayIntersection(r3).get(HitRecord());
     assert(HitRecord(
         Point(-2.0 / 3.0, 5.0, z),
-        Normal(-sqrt(3.0) / 2.0, 0.0, -0.5),
+        0.5 * Normal(-sqrt(3.0) / 2.0, 0.0, -0.5),
         Vec2d(2.0 / 3.0, 17.0 / 24.0),
         3.0,
         r3,
@@ -514,7 +512,7 @@ unittest
     HitRecord h4 = box.rayIntersection(r4).get(HitRecord());
     assert(HitRecord(
         Point(-0.5, 5.0, z),
-        Normal(0.0, 1.0, 0.0),
+        (1.0 / 3.0) * Normal(0.0, 1.0, 0.0),
         Vec2d((48.0 + sqrt(3.0)) / 72.0, 47.0 / 64.0),
         3.0,
         r4,
@@ -525,7 +523,7 @@ unittest
     HitRecord h5 = box.rayIntersection(r5).get(HitRecord());
     assert(HitRecord(
         Point(-0.4, 2.0, z),
-        Normal(0.0, -1.0, 0.0),
+        (1.0 / 3.0) * Normal(0.0, -1.0, 0.0),
         Vec2d((15.0 - sqrt(3.0)) / 45.0, 0.75),
         2.0,
         r5,
@@ -546,7 +544,7 @@ unittest
     HitRecord hVert1 = box.rayIntersection(vertical1).get(HitRecord());
     assert(HitRecord(
         Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.25),
-        Normal(-0.5, 0.0, sqrt(3.0) / 2.0),
+        1.25 * Normal(-0.5, 0.0, sqrt(3.0) / 2.0),
         Vec2d(8.0 / 15.0, 0.4375),
         0.25,
         vertical1,
@@ -557,46 +555,81 @@ unittest
     HitRecord hVert2 = box.rayIntersection(vertical2).get(HitRecord());
     assert(HitRecord(
         Point(sqrt(3.0) - 0.9, 3.0, 5.0 - 0.1 * sqrt(3.0)),
-        Normal(sqrt(3.0) / 2.0, 0.0, 0.5),
+        0.5 * Normal(sqrt(3.0) / 2.0, 0.0, 0.5),
         Vec2d(4.0 / 9.0, 0.1875),
         sqrt(3.0),
         vertical2,
         box).recordIsClose(hVert2));
 }
 
-///******************** Cylinder ********************
+// ******************** CylinderShell ********************
 /// Class for a 3D Cylinder shell (lateral suface) aligned with the z axis
-class Cylinder : Shape
+class CylinderShell : Shape
 {
-    float r, phiMax, zMax, zMin;
-
-    /// Build a Cylinder - also with a tranformation and a material
-    pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material(),
-    float radius = 1, float maxPhi = 2 * PI, float maxZ = 2.0, float minZ = 0.0)
-    in (!areClose(maxZ, minZ))
+    /// Build a Cylinder shell - also with a tranformation and a material
+    pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
-        r = radius;
-        phiMax = maxPhi;
-        zMax = maxZ;
-        zMin = minZ;
+    }
+
+    pure nothrow @safe this(in float radius, in Point minCenter,
+        in Point maxCenter, Material m = Material())
+    in (!areClose(radius, 0.0))
+    in (!minCenter.xyzIsClose(maxCenter))
+    {
+        immutable float length = (maxCenter - minCenter).norm;
+        Transformation scale = scaling(Vec(radius, radius, length));
+        Transformation transl = translation(minCenter.convert);
+
+        Transformation rotation;
+        immutable float colatCosine = (maxCenter.z - minCenter.z) / length;
+        if (!areClose(colatCosine, 1.0))
+        {
+            immutable float colatSine = 1.0 - colatCosine * colatCosine;
+            rotation = rotationY(colatCosine, colatSine) * rotation;
+
+            immutable float longCosine = (maxCenter.x - minCenter.x) / (length * colatSine);
+            if (!areClose(longCosine, 1.0))
+            {
+                immutable float longSine = 1.0 - longCosine * longCosine;
+                rotation = rotationZ(longCosine, longSine) * rotation;
+            }
+        }
+
+        transf = transl * rotation * scale;
+        material = m;
+    }
+
+    pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
+        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
+        in float zAngleInDegrees = 0.0, Material m = Material())
+    in (!areClose(radius, 0.0))
+    in (!areClose(length, 0.0))
+    {
+        Transformation scale = scaling(Vec(radius, radius, length));
+        Transformation transl = translation(translVec);
+
+        Transformation rotation;
+        if (xAngleInDegrees % 360 != 0) rotation = rotationX(xAngleInDegrees) * rotation;
+        if (yAngleInDegrees % 360 != 0) rotation = rotationY(yAngleInDegrees) * rotation;
+        if (zAngleInDegrees % 360 != 0) rotation = rotationZ(zAngleInDegrees) * rotation;
+
+        transf = transl * rotation * scale;
+        material = m;
     }
 
     /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
-    pure nothrow @nogc @safe Vec2d cylinderUVPoint(in Point p) const
+    pure nothrow @nogc @safe Vec2d cylShellUVPoint(in Point p) const
     {
-        float u = atan2(p.y, p.x) / phiMax; // 2PI default
-        immutable float v = (p.z - zMin) / (zMax - zMin);
-        if (u < 0.0) ++u;
-
-        return Vec2d(u,v);
+        immutable float u = atan2(p.y, p.x) / (2.0 * PI);
+        return Vec2d(u < 0 ? u + 1 : u, p.z);
     }
 
     /// Create a Normal to a Vector in a Point of the Cylinder surface
-    pure nothrow @nogc @safe Normal cylinderNormal(in Point p, in Vec v) const
+    pure nothrow @nogc @safe Normal cylShellNormal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, 0.0);
-        return p.convert * v < 0 ? n : -n;
+        return p.x * v.x + p.y * v.y < 0 ? n : -n;
     }
 
     /// Check and record an intersection between a Ray and a Cylinder
@@ -607,40 +640,149 @@ class Cylinder : Shape
         Nullable!HitRecord hit;
 
         immutable float a = invR.dir.x * invR.dir.x + invR.dir.y * invR.dir.y;
-        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y; // a?
-        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - this.r * this.r; // a-r^2?
+        if (areClose(a, 0.0, 1e-10)) return hit;
 
+        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y;
+        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - 1.0;
         immutable float reducedDelta = halfB * halfB - a * c;
-        if (reducedDelta < 0) return hit;
+
+        if (reducedDelta < 0.0) return hit;
 
         immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float z1Hit = originVec.z + t1 * invR.dir.z;
         immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
+        immutable float z2Hit = originVec.z + t2 * invR.dir.z;
 
         float firstHit;
-        if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
-        else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
+        if (t1 > invR.tMin && t1 < invR.tMax && z1Hit >= 0.0 && z1Hit <= 1.0)
+            firstHit = t1;
+        else if (t2 > invR.tMin && t2 < invR.tMax && z2Hit >= 0.0 && z2Hit <= 1.0)
+            firstHit = t2;
         else return hit;
 
-        Point hitPoint = invR.at(firstHit);
-        float phi = cylinderUVPoint(hitPoint).v;
-        if (phi < 0) phi += 2 * PI;
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(transf * hitPoint,
+            transf * cylShellNormal(hitPoint, invR.dir),
+            cylShellUVPoint(hitPoint),
+            firstHit,
+            ray,
+            this);
+        return hit;
+    }
 
-        if (hitPoint.z < zMin || hitPoint.z > zMax || phi > phiMax)
+   /// Look up quickly for intersection between a Ray and a Cylinder
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray ray) const
+    {
+        immutable Ray invR = transf.inverse * ray;
+        immutable Vec originVec = invR.origin.convert;
+
+        immutable float a = invR.dir.x * invR.dir.x + invR.dir.y * invR.dir.y;
+        if (areClose(a, 0.0, 1e-10)) return false;
+
+        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y;
+        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - 1.0;
+        immutable float reducedDelta = halfB * halfB - a * c;
+
+        if (reducedDelta < 0.0) return false;
+
+        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float z1Hit = originVec.z + t1 * invR.dir.z;
+        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
+        immutable float z2Hit = originVec.z + t2 * invR.dir.z;
+        return (t1 > invR.tMin && t1 < invR.tMax && z1Hit >= 0.0 && z1Hit <= 1.0)
+            || (t2 > invR.tMin && t2 < invR.tMax && z2Hit >= 0.0 && z2Hit <= 1.0);
+    }
+}
+
+unittest
+{
+    import hdrimage : Color;
+    import materials : DiffuseBRDF, Material, UniformPigment;
+    immutable Color cylinderColor = {0.3, 0.4, 0.8};
+    UniformPigment cylinderPig = new UniformPigment(cylinderColor);
+    DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
+    Material cylinderMaterial = Material(cylinderBRDF);
+
+    Point pMin = {-2.0, 3.0, 0.0};
+    CylinderShell c1 = new CylinderShell(translation(pMin.convert) * scaling(Vec(2.0, 2.0, 2.0)), cylinderMaterial);
+    CylinderShell c2 = new CylinderShell(2.0, pMin, pMin + 2 * vecZ, cylinderMaterial);
+    CylinderShell c3 = new CylinderShell(2.0, 2.0, Vec(), 0.0, 0.0, 0.0, cylinderMaterial);
+
+    Vec2d uv1, uv2, uv3;
+    uv1 = c1.cylShellUVPoint(Point(3.0, 2.0, 1.0));
+    uv2 = c2.cylShellUVPoint(Point(3.0, 2.0, 1.0));
+    uv3 = c3.cylShellUVPoint(Point(3.0, 2.0, 1.0));
+    import std.stdio;
+    writeln(uv1, "  ", uv2, "  ", uv3);
+}
+
+// ******************** Cylinder ********************
+/// Class for a 3D Cylinder aligned with the z axis
+class Cylinder : CylinderShell
+{
+    /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
+    pure nothrow @nogc @safe Vec2d cylinderUVPoint(in Point p) const
+    {
+        if (!areClose(p.z, 0.0) || !areClose(p.z, 1.0)) return cylShellUVPoint(p);
+        immutable float u = atan2(p.y, p.x) / (2.0 * PI); // WRONG
+        return Vec2d(u < 0 ? u + 1 : u, p.z);
+    }
+
+    /// Create a Normal to a Vector in a Point of the Cylinder surface
+    pure nothrow @nogc @safe Normal cylinderNormal(in Point p, in Vec v) const
+    {
+        if (!areClose(p.z, 0.0) || !areClose(p.z, 1.0)) return cylShellNormal(p, v);
+        immutable Normal n = Normal(0.0, 0.0, 1.0); // WRONG
+        return n * v < 0 ? n : -n;
+    }
+
+    /// Check and record an intersection between a Ray and a Cylinder
+    override pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray ray)
+    {
+        immutable Ray invR = transf.inverse * ray;
+        immutable Vec originVec = invR.origin.convert;
+        Nullable!HitRecord hit;
+
+        immutable float a = invR.dir.x * invR.dir.x + invR.dir.y * invR.dir.y;
+        if (areClose(a, 0.0, 1e-10))
         {
-            if (firstHit == t1) return hit;
+            if (originVec.x * originVec.x + originVec.y * originVec.y > 1.0) return hit;
+            if ((originVec.z > 1.0 && invR.dir.z > 0.0) || (originVec.z < 0.0 && invR.dir.z < 0.0))
+                return hit;
 
-            firstHit = t1;
-            if (firstHit > invR.tMax) return hit;
+            float firstHit = -originVec.z / invR.dir.z;
+            if (invR.dir.z < 0.0) firstHit += 1.0 / invR.dir.z;
 
-            hitPoint = invR.at(firstHit);
-            phi = atan2(hitPoint.y, hitPoint.x);
-
-            if (phi < 0) phi += 2 * PI;
-            if (hitPoint.z < zMin || hitPoint.z > zMax || phi > phiMax) return hit;
+            immutable Point hitPoint = invR.at(firstHit);
+                hit = HitRecord(transf * hitPoint,
+                transf * cylinderNormal(hitPoint, invR.dir),
+                cylinderUVPoint(hitPoint),
+                firstHit,
+                ray,
+                this);
+            return hit;
         }
 
-        hit = HitRecord(
-            transf * hitPoint,
+        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y;
+        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - 1.0;
+        immutable float reducedDelta = halfB * halfB - a * c;
+
+        if (reducedDelta < 0.0) return hit;
+
+        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float z1Hit = originVec.z + t1 * invR.dir.z;
+        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
+        immutable float z2Hit = originVec.z + t2 * invR.dir.z;
+
+        float firstHit;
+        if (t1 > invR.tMin && t1 < invR.tMax && z1Hit >= 0.0 && z1Hit <= 1.0)
+            firstHit = t1;
+        else if (t2 > invR.tMin && t2 < invR.tMax && z2Hit >= 0.0 && z2Hit <= 1.0)
+            firstHit = t2;
+        else return hit;
+
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(transf * hitPoint,
             transf * cylinderNormal(hitPoint, invR.dir),
             cylinderUVPoint(hitPoint),
             firstHit,
@@ -656,34 +798,25 @@ class Cylinder : Shape
         immutable Vec originVec = invR.origin.convert;
 
         immutable float a = invR.dir.x * invR.dir.x + invR.dir.y * invR.dir.y;
-        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y; // a?
-        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - this.r * this.r; // a-r^2?
-
+        if (areClose(a, 0.0, 1e-10))
+        {
+            if (originVec.x * originVec.x + originVec.y * originVec.y > 1.0) return false;
+            if ((originVec.z > 1.0 && invR.dir.z > 0.0) || (originVec.z < 0.0 && invR.dir.z < 0.0)) return false;
+            return true;
+        }
+        immutable float halfB = originVec.x * invR.dir.x + originVec.y * invR.dir.y;
+        immutable float c = originVec.x * originVec.x + originVec.y * originVec.y - 1.0;
         immutable float reducedDelta = halfB * halfB - a * c;
-        if (reducedDelta < 0) return false;
+
+        if (reducedDelta < 0.0) return false;
 
         immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
+        immutable float z1Hit = originVec.z + t1 * invR.dir.z;
         immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-
-        return (t1 > invR.tMin && t1 < invR.tMax) || (t2 > invR.tMin && t2 < invR.tMax);
+        immutable float z2Hit = originVec.z + t2 * invR.dir.z;
+        return (t1 > invR.tMin && t1 < invR.tMax && z1Hit >= 0.0 && z1Hit <= 1.0)
+            || (t2 > invR.tMin && t2 < invR.tMax && z2Hit >= 0.0 && z2Hit <= 1.0);
     }
-}
-
-unittest
-{   
-    import hdrimage : Color;
-    import materials : DiffuseBRDF, Material, UniformPigment;
-    immutable Color cylinderColor = {0.3, 0.4, 0.8};
-    UniformPigment cylinderPig = new UniformPigment(cylinderColor);
-    DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-    Material cylinderMaterial = Material(cylinderBRDF);
-
-    Cylinder c = new Cylinder(translation(Vec(-2.0, 3.0, 0.0)), cylinderMaterial, 2.0);
-
-    Vec2d uv;
-    uv = c.cylinderUVPoint(Point(3.0, 2.0, 1.0));
-    import std.stdio;
-    writeln(uv.u);
 }
 
 struct World

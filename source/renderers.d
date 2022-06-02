@@ -17,12 +17,12 @@ class Renderer
     World world;
     Color backgroundColor;
 
-    pure nothrow this(World w)
+    pure nothrow @safe this(World w)
     {
         world = w;
     }
 
-    pure nothrow this(World w, in Color bgCol)
+    pure nothrow @safe this(World w, in Color bgCol)
     {
         this(w);
         backgroundColor = bgCol;
@@ -35,18 +35,18 @@ class OnOffRenderer : Renderer
 {
     Color color = white;
 
-    pure nothrow this(World w)
+    pure nothrow @safe this(World w)
     {
         super(w);
     }
 
-    pure nothrow this(World w, in Color bgCol, in Color col)
+    pure nothrow @safe this(World w, in Color bgCol, in Color col)
     {
         super(w, bgCol);
         color = col;
     }
 
-    override pure nothrow Color call(in Ray r)
+    override pure nothrow @safe Color call(in Ray r)
     {
         return world.rayIntersection(r).isNull ? backgroundColor : color;
     }
@@ -80,17 +80,17 @@ unittest
 
 class FlatRenderer : Renderer
 {
-    pure nothrow this(World w)
+    pure nothrow @safe this(World w)
     {
         super(w);
     }
 
-    pure nothrow this(World w, in Color bgCol)
+    pure nothrow @safe this(World w, in Color bgCol)
     {
         super(w, bgCol);
     }
 
-    override pure nothrow Color call(in Ray r)
+    override pure nothrow @safe Color call(in Ray r)
     {
         Nullable!HitRecord hit = world.rayIntersection(r);
         if (hit.isNull) return backgroundColor;
@@ -134,7 +134,7 @@ class PathTracer : Renderer
     PCG pcg = new PCG();
     int numberOfRays = 10, maxDepth = 2, russianRouletteLimit = 3;
 
-    pure nothrow this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
+    pure nothrow @safe this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
         in int numOfRays = 10, in int depth = 2, in int RRLimit = 3)
     {
         super(w, bgCol);
@@ -144,7 +144,7 @@ class PathTracer : Renderer
         russianRouletteLimit = RRLimit;
     }
 
-    override pure nothrow Color call(in Ray ray)
+    override pure nothrow @safe Color call(in Ray ray)
     {
         if (ray.depth > maxDepth) return black;
 
