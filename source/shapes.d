@@ -657,11 +657,11 @@ class CylinderShell : Shape
         immutable float[2] tShell = cylShellIntersections(invR);
         if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return hit;
         immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
-        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return hit;
+        if (tShell[0] >= tZ[1] || tShell[1] <= tZ[0]) return hit;
 
         float firstHit;
-        if (tShell[0] >= tZ[0] && tShell[0] > invR.tMin) firstHit = tShell[0];
-        else if (tShell[1] <= tZ[1] && tShell[1] < invR.tMax) firstHit = tShell[1];
+        if (tShell[0] > tZ[0] && tShell[0] > invR.tMin) firstHit = tShell[0];
+        else if (tShell[1] < tZ[1] && tShell[1] < invR.tMax) firstHit = tShell[1];
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
@@ -770,7 +770,7 @@ class Cylinder : CylinderShell
         immutable float[2] t = cylinderIntersections(invR);
 
         float firstHit;
-        if (t[0] > t[1]) return hit;
+        if (t[0] >= t[1]) return hit;
         if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
         else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
         else return hit;

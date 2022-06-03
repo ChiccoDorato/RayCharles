@@ -8,7 +8,7 @@ import ray;
 
 pure nothrow @nogc @safe bool validParm(in float coordinate)
 {
-    return coordinate >= 0 && coordinate <= 1;
+    return coordinate >= 0.0 && coordinate <= 1.0;
 }
 
 class Pigment
