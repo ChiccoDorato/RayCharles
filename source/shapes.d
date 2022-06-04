@@ -370,16 +370,24 @@ class AABox : Shape
 
     pure nothrow @nogc @safe Vec2d boxUVPoint(in Point p) const
     {
-        if (areClose(p.x, 0.0)) return Vec2d((1.0 + p.y) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.x, 1.0)) return Vec2d((1.0 + p.y) / 3.0, (1.0 - p.z) / 4.0);
-        else if (areClose(p.y, 0.0)) return Vec2d((1.0 - p.x) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.y, 1.0)) return Vec2d((2.0 + p.x) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.z, 0.0)) return Vec2d((1.0 + p.y) / 3.0, (2.0 - p.x) / 4.0);
+        Vec2d boxUV;
+        if (areClose(p.x, 0.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (2.0 + p.z) / 4.0);
+        else if (areClose(p.x, 1.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (1.0 - p.z) / 4.0);
+        else if (areClose(p.y, 0.0)) boxUV = Vec2d((1.0 - p.x) / 3.0, (2.0 + p.z) / 4.0);
+        else if (areClose(p.y, 1.0)) boxUV = Vec2d((2.0 + p.x) / 3.0, (2.0 + p.z) / 4.0);
+        else if (areClose(p.z, 0.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (2.0 - p.x) / 4.0);
         else
         {
             assert(areClose(p.z, 1.0));
-            return Vec2d((1.0 + p.y) / 3.0, (3.0 + p.x) / 4.0);
+            boxUV = Vec2d((1.0 + p.y) / 3.0, (3.0 + p.x) / 4.0);
         }
+
+        if (boxUV.u < 0.0 && boxUV.u > -1e-4) boxUV.u = 0.0;
+        else if (boxUV.u > 1.0 && boxUV.u < 1.0001) boxUV.u = 1.0;
+        if (boxUV.v < 0.0 && boxUV.v > -1e-4) boxUV.v = 0.0;
+        else if (boxUV.v > 1.0 && boxUV.v < 1.0001) boxUV.v = 1.0;
+
+        return boxUV;
     }
 
     pure nothrow @nogc @safe Normal boxNormal(in Point p, in Vec v) const
@@ -599,21 +607,12 @@ class CylinderShell : Shape
         material = m;
     }
 
-    pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
-        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
-        in float zAngleInDegrees = 0.0, Material m = Material())
+    pure nothrow @safe this(in float radius, in float length,
+        in Vec translVec = Vec(), Material m = Material())
     in (!areClose(radius, 0.0))
     in (!areClose(length, 0.0))
     {
-        Transformation scale = scaling(Vec(radius, radius, length));
-        Transformation transl = translation(translVec);
-
-        Transformation rotation;
-        if (xAngleInDegrees % 360 != 0) rotation = rotationX(xAngleInDegrees) * rotation;
-        if (yAngleInDegrees % 360 != 0) rotation = rotationY(yAngleInDegrees) * rotation;
-        if (zAngleInDegrees % 360 != 0) rotation = rotationZ(zAngleInDegrees) * rotation;
-
-        transf = transl * rotation * scale;
+        transf = translation(translVec) * scaling(Vec(radius, radius, length));
         material = m;
     }
 
@@ -701,7 +700,7 @@ unittest
     Point pMin = {-2.0, 3.0, 0.0};
     CylinderShell c1 = new CylinderShell(translation(pMin.convert) * scaling(Vec(2.0, 2.0, 2.0)), cylinderMaterial);
     CylinderShell c2 = new CylinderShell(2.0, pMin, pMin + 2 * vecZ, cylinderMaterial);
-    CylinderShell c3 = new CylinderShell(2.0, 2.0, Vec(), 0.0, 0.0, 0.0, cylinderMaterial);
+    CylinderShell c3 = new CylinderShell(2.0, 2.0, Vec(), cylinderMaterial);
 
     Vec2d uv1, uv2, uv3;
     uv1 = c1.cylShellUVPoint(Point(3.0, 2.0, 1.0));
@@ -727,11 +726,10 @@ class Cylinder : CylinderShell
         super(radius, minCenter, maxCenter, m);
     }
 
-    pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
-        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
-        in float zAngleInDegrees = 0.0, Material m = Material())
+    pure nothrow @safe this(in float radius, in float length,
+        in Vec translVec = Vec(), Material m = Material())
     {
-        super(radius, length, translVec, xAngleInDegrees, yAngleInDegrees, zAngleInDegrees, m);
+        super(radius, length, translVec, m);
     }
 
     pure nothrow @nogc @safe float[2] cylinderIntersections(in Ray r) const
