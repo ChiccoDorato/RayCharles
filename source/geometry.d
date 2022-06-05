@@ -223,8 +223,8 @@ unittest
     assert(areClose(a.norm * a.norm, 14.0));
 }
 
-///******************** Point ********************
-/// struct for a 3D Point
+// ******************** Point ********************
+/// struct for a 3D Point (x, y, z)
 struct Point
 {
     float x, y, z;

@@ -584,13 +584,13 @@ class CylinderShell : Shape
         immutable float colatCosine = (maxCenter.z - minCenter.z) / length;
         if (!areClose(colatCosine, 1.0))
         {
-            immutable float colatSine = 1.0 - colatCosine * colatCosine;
+            immutable float colatSine = sqrt(1.0 - colatCosine * colatCosine);
             rotation = rotationY(colatCosine, colatSine) * rotation;
 
             immutable float longCosine = (maxCenter.x - minCenter.x) / (length * colatSine);
             if (!areClose(longCosine, 1.0))
             {
-                immutable float longSine = 1.0 - longCosine * longCosine;
+                immutable float longSine = sqrt(1.0 - longCosine * longCosine);
                 rotation = rotationZ(longCosine, longSine) * rotation;
             }
         }
@@ -693,22 +693,45 @@ unittest
 {
     import hdrimage : Color;
     import materials : DiffuseBRDF, Material, UniformPigment;
-    immutable Color cylinderColor = {0.3, 0.4, 0.8};
-    UniformPigment cylinderPig = new UniformPigment(cylinderColor);
-    DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-    Material cylinderMaterial = Material(cylinderBRDF);
+    immutable Color cylinderShellColor = {1.0, 0.0, 0.0};
+    UniformPigment cylinderShellPig = new UniformPigment(cylinderShellColor);
+    DiffuseBRDF cylinderShellBRDF = new DiffuseBRDF(cylinderShellPig);
+    Material cylinderShellMaterial = Material(cylinderShellBRDF);
 
-    Point pMin = {-2.0, 3.0, 0.0};
-    CylinderShell c1 = new CylinderShell(translation(pMin.convert) * scaling(Vec(2.0, 2.0, 2.0)), cylinderMaterial);
-    CylinderShell c2 = new CylinderShell(2.0, pMin, pMin + 2 * vecZ, cylinderMaterial);
-    CylinderShell c3 = new CylinderShell(2.0, 2.0, Vec(), 0.0, 0.0, 0.0, cylinderMaterial);
+    Point pMin = {1.0, 1.0, 0.0};
+    CylinderShell c1 = new CylinderShell(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
+    CylinderShell c2 = new CylinderShell(1.0, pMin, pMin + 2 * vecZ, cylinderShellMaterial);
+    CylinderShell c3 = new CylinderShell(1.0, 2.0, Vec(1.0, 1.0, 0.0), 0.0, 0.0, 0.0, cylinderShellMaterial);
 
     Vec2d uv1, uv2, uv3;
-    uv1 = c1.cylShellUVPoint(Point(3.0, 2.0, 1.0));
-    uv2 = c2.cylShellUVPoint(Point(3.0, 2.0, 1.0));
-    uv3 = c3.cylShellUVPoint(Point(3.0, 2.0, 1.0));
-    import std.stdio;
-    writeln(uv1, "  ", uv2, "  ", uv3);
+    uv1 = c1.cylShellUVPoint(Point(0.0, 1.0, 0.0));
+    uv2 = c2.cylShellUVPoint(Point(0.0, 1.0, 0.0));
+    uv3 = c3.cylShellUVPoint(Point(0.0, 1.0, 0.0));
+
+    assert(uv1.uvIsClose(uv2));
+    assert(uv1.uvIsClose(uv3));
+    assert(uv2.uvIsClose(uv3));
+
+    Ray r1 = Ray(Point(-1.0, 1.0, 1.0), vecX);
+    Ray r2 = Ray(Point(-1.0, 1.0, 0.0), Vec(1.0, 0.5, 0.0));
+    Ray r3 = Ray(Point(-1.0, 1.0, -1e-10), vecX);
+    Ray r4 = Ray(Point(1.0, 1.0, 3.0), -vecZ);
+
+    assert(c1.quickRayIntersection(r1));
+    assert(c1.quickRayIntersection(r2));
+    assert(!c1.quickRayIntersection(r3));
+    assert(!c1.quickRayIntersection(r4));
+
+    HitRecord h1 = c1.rayIntersection(r1).get;
+
+    assert(h1.worldPoint.xyzIsClose(Point(0.0, 1.0, 1.0)));
+
+    CylinderShell c22 = new CylinderShell(1.0, pMin, Point(0.0, 0.0, 3.0), cylinderShellMaterial);
+    Ray ray22 = Ray(Point(1.0, -1.0, 4.0), Vec(0.0, 1.0, -1.0));
+
+    assert(c22.quickRayIntersection(ray22));
+
+    // NORMALI
 }
 
 // ******************** Cylinder ********************

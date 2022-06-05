@@ -12,19 +12,19 @@ import std.math : abs, isNaN, log10, NaN, pow, round;
 import std.stdio : File, writeln;
 import std.system : endian;
 
-/// Verify if the difference between two floating point x and y is smaller than epsilon 
+/// Verify if the difference between two floating point x and y is smaller than epsilon = 1e-5 (default)
 pure nothrow @nogc @safe bool areClose(in float x, in float y, in float epsilon = 1e-5)
 {
 	return abs(x - y) < epsilon;
 }
 
-///******************** Color ********************
+// ******************** Color ********************
 /// Stucture representing a Color with three floating point members red (r), green (g) and blue (b)
 struct Color
 {
 	float r = 0.0, g = 0.0, b = 0.0;
 
-	/// Return the sum (+), the difference (-) or the product (*) between two colors
+	/// Return the sum (+), the difference (-) or the product (*) between two Colors
 	pure nothrow @nogc @safe Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
 	{
 		mixin("return Color(r" ~ op ~ "rhs.r, g" ~ op ~ "rhs.g, b" ~ op ~ "rhs.b);");
