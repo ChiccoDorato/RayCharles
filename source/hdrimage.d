@@ -42,8 +42,9 @@ struct Color
 		mixin("return Color(alfa*r, alfa*g, alfa*b);");
 	}
 
-	/// Return the three components of a Color in a string
-	pure @safe string colorToString() const
+	/// Return the three components of a Color in a string.
+	// gdc throws error: not pure. Ok for dmd and ldc2.
+	pure @safe string toString() const
 	{
 		return "<r: " ~ to!string(r) ~ ", g: " ~ to!string(g) ~ ", b: " ~ to!string(b) ~ ">";
 	}
@@ -61,7 +62,7 @@ struct Color
 	}
 }
 
-immutable(Color) black = Color(), white = Color(1.0, 1.0, 1.0);
+immutable Color black = Color(), white = Color(1.0, 1.0, 1.0);
 
 ///
 unittest

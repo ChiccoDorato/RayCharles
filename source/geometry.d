@@ -5,12 +5,20 @@ import pcg;
 import std.array : split;
 import std.conv : to;
 import std.math : sqrt;
+import std.meta : AliasSeq;
+import std.traits : Fields, hasMember;
+
+pure nothrow @nogc @safe bool isXYZ(T)()
+{
+    return is(Fields!T == AliasSeq!(float, float, float)) &&
+        hasMember!(T, "x") && hasMember!(T, "y") && hasMember!(T, "z") ? true : false;
+}
 
 /// Convert an (x, y, z)-object into a string
 mixin template toString(T)
 {
     nothrow @safe string toString()() const
-    in (T.tupleof.length == 3, "toString accepts xyz types only.")
+    in (isXYZ!T, "toString accepts xyz types only.")
     {
         string[] typePath = to!string(typeid(T)).split(".");
         return typePath[$-1] ~ "(x=" ~ to!string(x) ~ ", y=" ~ to!string(y) ~ ", z=" ~ to!string(z) ~ ")";
@@ -21,7 +29,7 @@ mixin template toString(T)
 mixin template xyzIsClose(T)
 {
     pure nothrow @nogc @safe bool xyzIsClose(T)(in T v) const
-    in (T.tupleof.length == 3, "xyzIsClose accepts xyz types only.")
+    in (isXYZ!T, "xyzIsClose accepts xyz types only.")
     {
         return areClose(x, v.x) && areClose(y, v.y) && areClose(z, v.z);
     }
@@ -31,7 +39,7 @@ mixin template xyzIsClose(T)
 mixin template sumDiff(T, R)
 {
     pure nothrow @nogc @safe R opBinary(string op)(in T rhs) const if (op == "+" || op == "-")
-    in (T.tupleof.length == 3 && R.tupleof.length == 3, "sumDiff accepts xyz types only.")
+    in (isXYZ!T && isXYZ!R, "sumDiff accepts xyz types only.")
     {
         return mixin("R(x" ~ op ~ "rhs.x, y" ~ op ~ "rhs.y, z" ~ op ~ "rhs.z)");
     }
@@ -41,7 +49,7 @@ mixin template sumDiff(T, R)
 mixin template neg(R)
 {
     pure nothrow @nogc @safe R opUnary(string op)() const if (op == "-")
-    in (R.tupleof.length == 3, "neg accepts xyz types only.")
+    in (isXYZ!R, "neg accepts xyz types only.")
     {
         return R(-x, -y, -z);
     }
@@ -50,7 +58,7 @@ mixin template neg(R)
 /*mixin template mul(R)
 {
     pure nothrow @nogc @safe R opBinary(string op)(in float alfa) const if (op == "*")
-    in (R.tupleof.length == 3, "mul accepts xyz types only.")
+    in (isXYZ!R, "mul accepts xyz types only.")
     {
         return R(x * alfa, y * alfa, z * alfa);
     }
@@ -60,7 +68,7 @@ mixin template neg(R)
 mixin template rightMul(R)
 {
     pure nothrow @nogc @safe R opBinaryRight(string op)(in float alfa) const if (op == "*")
-    in (R.tupleof.length == 3, "rightMul accepts xyz types only.")
+    in (isXYZ!R, "rightMul accepts xyz types only.")
     {
         return R(alfa * x, alfa * y, alfa * z);
     }
@@ -69,7 +77,7 @@ mixin template rightMul(R)
 /*mixin template dot(T)
 {
     pure nothrow @nogc @safe float opBinary(string op)(in T rhs) const if (op == "*")
-    in (T.tupleof.length == 3, "dot accepts xyz types only.")
+    in (isXYZ!T, "dot accepts xyz types only.")
     {
         return x * rhs.x + y * rhs.y + z * rhs.z;
     }
@@ -78,7 +86,7 @@ mixin template rightMul(R)
 /*mixin template cross(T, R)
 {
     pure nothrow @nogc @safe R opBinary(string op)(in T rhs) constif (op == "^")
-    in (T.tupleof.length == 3 && R.tupleof.length == 3, "cross accepts xyz types only.")
+    in (isXYZ!T && isXYZ!R, "cross accepts xyz types only.")
     {
         return mixin("R(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x)");
     }
@@ -88,7 +96,7 @@ mixin template rightMul(R)
 mixin template squaredNorm(T)
 {
     pure nothrow @nogc @safe float squaredNorm()() const
-    in (T.tupleof.length == 3, "squaredNorm accepts xyz types only.")
+    in (isXYZ!T, "squaredNorm accepts xyz types only.")
     {
         return x * x + y * y + z * z;
     }
@@ -98,7 +106,7 @@ mixin template squaredNorm(T)
 mixin template norm(T)
 {
     pure nothrow @nogc @safe float norm()() const
-    in (T.tupleof.length == 3, "norm accepts xyz types only.")
+    in (isXYZ!T, "norm accepts xyz types only.")
     {
         return sqrt(squaredNorm());
     }
@@ -108,7 +116,7 @@ mixin template norm(T)
 mixin template normalize(R)
 {
     pure nothrow @nogc @safe R normalize()() const
-    in (R.tupleof.length == 3, "normalize accepts xyz types only.")
+    in (isXYZ!R, "normalize accepts xyz types only.")
     {
         return (areClose(R.x, 0) && areClose(R.y, 0) && areClose(R.z, 0)) ?
             this : 1.0 / norm() * this;
@@ -119,7 +127,7 @@ mixin template normalize(R)
 mixin template convert(T, R)
 {
     pure nothrow @nogc @safe R convert() const
-    in (T.tupleof.length == 3 && R.tupleof.length == 3, "convert accepts xyz types only.")
+    in (isXYZ!T && isXYZ!R, "convert accepts xyz types only.")
     {
         return R(x, y, z);
     }
@@ -197,7 +205,7 @@ struct Vec
 }
 
 /// Cartesian Versors in x, y and z direction
-immutable(Vec) vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
+immutable Vec vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
 
 unittest
 {
@@ -279,7 +287,7 @@ unittest
     assert((p2 - p1).xyzIsClose(Vec(3.0, 4.0, 5.0)));
 }
 
-///******************** Normal ********************
+// ******************** Normal ********************
 /// struct for a 3D Normal
 struct Normal
 {
@@ -335,7 +343,7 @@ unittest
     assert(n2.normalize.xyzIsClose(Normal(5.0 / 13.0, 12.0 / 13.0, 0.0)));
 }
 
-///******************** Vec2d ********************
+// ******************** Vec2d ********************
 /// struct for a 2D Vec
 struct Vec2d
 {

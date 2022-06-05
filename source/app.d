@@ -30,8 +30,8 @@ void main(string[] args)
 				"height in pixels of the image to render. Default: 480")
 				.defaultValue("480"))
 			.add(new Option("alg", "algorithm",
-				"algorithm to render an image. Default: flat, options: flat, on-off, path")
-				.defaultValue("flat"))
+				"algorithm to render an image. Default: path, options: flat, on-off, path")
+				.defaultValue("path"))
 			.add(new Option("a", "angleDeg",
 				"angle of view in degree. Default: 0.0")
 				.defaultValue("0.0"))
@@ -47,8 +47,14 @@ void main(string[] args)
 			.add(new Option("initSeq", "initialSequence",
 				"identifier of the sequence produced by a random generator. Default: 54")
 				.defaultValue("54"))
-			.add(new Option("samPP", "samplesPerPixel",
-				"number of samples per Pixel. Default: 0")
+			.add(new Option("n", "numberOfRays",
+				"number of rays departing from each surface point. Effective only when --algorithm=path. Default: 10")
+				.defaultValue("10"))
+			.add(new Option("d", "depth",
+				"maximum number of rays reflections. Effective only when --algorithm=path. Default: 2")
+				.defaultValue("2"))
+			.add(new Option("spp", "samplesPerPixel",
+				"number of samples per pixel. Allowed perfect squares only. Default: 0")
 				.defaultValue("0"))
 			.add(new Flag("o", "orthogonal",
 				"use an orthogonal camera. Default: perspective camera")))
@@ -76,26 +82,13 @@ void main(string[] args)
 
 			try
 			{
-				MonoTime startReading = MonoTime.currTime;
 				HDRImage image = new HDRImage(parms.pfmInput);
-				MonoTime endReading = MonoTime.currTime;
-				Duration timeElapsedForReading = endReading - startReading;
 				writeln("File " ~ parms.pfmInput ~ " has been read from disk");
 
-				MonoTime startPixelOps = MonoTime.currTime;
 				image.normalizeImage(parms.factor);
 				image.clampImage;
-				MonoTime endPixelOps = MonoTime.currTime;
-				Duration timeElapsedForPixelOps = endPixelOps - startPixelOps;
-
-				MonoTime startWriting = MonoTime.currTime;
 				image.writePNG(parms.pngOutput.dup, parms.gamma);
-				MonoTime endWriting = MonoTime.currTime;
-				Duration timeElapsedForWriting = endWriting - startWriting;
 				writeln("File " ~ parms.pngOutput ~ " has been written to disk");
-
-				writeln("\nReading\t\t\t", timeElapsedForReading, "\nPixel operations\t",
-					timeElapsedForPixelOps, "\nWriting\t\t\t", timeElapsedForWriting);
 			}
 			catch (InvalidPFMFileFormat exc)
 			{
@@ -126,6 +119,8 @@ void main(string[] args)
 				rayC.option("pngOutput"),
 				rayC.option("initialState"),
 				rayC.option("initialSequence"),
+				rayC.option("numberOfRays"),
+				rayC.option("depth"),
 				rayC.option("samplesPerPixel"),
 				rayC.flag("orthogonal") == true ? "o" : ""]);
 			catch (InvalidDemoParms exc)
@@ -134,15 +129,13 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationY(30) * rotationZ(parms.angle) * translation(Vec(-5.8, 0.0, 3.0));
+			Transformation cameraTr = translation(Vec(-3.0, 0.0, 4.0));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
-			int samplesPerPixel = parms.samplesPerPixel;
-			int samplesPerSide = cast(int)(sqrt(cast(float)(samplesPerPixel)));
 			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera, samplesPerSide);
+			ImageTracer tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
 /// A Plane as a sky
 			UniformPigment skyPig = new UniformPigment(black);
@@ -159,32 +152,34 @@ void main(string[] args)
 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
 			Material groundMaterial = Material(groundBRDF);
 
-			immutable Color cylinderColor = {0.69, 0.8, 0.46};
-			UniformPigment cyliderPig = new UniformPigment(cylinderColor);
-			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cyliderPig);
-			Material cylinderMaterial = Material(cylinderBRDF);
+			// immutable Color cylinderColor = {0.69, 0.8, 0.46};
+			// UniformPigment cyliderPig = new UniformPigment(cylinderColor);
+			// DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cyliderPig);
+			// Material cylinderMaterial = Material(cylinderBRDF);
 
 			immutable Color shellColor = {0.3, 0.3, 0.78};
 			UniformPigment shellPig = new UniformPigment(shellColor);
 			DiffuseBRDF shellBRDF = new DiffuseBRDF(shellPig);
 			Material shellMaterial = Material(shellBRDF);
 
-			immutable Color sphereColor = {0.8, 0.75, 0.3};
-			UniformPigment spherePig = new UniformPigment(sphereColor);
-			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-			Material sphereMaterial = Material(sphereBRDF);
+			// immutable Color sphereColor = {0.8, 0.75, 0.3};
+			// UniformPigment spherePig = new UniformPigment(sphereColor);
+			// DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
+			// Material sphereMaterial = Material(sphereBRDF);
 
-			immutable Color mirrorColor = {0.6, 0.2, 0.3};
-			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
-			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
-			Material mirrorMaterial = Material(mirrorBRDF);
+			// immutable Color mirrorColor = {0.6, 0.2, 0.3};
+			// UniformPigment mirrorPig = new UniformPigment(mirrorColor);
+			// SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
+			// Material mirrorMaterial = Material(mirrorBRDF);
 			
+			import geometry : Point;
 			World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
-				new Cylinder(translation(Vec(0.0, -0.65, 0.0)) * scaling(Vec(0.64, 0.64, 2.0)), cylinderMaterial),
-				new CylinderShell(translation(Vec(0.8, 0.6, 0.0)) * rotationY(-4) * scaling(Vec(0.38, 0.4, 3.0)), shellMaterial),
-				new Sphere(translation(Vec(0.0, -1.0, 3.2)) * scaling(Vec(0.76, 0.76, 0.76)), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
+				//new Cylinder(translation(Vec(0.0, -0.65, 0.0)) * scaling(Vec(0.64, 0.64, 2.0)), cylinderMaterial),
+				new CylinderShell(translation(Vec(0.0, 1.0, 4.0)) * rotationY(45), shellMaterial),
+				new CylinderShell(1.0, Point(0.0, 1.0, 4.0), Point(0.0, 0.0, 5.0), shellMaterial)
+				//new Sphere(translation(Vec(0.0, -1.0, 3.2)) * scaling(Vec(0.76, 0.76, 0.76)), sphereMaterial),
+				//new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
 				]);
 
 /// ***********************************************************************************************
@@ -239,7 +234,7 @@ void main(string[] args)
 			else
 			{
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-				renderer = new PathTracer(world, black, randomGenerator, 10, 2, 3);
+				renderer = new PathTracer(world, black, randomGenerator, parms.numberOfRays, parms.depth, 5);
 			}
 			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));

@@ -148,6 +148,7 @@ class PathTracer : Renderer
     {
         if (ray.depth > maxDepth) return black;
 
+        // gdc throws error: get does not accept mutable parameters (makes no sense). Ok for dmd and ldc2.
         HitRecord hitRec = world.rayIntersection(ray).get(HitRecord());
         if (hitRec.t.isNaN) return backgroundColor;
 
