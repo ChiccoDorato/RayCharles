@@ -592,13 +592,13 @@ class CylinderShell : Shape
         immutable float colatCosine = (maxCenter.z - minCenter.z) / length;
         if (!areClose(colatCosine, 1.0))
         {
-            immutable float colatSine = 1.0 - colatCosine * colatCosine;
+            immutable float colatSine = sqrt(1.0 - colatCosine * colatCosine);
             rotation = rotationY(colatCosine, colatSine) * rotation;
 
             immutable float longCosine = (maxCenter.x - minCenter.x) / (length * colatSine);
             if (!areClose(longCosine, 1.0))
             {
-                immutable float longSine = 1.0 - longCosine * longCosine;
+                immutable float longSine = (maxCenter.y - minCenter.y) / (length * colatSine);
                 rotation = rotationZ(longCosine, longSine) * rotation;
             }
         }
