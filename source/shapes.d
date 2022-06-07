@@ -9,7 +9,7 @@ import std.math : abs, acos, atan2, floor, PI, sqrt;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation, rotationX, rotationY, rotationZ;
 
-///******************** HitRecord ********************
+// ******************** HitRecord ********************
 /// Struct HitRecord to keep in memory infos about intersection of a ray with an object 
 struct HitRecord
 {
@@ -48,7 +48,7 @@ pure nothrow @nogc @safe float[2] oneDimIntersections(in float origin, in float 
     return [t1, t2];
 }
 
-///******************** Shape ********************
+// ******************** Shape ********************
 /// Abstract class for a generic Shape
 class Shape
 {
@@ -67,7 +67,7 @@ class Shape
     abstract pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const;
 }
 
-///******************** Sphere ********************
+// ******************** Sphere ********************
 /// Class for a 3D Sphere centered in the origin of the axis
 class Sphere : Shape
 {
@@ -212,7 +212,7 @@ unittest
         r2).recordIsClose(h2));
 }
 
-///******************** Plane ********************
+// ******************** Plane ********************
 /// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
 class Plane : Shape
 {
@@ -334,7 +334,7 @@ unittest
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
 
-///******************** AABox ********************
+// ******************** AABox ********************
 /// Class for a 3D Axis Aligned Box
 class AABox : Shape
 {
@@ -598,7 +598,7 @@ class CylinderShell : Shape
             immutable float longCosine = (maxCenter.x - minCenter.x) / (length * colatSine);
             if (!areClose(longCosine, 1.0))
             {
-                immutable float longSine = sqrt(1.0 - longCosine * longCosine);
+                immutable float longSine = (maxCenter.y - minCenter.y) / (length * colatSine);
                 rotation = rotationZ(longCosine, longSine) * rotation;
             }
         }
@@ -698,7 +698,7 @@ unittest
     Material cylinderShellMaterial = Material(cylinderShellBRDF);
 
     Point pMin = {1.0, 1.0, 0.0};
-    CylinderShell c1 = new CylinderShell(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
+    CylinderShell c1 = new CylinderShell(translation(pMin.convert)*scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
     CylinderShell c2 = new CylinderShell(1.0, pMin, pMin + 2 * vecZ, cylinderShellMaterial);
     CylinderShell c3 = new CylinderShell(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderShellMaterial);
 
@@ -735,46 +735,49 @@ unittest
     Material cylinderShellMaterial = Material(cylinderShellBRDF);
 
 // Rotation of a CylinderShell
-    Ray rayYep = Ray(Point(0.0, 3.0, 0.0), -vecY);
-    Ray rayNop = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+
+    // conflict in Constructor 1: 
+    CylinderShell csRot1 = new CylinderShell(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderShellMaterial);
     
-    CylinderShell c2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
-    assert(c2.quickRayIntersection(rayYep));
-    assert(!c2.quickRayIntersection(rayNop));
-
-    HitRecord h2 = c2.rayIntersection(rayYep).get;
-
-    //assert(h2.worldPoint.xyzIsClose(Point(0.0, 0.0, 0.0))); 
-    // Problem in constructor 2: 
-    // not working because the CylinderShell is on the other side as one can see below
-    assert(h2.worldPoint.xyzIsClose(Point(0.0, 1+sqrt(2.0), 0)));
-
-    // conflict in constructor 1: 
-    CylinderShell c1 = new CylinderShell(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderShellMaterial);
-    
-    assert(!c1.quickRayIntersection(rayNop));
-    Nullable!HitRecord hit = c1.rayIntersection(rayNop);
-    assert(hit.isNull);
-
+    Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     // quickRayIntersection finds the intersection
-    assert(c1.quickRayIntersection(rayYep));
-    // rayIntersection doesn't
-    Nullable!HitRecord h1 = c1.rayIntersection(rayYep); 
+    assert(csRot1.quickRayIntersection(ray1));
+    // rayIntersection doesn't :(
+    Nullable!HitRecord h1 = csRot1.rayIntersection(ray1); 
     assert(h1.isNull);
-    // import std.stdio;
-    // writeln(h1.worldPoint);
-    // assert(h1.worldPoint.xyzIsClose(Point(0.0, 0.0, 0.0)));
 
-    // Ray horizontal = {Point(0.0, 3.0, 0.0), -vecY};
-    // assert(c1.quickRayIntersection(horizontal));
-    // HitRecord hHor = c1.rayIntersection(horizontal).get(HitRecord());
+    // HitRecord hor1 = csRot1.rayIntersection(ray1).get(HitRecord());
     // assert(HitRecord(
-    //     Point(0.0,3.0, 0.0),
-    //     Normal(1.0, 1.0, 1.0),
-    //     Vec2d( 0.0, 0.0), // u = 0.0 or +-PI/2PI = +-0.5
-    //     3.0,
-    //     horizontal,
-    //     c1).recordIsClose(hHor));
+    //     Point(0.0, 1-sqrt(2.0), 0.0),
+    //     Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
+    //     Vec2d(0.0, sqrt(2.0)/2), 
+    //     (2+sqrt(2.0)), 
+    //     ray1,
+    //     csRot1).recordIsClose(hor1));
+
+    Ray ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+    assert(!csRot1.quickRayIntersection(ray2));
+    Nullable!HitRecord hit1 = csRot1.rayIntersection(ray2);
+    assert(hit1.isNull);
+
+
+    // Constructor 2
+    CylinderShell csRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
+    
+    assert(csRot2.quickRayIntersection(ray1));
+    HitRecord hor2 = csRot2.rayIntersection(ray1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 1-sqrt(2.0), 0.0),
+        Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
+        Vec2d(0.0, sqrt(2.0)/2), 
+        (2+sqrt(2.0)), 
+        ray1,
+        csRot2).recordIsClose(hor2));
+
+    assert(!csRot2.quickRayIntersection(ray2));
+    Nullable!HitRecord hit2 = csRot2.rayIntersection(ray2);
+    assert(hit2.isNull);
+
 }
 
 // ******************** Cylinder ********************
@@ -933,50 +936,53 @@ unittest
     DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
     Material cylinderMaterial = Material(cylinderBRDF);
 
-
-// // Rotation of a Cylinder
-
-
-//     Ray rayYep = Ray(Point(0.0, 3.0, 0.0), -vecY);
-//     Ray rayNop = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+// Rotation of a Cylinder
+    // Constructor 1: 
+    Cylinder cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
     
-//     CylinderShell c2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
-//     assert(c2.quickRayIntersection(rayYep));
-//     assert(!c2.quickRayIntersection(rayNop));
+    Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
+    assert(cRot1.quickRayIntersection(ray1));
+    HitRecord hit1 = cRot1.rayIntersection(ray1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 1.0, 0.0),
+        Normal(0.0, sqrt(2.0)/2, -sqrt(2.0)/2),
+        Vec2d(0.0, 0.0), 
+        2.0, 
+        ray1,
+        cRot1).recordIsClose(hit1));
 
-//     HitRecord h2 = c2.rayIntersection(rayYep).get;
+    Ray ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+    assert(cRot1.quickRayIntersection(ray2));
+    HitRecord hit2 = cRot1.rayIntersection(ray2).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 0.292893, sqrt(2.0)/2),  // Not very clear why 0.292893
+        Normal(0.0, -sqrt(2.0)/2, sqrt(2.0)/2),
+        Vec2d(0.0, 1.0), 
+        1+0.292893, 
+        ray2,
+        cRot1).recordIsClose(hit2));
 
-//     //assert(h2.worldPoint.xyzIsClose(Point(0.0, 0.0, 0.0))); 
-//     // Problem in constructor 2: 
-//     // not working because the CylinderShell is on the other side as one can see below
-//     assert(h2.worldPoint.xyzIsClose(Point(0.0, 1+sqrt(2.0), 0)));
+    Ray ray3 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, 1.0));
+    assert(!cRot1.quickRayIntersection(ray3));
+    Nullable!HitRecord hit3 = cRot1.rayIntersection(ray3);
+    assert(hit3.isNull);
 
-//     // conflict in constructor 1: 
-//     CylinderShell c1 = new CylinderShell(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderShellMaterial);
+    // Constructor 2
+    CylinderShell cRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderMaterial);
     
-//     assert(!c1.quickRayIntersection(rayNop));
-//     Nullable!HitRecord hit = c1.rayIntersection(rayNop);
-//     assert(hit.isNull);
+    assert(cRot2.quickRayIntersection(ray1));
+    HitRecord h1 = cRot2.rayIntersection(ray1).get(HitRecord());
+    assert(HitRecord(
+        Point(0.0, 1-sqrt(2.0), 0.0),
+        Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
+        Vec2d(0.0, sqrt(2.0)/2), 
+        (2+sqrt(2.0)), 
+        ray1,
+        cRot2).recordIsClose(h1));
 
-//     // quickRayIntersection finds the intersection
-//     assert(c1.quickRayIntersection(rayYep));
-//     // rayIntersection doesn't
-//     Nullable!HitRecord h1 = c1.rayIntersection(rayYep); 
-//     assert(h1.isNull);
-//     // import std.stdio;
-//     // writeln(h1.worldPoint);
-//     // assert(h1.worldPoint.xyzIsClose(Point(0.0, 0.0, 0.0)));
-
-//     // Ray horizontal = {Point(0.0, 3.0, 0.0), -vecY};
-//     // assert(c1.quickRayIntersection(horizontal));
-//     // HitRecord hHor = c1.rayIntersection(horizontal).get(HitRecord());
-//     // assert(HitRecord(
-//     //     Point(0.0,3.0, 0.0),
-//     //     Normal(1.0, 1.0, 1.0),
-//     //     Vec2d( 0.0, 0.0), // u = 0.0 or +-PI/2PI = +-0.5
-//     //     3.0,
-//     //     horizontal,
-//     //     c1).recordIsClose(hHor));
+    assert(!cRot2.quickRayIntersection(ray3));
+    Nullable!HitRecord h2 = cRot2.rayIntersection(ray3);
+    assert(h2.isNull);
 }
 
 struct World
