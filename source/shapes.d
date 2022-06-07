@@ -616,6 +616,24 @@ class CylinderShell : Shape
         material = m;
     }
 
+    pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
+        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
+        in float zAngleInDegrees = 0.0, Material m = Material())
+    in (!areClose(radius, 0.0))
+    in (!areClose(length, 0.0))
+    {
+        Transformation scale = scaling(Vec(radius, radius, length));
+        Transformation transl = translation(translVec);
+
+        Transformation rotation;
+        if (xAngleInDegrees % 360 != 0) rotation = rotationX(xAngleInDegrees) * rotation;
+        if (yAngleInDegrees % 360 != 0) rotation = rotationY(yAngleInDegrees) * rotation;
+        if (zAngleInDegrees % 360 != 0) rotation = rotationZ(zAngleInDegrees) * rotation;
+
+        transf = transl * rotation * scale;
+        material = m;
+    }
+
     pure nothrow @nogc @safe float[2] cylShellIntersections(in Ray r) const
     {
         immutable float c = r.origin.x * r.origin.x + r.origin.y * r.origin.y - 1.0;
