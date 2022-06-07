@@ -2,13 +2,10 @@ module ray;
 
 import geometry : Point, Vec, xyzIsClose; 
 
-//******************** Ray ********************
+// ******************** Ray ********************
 /// struct of a 3D Ray 
 ///
-/// Point origin - is the origin of the Ray
-/// Vec dir - is the direction of the Ray
-/// float tMin, tMax - are the minimum/maximum time of the intersection
-/// int depth - number of rebound of a Ray 
+/// Parameters: origin (Point), dir (Vec), tMin, tMax (float), depth (int) 
 struct Ray
 {
     Point origin;
