@@ -72,10 +72,10 @@ unittest
 	foreach (string fileName; files)
 	{
 		HDRImage img = new HDRImage(fileName);
-
+		// HDRImage
 		assert(img.width == 3);
 		assert(img.height == 2);
-
+		// colorIsClose
 		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
 		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
 		assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
@@ -252,7 +252,7 @@ in (x >= 0)
 	return x / (1.0 + x);
 }
 
-///******************** HDRImage ********************
+// ******************** HDRImage ********************
 /// Class of an High Dynamic Range Image
 class HDRImage
 {

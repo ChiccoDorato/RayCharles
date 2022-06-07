@@ -763,8 +763,8 @@ unittest
     // rayIntersection doesn't :(
     Nullable!HitRecord h1 = csRot1.rayIntersection(ray1); 
     assert(h1.isNull);
-
-    // HitRecord hor1 = csRot1.rayIntersection(ray1).get(HitRecord());
+    // import std.stdio;
+    // writeln(h1.worldPoint, " ", h1.normal, " ", h1.surfacePoint, " ", h1.t);
     // assert(HitRecord(
     //     Point(0.0, 1-sqrt(2.0), 0.0),
     //     Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
@@ -795,7 +795,6 @@ unittest
     assert(!csRot2.quickRayIntersection(ray2));
     Nullable!HitRecord hit2 = csRot2.rayIntersection(ray2);
     assert(hit2.isNull);
-
 }
 
 // ******************** Cylinder ********************
@@ -955,7 +954,7 @@ unittest
     Material cylinderMaterial = Material(cylinderBRDF);
 
 // Rotation of a Cylinder
-    // Constructor 1: 
+    // Constructor 1 
     Cylinder cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
     
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
