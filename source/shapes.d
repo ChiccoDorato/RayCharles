@@ -212,7 +212,7 @@ unittest
         r2).recordIsClose(h2));
 }
 
-// ******************** Plane ********************
+// ************************* Plane *************************
 /// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
 class Plane : Shape
 {
@@ -334,16 +334,18 @@ unittest
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
 
-// ******************** AABox ********************
+// ************************* AABox *************************
 /// Class for a 3D Axis Aligned Box
 class AABox : Shape
 {
-    /// Build an AABox - also with a transformation and a material
+    /// Build an AABox - Parameters: transformation, material
     pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
     }
 
+    /// Build an AABox - Parameters: 
+    /// 2 point (max and min of the box), 3 angles (rotation in disrespect to x,y,z axis), material
     pure nothrow @safe this(in Point min, in Point max,
         in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
         in float zAngleInDegrees = 0.0, Material m = Material())
@@ -360,6 +362,7 @@ class AABox : Shape
         material = m;
     }
 
+    /// Find and record the intersections with the box passing by each dimension x,y,z
     pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
     {
         immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
@@ -368,6 +371,7 @@ class AABox : Shape
         return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
     }
 
+    /// Convert a 3D point (x, y, z) on the AABox in a 2D point (u, v) on the screen/Image
     pure nothrow @nogc @safe Vec2d boxUVPoint(in Point p) const
     {
         Vec2d boxUV;
@@ -390,6 +394,7 @@ class AABox : Shape
         return boxUV;
     }
 
+    /// Create a Normal to a Vector in a Point of the AABox
     pure nothrow @nogc @safe Normal boxNormal(in Point p, in Vec v) const
     {
         if (areClose(p.x, 0.0) || areClose(p.x, 1.0))
@@ -403,6 +408,7 @@ class AABox : Shape
         }
     }
 
+    /// Check and record an intersection between a Ray and an AABOX
     override pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray r)
     {
         Nullable!HitRecord hit;
@@ -426,6 +432,7 @@ class AABox : Shape
         return hit;
     }
 
+    /// Look up quickly for an intersection between a Ray and a Plane
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -435,6 +442,7 @@ class AABox : Shape
     }
 }
 
+///
 unittest
 {
     Vec translVec = {1.0, 2.0, 4.0}, scaleVec = {-2.0, 3.0, 1.0};
@@ -444,18 +452,21 @@ unittest
 
     Point p1 = {1.0, 2.0, 4.0}, p2 = {-1.0, 5.0, 5.0};
     AABox pointsConstructorBox = new AABox(p1, p2, 0.0, 330.0, 0.0);
+    // checking the constructor
     assert(pointsConstructorBox.transf.transfIsClose(transl * rotY * scale));
 }
 
+///
 unittest
-{
+{   
+    // Default constructor
     AABox box = new AABox();
-
+    // rayIntersection
     Ray r1 = {Point(-2.0, 0.5, 0.0), -vecX};
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
-
+    // recordIsClose
     Ray r2 = {Point(0.0, 0.3, 0.7), vecY};
     assert(box.quickRayIntersection(r2));
     HitRecord h2 = box.rayIntersection(r2).get(HitRecord());
@@ -479,21 +490,24 @@ unittest
         box).recordIsClose(h3));
 }
 
+///
 unittest
 {
     Vec translVec = {-1.0, 2.0, 4.0}, scaleVec = {2.0, 3.0, -0.8};
     Transformation scale = scaling(scaleVec);
     Transformation rotY = rotationY(-30.0);
     Transformation transl = translation(translVec);
-    
+    // AABox with tranformation
     AABox box = new AABox(transl * rotY * scale);
     float z = 4.0 - sqrt(3.0) / 3.0;
 
     Point p1 = {-1.0, 2.0, 4.0}, p2 = {1.0, 5.0, 3.2};
     AABox pointsConstructorBox = new AABox(p1, p2, 0.0, -30.0, 0.0);
+    // tranfIsClose
     assert(pointsConstructorBox.transf.transfIsClose(box.transf));
 
     Ray r1 = {Point(-1.0, 8.0, z), -vecY};
+    // quickRayIntersection
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
@@ -569,7 +583,7 @@ unittest
         box).recordIsClose(hVert2));
 }
 
-// ******************** CylinderShell ********************
+// ************************* CylinderShell *************************
 /// Class for a 3D Cylinder shell (lateral suface) aligned with the z axis
 class CylinderShell : Shape
 {
@@ -606,7 +620,8 @@ class CylinderShell : Shape
         transf = transl * rotation * scale;
         material = m;
     }
-    /// Build a Cylinder - Parameters: the radius, the lenght, the translation Vector and the material
+
+    /// Build a CylinderShell - Parameters: the radius, the lenght, the translation Vector and the material
     pure nothrow @safe this(in float radius, in float length,
         in Vec translVec = Vec(), Material m = Material())
     in (!areClose(radius, 0.0))
@@ -616,6 +631,8 @@ class CylinderShell : Shape
         material = m;
     }
 
+    /// Build a CylinderShell - Parameters: the radius, the lenght, the translation Vector,
+    /// 3 angles for a rotation (in disrespect to x,y and z axis) and the material
     pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
         in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
         in float zAngleInDegrees = 0.0, Material m = Material())
@@ -634,6 +651,7 @@ class CylinderShell : Shape
         material = m;
     }
 
+    /// Find and record the intersections with the CylinderShell passing by each dimension x,y,z
     pure nothrow @nogc @safe float[2] cylShellIntersections(in Ray r) const
     {
         immutable float c = r.origin.x * r.origin.x + r.origin.y * r.origin.y - 1.0;
@@ -651,21 +669,21 @@ class CylinderShell : Shape
         return [t1, t2];
     }
 
-    /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
+    /// Convert a 3D point (x, y, z) on the CylinderShell in a 2D point (u, v) on the screen/Image
     pure nothrow @nogc @safe Vec2d cylShellUVPoint(in Point p) const
     {
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
         return Vec2d(u < 0.0 ? u + 1.0 : u, p.z);
     }
 
-    /// Create a Normal to a Vector in a Point of the Cylinder surface
+    /// Create a Normal to a Vector in a Point of the CylinderShell surface
     pure nothrow @nogc @safe Normal cylShellNormal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, 0.0);
         return p.x * v.x + p.y * v.y < 0.0 ? n : -n;
     }
 
-    /// Check and record an intersection between a Ray and a Cylinder
+    /// Check and record an intersection between a Ray and a CylinderShell
     override pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray ray)
     {
         Nullable!HitRecord hit;
@@ -706,6 +724,7 @@ class CylinderShell : Shape
     }
 }
 
+///
 unittest
 {
     import hdrimage : Color;
@@ -716,6 +735,7 @@ unittest
     Material cylinderShellMaterial = Material(cylinderShellBRDF);
 
     Point pMin = {1.0, 1.0, 0.0};
+    // Same behaviour for the three different CylinderShells
     CylinderShell c1 = new CylinderShell(translation(pMin.convert)*scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
     CylinderShell c2 = new CylinderShell(1.0, pMin, pMin + 2 * vecZ, cylinderShellMaterial);
     CylinderShell c3 = new CylinderShell(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderShellMaterial);
@@ -743,6 +763,7 @@ unittest
     assert(h1.worldPoint.xyzIsClose(Point(0.0, 1.0, 1.0)));
 }
 
+///
 unittest
 {
     import hdrimage : Color;
@@ -752,9 +773,8 @@ unittest
     DiffuseBRDF cylinderShellBRDF = new DiffuseBRDF(cylinderShellPig);
     Material cylinderShellMaterial = Material(cylinderShellBRDF);
 
-// Rotation of a CylinderShell
-
-    // conflict in Constructor 1: 
+    // Rotation of a CylinderShell
+    // Conflict in Constructor 1: 
     CylinderShell csRot1 = new CylinderShell(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderShellMaterial);
     
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
@@ -778,7 +798,6 @@ unittest
     Nullable!HitRecord hit1 = csRot1.rayIntersection(ray2);
     assert(hit1.isNull);
 
-
     // Constructor 2
     CylinderShell csRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
     
@@ -797,7 +816,7 @@ unittest
     assert(hit2.isNull);
 }
 
-// ******************** Cylinder ********************
+// ************************* Cylinder *************************
 /// Class for a 3D Cylinder aligned with the z axis
 class Cylinder : CylinderShell
 {
@@ -882,6 +901,7 @@ class Cylinder : CylinderShell
     }
 }
 
+///
 unittest
 {
     import hdrimage : Color;
@@ -892,6 +912,7 @@ unittest
     Material cylinderMaterial = Material(cylinderBRDF);
 
     Point pMin = {1.0, 1.0, 0.0};
+    // Same behaviour for the three different Cylinders
     Cylinder c1 = new Cylinder(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
     Cylinder c2 = new Cylinder(1.0, pMin, pMin + 2 * vecZ, cylinderMaterial);
     Cylinder c3 = new Cylinder(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderMaterial);
@@ -944,6 +965,7 @@ unittest
         c1).recordIsClose(vertical));
 }
 
+///
 unittest
 {
     import hdrimage : Color;
@@ -952,8 +974,8 @@ unittest
     UniformPigment cylinderPig = new UniformPigment(cylinderColor);
     DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
     Material cylinderMaterial = Material(cylinderBRDF);
-
-// Rotation of a Cylinder
+    
+    // Rotation of a Cylinder
     // Constructor 1 
     Cylinder cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
     
@@ -1002,20 +1024,25 @@ unittest
     assert(h2.isNull);
 }
 
+// ************************* World *************************
+/// Struct for a 3D World where to put all the shapes of the image
 struct World
 {
     Shape[] shapes;
-
+    
+    /// Build a World from an array of Shapes 
     pure nothrow @safe this(Shape[] s)
     {
         shapes = s;
     }
 
+    /// Add a Shape to the list of the World
     pure nothrow @safe void addShape(Shape s)
     {
         shapes ~= s;
     }
 
+    /// Check and record an intersection between a Ray and each Shape of the World by calling their specific rayIntersection
     pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray ray)
     {
         Nullable!HitRecord closest;
@@ -1030,6 +1057,7 @@ struct World
         return closest;
     }
 
+    /// Return if a Point of the World is visible or not from the observer put in obsPos
     pure nothrow @nogc @safe bool isPointVisible(in Point point, in Point obsPos)
     {
         immutable Vec direction = point - obsPos;
@@ -1041,6 +1069,7 @@ struct World
     }
 }
 
+///
 unittest
 {
     World world;
@@ -1049,7 +1078,8 @@ unittest
     Sphere s2 = new Sphere(translation(vecX * 8.0));
     world.addShape(s1);
     world.addShape(s2);
-
+    
+    // rayIntersection
     Nullable!HitRecord intersection1 = world.rayIntersection(Ray(Point(0.0, 0.0, 0.0), vecX));
     assert(!intersection1.isNull);
     assert(intersection1.get.worldPoint.xyzIsClose(Point(1.0, 0.0, 0.0)));
@@ -1059,6 +1089,7 @@ unittest
     assert(intersection2.get.worldPoint.xyzIsClose(Point(9.0, 0.0, 0.0)));
 }
 
+///
 unittest
 {
     World world;
@@ -1068,6 +1099,7 @@ unittest
     world.addShape(s1);
     world.addShape(s2);
 
+    // isPointVisible
     assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
     assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
     assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));

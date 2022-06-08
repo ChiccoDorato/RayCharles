@@ -5,19 +5,24 @@ import hdrimage : areClose;
 import ray;
 import std.math : cos, PI, sin, sqrt;
 
+/// The Identity 4x4 Matrix
 immutable float[4][4] id4 = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 
+// ************************* Transformation *************************
+/// Struct of a transformation that uses a 4x4 matrix as operator
 struct Transformation
 {	
 	float[4][4] m = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 	float[4][4] invM = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]];
 
+    /// Build a transformation with a 4x4 matrix and its inverse 4x4 matrix
 	pure nothrow @nogc @safe this(in float[4][4] matrix, in float[4][4] invMatrix)
     {
 		m = matrix;
 		invM = invMatrix;
 	}
 
+    /// Return the product between two 4X4 matrices
 	pure nothrow @nogc @safe float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
     {
 		float[4][4] prod = 0;
@@ -27,6 +32,7 @@ struct Transformation
 		return prod;
 	}
 
+    /// Verify if two matrices are close by calling the fuction areClose on every component 
     pure nothrow @nogc @safe bool matrixIsClose(in float[4][4] m1, in float[4][4] m2, in float epsilon=1e-5) const
     {
         for (ubyte i = 0; i < 4; ++i)
@@ -35,26 +41,31 @@ struct Transformation
         return true;
     }
 
+    /// Verify if two Tranformations are close by calling the fuction matrixIsClose on the matrix and on its inverse
     pure nothrow @nogc @safe bool transfIsClose(in Transformation t, in float epsilon=1e-5) const
     {
         return matrixIsClose(m, t.m, epsilon) && matrixIsClose(invM, t.invM, epsilon);
     }
 
+    /// Verify if a Tranformation is consistent: the product between the matrix and its inverse must be the identity
 	pure nothrow @nogc @safe bool isConsistent(in float epsilon=1e-5) const
     {
 		return matrixIsClose(matProd(m, invM), id4, epsilon);
 	}
 
+    /// Return the inverse of a Transformation
 	pure nothrow @nogc @safe Transformation inverse() const
     {
 		return Transformation(invM, m);
 	}
 
+    /// Return the product (*) between two Tranformations
 	pure nothrow @nogc @safe Transformation opBinary(string op)(in Transformation rhs) const if (op == "*")
     {
 		return Transformation(matProd(m, rhs.m), matProd(rhs.invM, invM));
 	}
 
+    /// Return the product (*) between a matrix and a Point 
 	pure nothrow @nogc @safe Point opBinary(string op)(in Point rhs) const if (op == "*")
     {
 		immutable Point p = Point(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2] + m[0][3],
@@ -66,6 +77,7 @@ struct Transformation
 		return p * (1 / lambda);
 	}
 
+    /// Return the product (*) between a matrix and a Vec 
 	pure nothrow @nogc @safe Vec opBinary(string op)(in Vec rhs) const if (op == "*")
     {
 		return Vec(rhs.x * m[0][0] + rhs.y * m[0][1] + rhs.z * m[0][2],
@@ -73,6 +85,7 @@ struct Transformation
             rhs.x * m[2][0] + rhs.y * m[2][1] + rhs.z * m[2][2]);
 	}
 
+    /// Return the product (*) between a matrix and a Normal 
     pure nothrow @nogc @safe Normal opBinary(string op)(in Normal rhs) const if (op == "*")
     {
 		return Normal(rhs.x * invM[0][0] + rhs.y * invM[1][0] + rhs.z * invM[2][0],
@@ -80,12 +93,14 @@ struct Transformation
             rhs.x * invM[0][2] + rhs.y * invM[1][2] + rhs.z * invM[2][2]);
 	}
 
+    /// Return a transformed Ray: the product (*) of the origin (Point) and of the direction (Vec) with the matrix is calculated 
     pure nothrow @nogc @safe Ray opBinary(string op)(in Ray rhs) const if (op == "*")
     {
         return Ray(this * rhs.origin, this * rhs.dir, rhs.tMin, rhs.tMax, rhs.depth);
     }
 }
 
+///
 unittest
 {
     float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
@@ -97,9 +112,11 @@ unittest
         [0.5, 0.5, -1.0, 1.0],
         [-1.375, 0.875, 0.0, -0.5]];
     Transformation t1 = Transformation(m1, m2);
+    // isConsistent
     assert(t1.isConsistent);
 
     Transformation t2 = Transformation(t1.m, t1.invM);
+    // transfIsClose
     assert(t1.transfIsClose(t2));
 
     Transformation t3 = Transformation(t1.m, t1.invM);
@@ -111,6 +128,7 @@ unittest
     assert(!t1.transfIsClose(t4));
 }
 
+///
 unittest
 {
     float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
@@ -124,16 +142,20 @@ unittest
     Transformation t = Transformation(m1, m2);
     assert(t.isConsistent);
 
+    // Vec product
     Vec expectedV = {14.0, 38.0, 51.0};
     assert(expectedV.xyzIsClose(t * Vec(1.0, 2.0, 3.0)));
 
+    // Point product
     Point expectedP = {18.0, 46.0, 58.0};
     assert(expectedP.xyzIsClose(t * Point(1.0, 2.0, 3.0)));
 
+    // Normal product
     Point expectedN = {-8.75, 7.75, -3.0};
     assert(expectedN.xyzIsClose(t * Normal(3.0, 2.0, 4.0)));
 }
 
+///
 unittest
 {
     float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
@@ -168,9 +190,11 @@ unittest
         [4.825, -4.325, 2.5, -1.1]];
     Transformation expected = Transformation(m5, m6);
     assert(expected.isConsistent(1e-4));
+    // transfIsClose
     assert(expected.transfIsClose(t1 * t2));
 }
 
+///
 unittest
 {
     float[4][4] m1 = [[1.0, 2.0, 3.0, 4.0],
@@ -183,15 +207,17 @@ unittest
         [-1.375, 0.875, 0.0, -0.5]];
     Transformation t1 = Transformation(m1, m2);
 
+    // inverse
     Transformation t2 = t1.inverse;
     assert(t2.isConsistent);
 
+    // Transformation product (*)
     Transformation prod = t1 * t2;
     assert(prod.isConsistent);
     assert(prod.transfIsClose(Transformation()));
 }
 
-// Function that creates translation of a given vector.
+/// Return a translation of a given Vec (x,y,z)
 pure nothrow @nogc @safe Transformation translation(in Vec v)
 {
 	immutable float[4][4] m = [[1.0, 0.0, 0.0, v.x],
@@ -205,8 +231,10 @@ pure nothrow @nogc @safe Transformation translation(in Vec v)
 	return Transformation(m, invM);
 }
 
+///
 unittest
 {
+    // translation
     Transformation tr1 = translation(Vec(1.0, 2.0, 3.0));
     assert(tr1.isConsistent);
 
@@ -220,6 +248,7 @@ unittest
     assert(prod.transfIsClose(expected));
 }
 
+/// Return a Rotation around the X axis - Parameter: angle (float)
 pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
@@ -234,6 +263,7 @@ pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
+/// Return a Rotation around the X axis - Parameter: cosine and sine of an angle (float)
 pure nothrow @nogc @safe Transformation rotationX(in float cosine, in float sine)
 in (areClose(cosine * cosine + sine * sine, 1.0))
 {
@@ -248,6 +278,7 @@ in (areClose(cosine * cosine + sine * sine, 1.0))
     return Transformation(m, invM);
 }
 
+/// Return a Rotation around the Y axis - Parameter: angle (float)
 pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
@@ -262,6 +293,7 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
+/// Return a Rotation around the Y axis - Parameter: cosine and sine of an angle (float)
 pure nothrow @nogc @safe Transformation rotationY(in float cosine, in float sine)
 in (areClose(cosine * cosine + sine * sine, 1.0))
 {
@@ -276,6 +308,7 @@ in (areClose(cosine * cosine + sine * sine, 1.0))
     return Transformation(m, invM);
 }
 
+/// Return a Rotation around the Z axis - Parameter: angle (float)
 pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 {
     immutable float sine = sin(angleInDegrees * PI / 180), cosine = cos(angleInDegrees * PI / 180);
@@ -290,6 +323,7 @@ pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
     return Transformation(m, invM);
 }
 
+/// Return a Rotation around the Z axis - Parameter: cosine and sine of an angle (float)
 pure nothrow @nogc @safe Transformation rotationZ(in float cosine, in float sine)
 in (areClose(cosine * cosine + sine * sine, 1.0))
 {
@@ -304,21 +338,26 @@ in (areClose(cosine * cosine + sine * sine, 1.0))
     return Transformation(m, invM);
 }
 
+///
 unittest
 {
+    // rotationX,rotationY, rotationZ
     assert(rotationX(0.1).isConsistent);
     assert(rotationY(0.1).isConsistent);
     assert(rotationZ(0.1).isConsistent);
 
+    // xyzIsClose
     assert((rotationX(90) * vecY).xyzIsClose(vecZ));
     assert((rotationY(90) * vecZ).xyzIsClose(vecX));
     assert((rotationZ(90) * vecX).xyzIsClose(vecY));
 
+    // transfIsClose
     assert(rotationX(sqrt(3.0) / 2.0, 0.5).transfIsClose(rotationX(30.0)));
     assert(rotationY(sqrt(2.0) / 2.0, sqrt(2.0) / 2.0).transfIsClose(rotationY(45.0)));
     assert(rotationZ(1.0, 0.0).transfIsClose(rotationZ(360.0)));
 }
 
+/// Return a scale transformation of a given Vec (x,y,z)
 pure nothrow @nogc @safe Transformation scaling(in Vec v)
 {
 	immutable float[4][4] m = [[v.x, 0.0, 0.0, 0.0],
@@ -332,14 +371,17 @@ pure nothrow @nogc @safe Transformation scaling(in Vec v)
 	return Transformation(m, invM);
 }
 
+///
 unittest
 {
+    // scaling
     Transformation tr1 = scaling(Vec(2.0, 5.0, 10.0));
     assert(tr1.isConsistent);
 
     Transformation tr2 = scaling(Vec(3.0, 2.0, 4.0));
     assert(tr2.isConsistent);
 
+    // product of two scalings
     Transformation expected = scaling(Vec(6.0, 10.0, 40.0));
     assert(expected.transfIsClose(tr1 * tr2));
 }

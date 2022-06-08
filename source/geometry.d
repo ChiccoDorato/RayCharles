@@ -8,6 +8,7 @@ import std.math : sqrt;
 import std.meta : AliasSeq;
 import std.traits : Fields, hasMember;
 
+/// Verify if the type given has three float components (x, y, z)
 pure nothrow @nogc @safe bool isXYZ(T)()
 {
     return is(Fields!T == AliasSeq!(float, float, float)) &&
@@ -133,7 +134,7 @@ mixin template convert(T, R)
     }
 }
 
-///******************** Vec ********************
+// ************************* Vec *************************
 /// struct for a 3D Vector
 struct Vec
 {
@@ -207,6 +208,7 @@ struct Vec
 /// Cartesian Versors in x, y and z direction
 immutable Vec vecX = {1.0, 0.0, 0.0}, vecY = {0.0, 1.0, 0.0},  vecZ = {0.0, 0.0, 1.0};
 
+///
 unittest
 {
     Vec a = {1.0, 2.0, 3.0}, b = {4.0, 6.0, 8.0};
@@ -231,8 +233,8 @@ unittest
     assert(areClose(a.norm * a.norm, 14.0));
 }
 
-// ******************** Point ********************
-/// struct for a 3D Point (x, y, z)
+// ************************* Point *************************
+/// Struct for a 3D Point (x, y, z)
 struct Point
 {
     float x, y, z;
@@ -287,7 +289,7 @@ unittest
     assert((p2 - p1).xyzIsClose(Vec(3.0, 4.0, 5.0)));
 }
 
-// ******************** Normal ********************
+// ************************* Normal *************************
 /// struct for a 3D Normal
 struct Normal
 {
@@ -336,6 +338,7 @@ struct Normal
     mixin convert!(Normal, Vec);
 }
 
+///
 unittest
 {
     Normal n1 = {0.0, 0.0, 0.0}, n2 = {5.0, 12.0, 0.0};
@@ -343,7 +346,7 @@ unittest
     assert(n2.normalize.xyzIsClose(Normal(5.0 / 13.0, 12.0 / 13.0, 0.0)));
 }
 
-// ******************** Vec2d ********************
+// ************************* Vec2d *************************
 /// struct for a 2D Vec
 struct Vec2d
 {
@@ -373,10 +376,10 @@ pure nothrow @nogc @safe Vec[3] createONBFromZ(Normal n)
     return [e1, e2, Vec(n.x, n.y, n.z)];
 }
 
+///
 unittest
 {
     PCG pcg = new PCG();
-
     Vec[3] base;
     for (int i = 0; i < 10_000; ++i)
     {

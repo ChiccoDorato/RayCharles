@@ -2,6 +2,8 @@ module tokens;
 
 import std.typecons : Nullable;
 
+// ************************* TokenType *************************
+/// Enumeration of the 6 types of Token for the Lexer:
 enum TokenType
 {
     keyword,
@@ -12,6 +14,8 @@ enum TokenType
     stopToken
 }
 
+// ************************* Keyword *************************
+/// Enumeration of the Keywords
 enum Keyword : string
 {
     newKeyword = "new",
@@ -38,6 +42,8 @@ enum Keyword : string
     floatKeyword = "float"
 }
 
+// ************************* TokenValue *************************
+/// Union representing a TokenValue - Parameters: a Keyword, an idOrLitString, a literalNumber, a symbol
 union TokenValue
 {
     Keyword keyword;
@@ -46,22 +52,27 @@ union TokenValue
     char symbol;
 }
 
+// ************************* Token *************************
+/// Struct of a TokenValue - Parameters: TokenType, TokenValue
 struct Token
 {
     TokenType type;
     TokenValue value;
 
+    /// Build a Token - Parameter: char of type Nullable. Update the type of the Token
     this(Nullable!char)
     {
         type = TokenType.stopToken;
     }
 
+    /// Build a Token - Parameter: Keyword. Update the type and the keyword value of the Token
     this(Keyword kw)
     {
         type = TokenType.keyword;
         value.keyword = kw;
     }
 
+    /// Build a Token - Parameters: string, bool. Update the type and the idOrLitString of the Token
     this(string s, bool id = true)
     {
         if (id) type = TokenType.identifier;
@@ -69,12 +80,14 @@ struct Token
         value.idOrLitString = s;
     }
 
+    /// Build a Token - Parameter: literalNum. Update the type and the literalNumber value of the Token
     this(float literalNum)
     {
         type = TokenType.literalNumber;
         value.literalNumber = literalNum;
     }
 
+    /// Build a Token - Parameter: char. Update the type and the symbol value of the Token
     this(char sym)
     {
         type = TokenType.symbol;
@@ -82,6 +95,8 @@ struct Token
     }
 }
 
+// ************************* SourceLocation *************************
+/// Struct of a SourceLocation - Parameters: fileName (string), number of line and column (uint)
 struct SourceLocation
 {
     string fileName;
@@ -89,6 +104,9 @@ struct SourceLocation
     uint col;
 }
 
+// ************************* InputStream *************************
+/// Struct of an InputStream - Parameters: stream (char[]), index (uint), savedChar (char), 
+///                             location and savedLocation (SourceLocation), tabulations (ubyte) 
 struct InputStream 
 {
     char[] stream;
@@ -97,6 +115,9 @@ struct InputStream
     SourceLocation location, savedLocation;
     ubyte tabulations;
 
+    /// Build an InputStream - Parameters: stream (char[]), fileName = "" (string), tabulation = 4 (ubyte).
+    ///
+    /// Default: SourceLocation at (1,1), savedChar (charInit)
     pure nothrow @safe this(char[] s, in string fileName = "", in ubyte tab = 4)
     in (stream.length != 0)
     in (tab == 4 || tab == 8)
@@ -108,6 +129,7 @@ struct InputStream
         tabulations = tab;
     }
 
+    /// Return the updated position after a char is read from the Lexer
     pure nothrow @nogc @safe void updatePos(in char c)
     {
         if (c == char.init) return;
@@ -120,6 +142,7 @@ struct InputStream
         else ++location.col;
     }
 
+    /// Read and record a char, then update the position calling the function updatePos
     pure nothrow @nogc @safe char readChar()
     {
         char c;
@@ -140,6 +163,7 @@ struct InputStream
         return c;
     }
 
+    /// Unread a char, then update the position "going back" (decrease the index by one)
     pure nothrow @nogc @safe void unreadChar(in char c)
     in (savedChar == char.init)
     {

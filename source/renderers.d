@@ -12,46 +12,63 @@ import std.math : isNaN;
 import std.typecons : Nullable;
 import transformations : scaling, Transformation, translation;
 
+// ************************* Renderer *************************
+/// Class representing a Renderer - Members: World, backgroundColor (Color)
 class Renderer
 {
     World world;
     Color backgroundColor;
 
+    /// Build a Renderer - Parameter: World
     pure nothrow @safe this(World w)
     {
         world = w;
     }
 
+    /// Build a Renderer - Parameter: World, Color
     pure nothrow @safe this(World w, in Color bgCol)
     {
         this(w);
         backgroundColor = bgCol;
     }
 
+    /// Return a Color form a Ray that hit a shape in the World
     abstract pure nothrow Color call(in Ray r);
 }
 
+// ************************* OnOffRenderer *************************
+/// Class representing a OnOffRenderer
 class OnOffRenderer : Renderer
 {
     Color color = white;
 
+    /// Build an OnOffRenderer - Parameter: World
+    ///
+    /// Use super(World)
     pure nothrow @safe this(World w)
     {
         super(w);
     }
 
+    /// Build an OnOffRenderer - Parameter: World, 2 Colors (backgroundColor & color)
+    ///
+    /// Use super(World, backgroundColor)
     pure nothrow @safe this(World w, in Color bgCol, in Color col)
     {
         super(w, bgCol);
         color = col;
     }
 
+    /// Return a Color form a Ray that hit a shape in the World
+    ///
+    /// The Color is the background one if there is no intersection
     override pure nothrow @safe Color call(in Ray r)
     {
         return world.rayIntersection(r).isNull ? backgroundColor : color;
     }
 }
 
+///
 unittest
 {
     Transformation transf = translation(Vec(2.0, 0.0, 0.0)) * scaling(Vec(0.2, 0.2, 0.2));
@@ -64,7 +81,7 @@ unittest
 
     Renderer renderer = new OnOffRenderer(world);
     tracer.fireAllRays((Ray r) => renderer.call(r));
-
+    // call
     assert(image.getPixel(0, 0).colorIsClose(black));
     assert(image.getPixel(1, 0).colorIsClose(black));
     assert(image.getPixel(2, 0).colorIsClose(black));
@@ -78,18 +95,31 @@ unittest
     assert(image.getPixel(2, 2).colorIsClose(black));   
 }
 
+// ************************* FlatRenderer *************************
+/// Class representing a FlatRenderer
 class FlatRenderer : Renderer
 {
+    /// Build an FlatRenderer - Parameter: World
+    ///
+    /// Use super(World)
     pure nothrow @safe this(World w)
     {
         super(w);
     }
 
+    /// Build an OnOffRenderer - Parameter: World, backgroundColor (Color)
+    ///
+    /// Use super(World, backgroundColor)
     pure nothrow @safe this(World w, in Color bgCol)
     {
         super(w, bgCol);
     }
 
+    /// Return a Color form a Ray that hit a shape in the World
+    ///
+    /// The Color is the background one if there is no intersection
+    /// 
+    /// The emitted radiance from the material of an object is taken into account
     override pure nothrow @safe Color call(in Ray r)
     {
         Nullable!HitRecord hit = world.rayIntersection(r);
@@ -101,6 +131,7 @@ class FlatRenderer : Renderer
     }
 }
 
+///
 unittest
 {
     Transformation transf = translation(Vec(2.0, 0.0, 0.0)) * scaling(Vec(0.2, 0.2, 0.2));
@@ -115,7 +146,7 @@ unittest
 
     Renderer renderer = new FlatRenderer(world);
     tracer.fireAllRays((Ray r) => renderer.call(r));
-
+    // call
     assert(image.getPixel(0, 0).colorIsClose(black));
     assert(image.getPixel(1, 0).colorIsClose(black));
     assert(image.getPixel(2, 0).colorIsClose(black));
@@ -129,11 +160,18 @@ unittest
     assert(image.getPixel(2, 2).colorIsClose(black));   
 }
 
+// ************************* PathTracer *************************
+/// Class representing a PathTracer - Professional Renderer with new members:
+/// PCG, number of rays (int), max depth (int), russianRouletteLimit (int) 
 class PathTracer : Renderer
 {
     PCG pcg = new PCG();
     int numberOfRays = 10, maxDepth = 2, russianRouletteLimit = 3;
 
+    /// Build a PathTracer - Parameters: World, backgroundColor (Color), PCG, 
+    /// number of rays (int), max depth (int), russianRouletteLimit (int) 
+    ///
+    /// Use super(World, backgroundColor)
     pure nothrow @safe this(World w, in Color bgCol = black, PCG randomGenerator = new PCG(),
         in int numOfRays = 10, in int depth = 2, in int RRLimit = 3)
     {
@@ -144,6 +182,13 @@ class PathTracer : Renderer
         russianRouletteLimit = RRLimit;
     }
 
+    /// Return a Color form a Ray that hit a shape in the World
+    ///
+    /// The Color is the background one if there is no intersection
+    /// 
+    /// The emitted radiance from the material of an object is taken into account
+    ///
+    /// Use the Russian Roulette Algorithm if the depth of the Ray is bigger than the limit set
     override pure nothrow @safe Color call(in Ray ray)
     {
         if (ray.depth > maxDepth) return black;
@@ -157,6 +202,7 @@ class PathTracer : Renderer
         immutable float hitColLum = max(hitCol.r, hitCol.g, hitCol.b);
         immutable Color emittedRadiance = hitMat.emittedRadiance.getColor(hitRec.surfacePoint);
 
+        /// Russian Roulette Algorithm
         if (ray.depth >= russianRouletteLimit)
         {
             immutable float q = max(0.05, 1.0 - hitColLum);
@@ -183,6 +229,7 @@ class PathTracer : Renderer
     }
 }
 
+///
 unittest
 {
     PCG pcg = new PCG();
@@ -195,11 +242,12 @@ unittest
             new UniformPigment(white * emittedRadiance));
         
         World world = World([new Sphere(Transformation(), enclosureMaterial)]);
+        // depth = 100, RRlimit = 101
         PathTracer pathTracer = new PathTracer(world, black, pcg, 1, 100, 101);
 
         Ray ray = {Point(0.0, 0.0, 0.0), vecX};
         Color color = pathTracer.call(ray);
-
+        // call
         float expected = emittedRadiance / (1.0 - reflectance);
         assert(areClose(expected, color.r));
         assert(areClose(expected, color.g));

@@ -18,8 +18,8 @@ pure nothrow @nogc @safe bool areClose(in float x, in float y, in float epsilon 
 	return abs(x - y) < epsilon;
 }
 
-// ******************** Color ********************
-/// Stucture representing a Color with three floating point members red (r), green (g) and blue (b)
+// ************************* Color *************************
+/// Stucture representing a Color - Parameters: 3 floating point members red (r), green (g) and blue (b)
 struct Color
 {
 	float r = 0.0, g = 0.0, b = 0.0;
@@ -49,7 +49,7 @@ struct Color
 		return "<r: " ~ to!string(r) ~ ", g: " ~ to!string(g) ~ ", b: " ~ to!string(b) ~ ">";
 	}
 
-	/// Verify if two Colors are close by calling the fuction areClose for every components 
+	/// Verify if two Colors are close by calling the fuction areClose for every component 
 	pure nothrow @nogc @safe bool colorIsClose(in Color c) const
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
@@ -62,6 +62,7 @@ struct Color
 	}
 }
 
+/// Fundamental colors: black (0.0, 0.0, 0.0) and white (1.0, 1.0, 1.0)
 immutable Color black = Color(), white = Color(1.0, 1.0, 1.0);
 
 ///
@@ -152,8 +153,7 @@ pure @safe int[2] parseImgSize(in ubyte[] imgSize)
 	if (dimensions[][0].length == 0 || dimensions[][1].length == 0)
 		throw new InvalidPFMFileFormat("invalid number of dimensions");
 
-	// Se ASCII esteso? Conversione a char[] fallisce con tipo std.utf.UTFException.
-	// Va controllato? Temo di sì.
+	// Se ASCII esteso - Conversione a char[] fallisce con tipo std.utf.UTFException.
 	const char[] widthArray = cast(const(char)[])dimensions[][0];
 	const char[] heightArray = cast(const(char)[])dimensions[1][0 .. $-1];
 
@@ -252,7 +252,7 @@ in (x >= 0)
 	return x / (1.0 + x);
 }
 
-// ******************** HDRImage ********************
+// ************************* HDRImage *************************
 /// Class of an High Dynamic Range Image
 class HDRImage
 {
