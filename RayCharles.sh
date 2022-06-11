@@ -13,7 +13,7 @@ fi
 # Build
 dub build --compiler ldc2
 
-for angle in $(seq 0 30); do
+for angle in $(seq 0 360); do
     # Angle with three digits, e.g. angle="1" → angleNNN="001"
     angleNNN=$(printf "%03d" $angle)
     ./RayCharles demo -a $angle -alg path -d 3 -spp 4 \

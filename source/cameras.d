@@ -6,7 +6,7 @@ import pcg;
 import ray;
 import transformations : rotationZ, Transformation, translation;
 
-///******************** Camera ********************
+// ************************* Camera *************************
 /// Class representing a 3D observer
 class Camera
 {
@@ -19,7 +19,7 @@ class Camera
     abstract pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const;
 }
 
-///******************** OrthogonalCamera ********************
+// ******************** OrthogonalCamera ********************
 /// Class representing a 3D observer with line of sight orthogonal to the surface observed
 class OrthogonalCamera : Camera
 {   
@@ -72,7 +72,7 @@ unittest
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
-///******************** PerspectiveCamera ********************
+// ************************* PerspectiveCamera *************************
 /// Class representing a 3D observer with line of sight perspective
  class PerspectiveCamera : Camera 
 {
@@ -111,7 +111,7 @@ unittest
     assert(r1.origin.xyzIsClose(r3.origin));
     assert(r1.origin.xyzIsClose(r4.origin));
 
-    // Verify id the ray hitting the corners have the right coordinates
+    // Verify if the ray hitting the corners have the right coordinates
     assert(r1.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
     assert(r2.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
     assert(r3.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
@@ -123,11 +123,11 @@ unittest
 {
     Camera cam = new PerspectiveCamera(1.0, 1.0, translation(-vecY * 2.0) * rotationZ(90));
     Ray r = cam.fireRay(0.5, 0.5);
-    /// fireRay
+    // fireRay
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
-///******************** ImageTracer ********************
+// ************************* ImageTracer *************************
 /// Class for an ImageTracer - create an image and solve the rendering equation
 struct ImageTracer
 {
@@ -189,7 +189,7 @@ struct ImageTracer
     }
 }
 
-/// Test xyzIsClose of the Tracer
+/// Test method "at" of the Tracer
 void testOrientation(in ImageTracer tracer)
 {
     immutable Ray topLeftRay = tracer.fireRay(0, 0, 0.0, 0.0);

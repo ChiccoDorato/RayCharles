@@ -27,6 +27,8 @@ class GrammarError : Exception
     }
 }
 
+// ************************* Keyword *************************
+/// Enumeration of the Keywords
 enum Keyword : string
 {
     newKeyword = "new",
@@ -113,6 +115,7 @@ struct InputStream
         tabulations = tab;
     }
 
+    /// Return the updated position after a char is read from the Lexer
     pure nothrow @nogc @safe void updatePos(in char c)
     {
         if (c == char.init) return;
@@ -125,6 +128,7 @@ struct InputStream
         else ++location.col;
     }
 
+    /// Read and record a char, then update the position calling the function updatePos
     pure nothrow @nogc @safe char readChar()
     {
         if (index == stream.length) return char.init;
@@ -147,6 +151,7 @@ struct InputStream
         return c;
     }
 
+    /// Unread a char, then update the position "going back" (decrease the index by one)
     pure nothrow @nogc @safe void unreadChar(in char c)
     in (savedChar == char.init)
     {
