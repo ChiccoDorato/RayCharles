@@ -1,15 +1,30 @@
 module tokens;
 
-import std.typecons : Nullable;
+import std.algorithm : canFind;
+import std.ascii : isAlpha, isAlphaNum, isDigit;
+import std.conv : ConvException, to;
+import std.format : format;
+import std.sumtype : match, SumType;
+import std.traits : EnumMembers;
 
-enum TokenType
+struct SourceLocation
 {
-    keyword,
-    identifier,
-    literalString,
-    literalNumber,
-    symbol,
-    stopToken
+    string fileName;
+    uint line;
+    uint col;
+
+    pure nothrow @safe string toString() const
+    {
+        return fileName ~ "(" ~ to!string(line) ~ ", " ~ to!string(col) ~ ")";
+    }
+}
+
+class GrammarError : Exception
+{
+    pure nothrow @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line);
+    }
 }
 
 enum Keyword : string
@@ -38,72 +53,62 @@ enum Keyword : string
     floatKeyword = "float"
 }
 
-union TokenValue
+struct StopToken
 {
-    Keyword keyword;
-    string idOrLitString;
-    float literalNumber;
+    SourceLocation tokenLocation;
+}
+
+struct SymbolToken
+{
     char symbol;
+    SourceLocation tokenLocation;
 }
 
-struct Token
+struct KeywordToken
 {
-    TokenType type;
-    TokenValue value;
-
-    this(Nullable!char)
-    {
-        type = TokenType.stopToken;
-    }
-
-    this(Keyword kw)
-    {
-        type = TokenType.keyword;
-        value.keyword = kw;
-    }
-
-    this(string s, bool id = true)
-    {
-        if (id) type = TokenType.identifier;
-        else type = TokenType.literalString;
-        value.idOrLitString = s;
-    }
-
-    this(float literalNum)
-    {
-        type = TokenType.literalNumber;
-        value.literalNumber = literalNum;
-    }
-
-    this(char sym)
-    {
-        type = TokenType.symbol;
-        value.symbol = sym;
-    }
+    Keyword kw;
+    SourceLocation tokenLocation;
 }
 
-struct SourceLocation
+struct IdentifierToken
 {
-    string fileName;
-    uint line;
-    uint col;
+    string identifier;
+    SourceLocation tokenLocation;
 }
+
+struct StringToken
+{
+    string literalString;
+    SourceLocation tokenLocation;
+}
+
+struct LiteralNumberToken
+{
+    float literalNumber;
+    SourceLocation tokenLocation;
+}
+
+alias Token = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
+alias KwOrId = SumType!(KeywordToken, IdentifierToken);
+
+immutable char[] whiteSpaces = [' ', '\t', '\n', '\r'];
+immutable char[] symbols = ['(', ')', '<', '>', '[', ']', '*'];
 
 struct InputStream 
 {
-    char[] stream;
+    immutable char[] stream;
     uint index;
     char savedChar;
     SourceLocation location, savedLocation;
     ubyte tabulations;
+    Token savedToken;
 
-    pure nothrow @safe this(char[] s, in string fileName = "", in ubyte tab = 4)
-    in (stream.length != 0)
+    pure nothrow @safe this(immutable char[] s, in string fileName, in ubyte tab = 4)
+    in (s.length != 0)
     in (tab == 4 || tab == 8)
     {
         stream = s;
         location = SourceLocation(fileName, 1, 1);
-        savedChar = char.init;
         savedLocation = location;
         tabulations = tab;
     }
@@ -122,6 +127,8 @@ struct InputStream
 
     pure nothrow @nogc @safe char readChar()
     {
+        if (index == stream.length) return char.init;
+
         char c;
         if (savedChar == char.init)
         {
@@ -145,6 +152,97 @@ struct InputStream
     {
         savedChar = c;
         location = savedLocation;
-        --index;
+    }
+
+    pure @safe void skipWhiteSpacesAndComments()
+    {
+        char c = readChar;
+        while (canFind(whiteSpaces, c) || c == '#')
+        {
+            if (c == '#') while (!canFind(['\r', '\n'], readChar)) continue;
+            c = readChar;
+        }
+        unreadChar(c);
+    }
+
+    pure @safe StringToken parseStringToken(in SourceLocation tokenLoc)
+    {
+        string token;
+        while (index < stream.length)
+        {
+            immutable char c = readChar;
+            if (c == '"') return StringToken(token, tokenLoc);
+            token ~= c;
+        }
+        throw new GrammarError(format("Unterminated string beginning at %s", tokenLoc.toString));
+    }
+
+    pure @safe LiteralNumberToken parseFloatToken(in char firstChar, in SourceLocation tokenLoc)
+    {
+        string token = [firstChar];
+        while (index < stream.length)
+        {
+            immutable char c = readChar;
+            if (!c.isDigit && !canFind(['.', 'e', 'E'], c))
+            {
+                unreadChar(c);
+                break;
+            }
+            token ~= c;
+        }
+
+        try
+        {
+            float value = to!float(token);
+            return LiteralNumberToken(value, tokenLoc);
+        }
+		catch (ConvException exc) throw new GrammarError(format(
+            "Invalid floating point number[%s] in %s", token, tokenLoc.toString));
+    }
+
+    pure @safe KwOrId parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
+    {
+        string token = [firstChar];
+        while(index < stream.length)
+        {
+            immutable char c = readChar;
+            if (!c.isAlphaNum && c != '_')
+            {
+                unreadChar(c);
+                break;
+            }
+            token ~= c;
+        }
+
+        static foreach (kw; EnumMembers!Keyword)
+            if (token == to!string(kw)) return KwOrId(KeywordToken(kw, tokenLoc));
+        return KwOrId(IdentifierToken(token, tokenLoc));
+    }
+
+    pure Token readToken()
+    {
+        if (savedToken.match!((StopToken saved) => false, _ => true))
+        {
+            Token result = savedToken;
+            savedToken = StopToken();
+            return result;
+        }
+
+        skipWhiteSpacesAndComments;
+
+        immutable char c = readChar;
+        if (c == char.init) return Token();
+        if (canFind(symbols, c)) return Token(SymbolToken(c, location));
+        else if (c == '"') return Token(parseStringToken(location));
+        else if (c.isDigit || canFind(['+', '-', '.'], c)) return Token(parseFloatToken(c, location));
+        else if (c.isAlpha || c == '_') return parseKeywordOrIdentifierToken(c, location).match!(
+            (KeywordToken kwT) => Token(kwT), (IdentifierToken idT) => Token(idT));
+        else throw new GrammarError(format("Invalid character %s at %s", c, location.toString));
+    }
+
+    pure nothrow @nogc void unreadToken(Token t)
+    in (savedToken.match!((StopToken t) => true, _ => false))
+    {
+        savedToken = t;
     }
 }

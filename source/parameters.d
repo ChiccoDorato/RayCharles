@@ -1,6 +1,6 @@
 module parameters;
 
-import std.conv;
+import std.conv : ConvException, to;
 import std.exception : enforce;
 import std.file : isFile;
 import std.format : format;

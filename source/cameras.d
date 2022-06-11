@@ -159,8 +159,10 @@ struct ImageTracer
     /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
     void fireAllRays(in Color delegate(Ray) solveRendering)
     {
-        for (uint row = 0; row < image.height; ++row){
-            for (uint col = 0; col < image.width; ++col){
+        for (uint row = 0; row < image.height; ++row)
+        {
+            for (uint col = 0; col < image.width; ++col)
+            {
                 Color colSum = Color(0.0, 0.0, 0.0);
 
                 if (samplesPerSide > 0)

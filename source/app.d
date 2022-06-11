@@ -98,15 +98,16 @@ void main(string[] args)
 		})
 		.on("demo", (rayC)
 		{
-			import cameras : Camera, ImageTracer, OrthogonalCamera, PerspectiveCamera;
-			import geometry : Vec, vecZ;
+			import cameras;
+			import geometry : Point, Vec, vecX, vecZ;
 			import hdrimage : black, Color, white;
-			import materials : CheckeredPigment, DiffuseBRDF, ImagePigment, Material, SpecularBRDF, UniformPigment;
+			import materials;
 			import pcg;
 			import ray;
 			import renderers;
 			import shapes;
-			import std.math : cos, PI, sin;
+			import std.algorithm : max, min;
+			import std.math : PI;
 			import transformations;
 
 			DemoParameters* parms;
@@ -129,106 +130,153 @@ void main(string[] args)
 				return;
 			}
 
-			Transformation cameraTr = rotationY(66) * rotationZ(parms.angle) * translation(Vec(-5.8, 0.0, 3.0));
+			auto cameraTr = rotationZ(30 - 0.25 * parms.angle) * rotationY(0.015 * parms.angle)
+				* translation(Vec(-1.4 + 0.75 * PI / 60.0 * 0.14 * parms.angle, 0.0, 1.4));
 			Camera camera;
 			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
 			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
 
-			HDRImage image = new HDRImage(parms.width, parms.height);
-			ImageTracer tracer = ImageTracer(image, camera, parms.samplesPerSide);
+			auto image = new HDRImage(parms.width, parms.height);
+			auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
 /// A Plane as a sky
-			UniformPigment skyPig = new UniformPigment(black);
-			DiffuseBRDF skyBRDF = new DiffuseBRDF(skyPig);
-			UniformPigment skyEmittedRadiance = new UniformPigment(Color(0.62, 0.68, 0.73));
-			Material skyMaterial = Material(skyBRDF, skyEmittedRadiance);
-			Transformation skyTransl = translation(Vec(0.0, 0.0, 0.4));
-			Transformation skyScale = scaling(Vec(200.0, 200.0, 200.0));
+			auto skyPig = new UniformPigment(black);
+			auto skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
+			auto skyMaterial = Material(new DiffuseBRDF(skyPig), skyEmittedRadiance);
+			immutable skyTransl = translation(Vec(0.0, 0.0, 0.4));
+			immutable skyScale = scaling(Vec(200.0, 200.0, 200.0));
+
 /// ***********************************************************************************************
-/// Decomment here to have the image required as homework 
+/// Decomment here to have the image required as homework
 /// ***********************************************************************************************
-			immutable Color groundColor1 = {0.3, 0.5, 0.1}, groundColor2 = {0.1, 0.2, 0.5};
-			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
-			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
-			Material groundMaterial = Material(groundBRDF);
+			// immutable groundColor1 = Color(0.3, 0.5, 0.1), groundColor2 = Color(0.1, 0.2, 0.5);
+			// auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
+			// auto groundMaterial = Material(new DiffuseBRDF(groundPig));
 
-			immutable Color cylinderColor = {0.69, 0.8, 0.46};
-			UniformPigment cyliderPig = new UniformPigment(cylinderColor);
-			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cyliderPig);
-			Material cylinderMaterial = Material(cylinderBRDF);
+			// auto spherePig = new UniformPigment(Color(0.3, 0.4, 0.8));
+			// // auto spherePig = new ImagePigment(new HDRImage("worldmap.pfm"));
+			// auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
 
-			immutable Color shellColor = {0.3, 0.3, 0.78};
-			UniformPigment shellPig = new UniformPigment(shellColor);
-			DiffuseBRDF shellBRDF = new DiffuseBRDF(shellPig);
-			Material shellMaterial = Material(shellBRDF);
+			// auto mirrorPig = new UniformPigment(Color(0.6, 0.2, 0.3));
+			// auto mirrorMaterial = Material(new SpecularBRDF(mirrorPig));
 
-			immutable Color sphereColor = {0.8, 0.75, 0.3};
-			UniformPigment spherePig = new UniformPigment(sphereColor);
-			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-			Material sphereMaterial = Material(sphereBRDF);
+			// World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
+			// 	new Plane(Transformation(), groundMaterial),
+			// 	new Sphere(translation(vecZ), sphereMaterial),
+			// 	new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
+			// 	]);
 
-			immutable Color mirrorColor = {0.6, 0.2, 0.3};
-			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
-			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
-			Material mirrorMaterial = Material(mirrorBRDF);
-			
+/// ***********************************************************************************************
+/// Decomment here for the table
+/// ***********************************************************************************************
+			immutable groundColor1 = Color(0.3, 0.5, 0.1), groundColor2 = Color(0.1, 0.2, 0.5);
+			auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
+			auto groundMaterial = Material(new DiffuseBRDF(groundPig));
+
+			auto topPig = new UniformPigment(Color(0.75, 0.6, 0.2));
+			auto topMaterial = Material(new DiffuseBRDF(topPig));
+			immutable topWidth = 0.86, topLength = 1.5, topHeight = 0.03, topDist = -0.3;
+			immutable edge = topLength / 2.0;
+			immutable topScale = scaling(Vec(topWidth, topLength, topHeight));
+
+			auto legPig = new UniformPigment(Color(0.82, 0.64, 0.1));
+			auto legMaterial = Material(new DiffuseBRDF(legPig));
+			immutable legR = 0.027, legH = 0.75;
+			immutable xMinLeg = 0.068, xMaxLeg = topWidth - xMinLeg, yLeg = edge - xMinLeg;
+
+			auto spherePig = new ImagePigment(new HDRImage("worldmap.pfm"));
+			auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
+			immutable sphereR = 0.14;
+
+			// sphereOmega is the angular velocity in degrees per frame (dpf), e.g. 3.0dpm and 30fps -> 90°/s
+			// Same idea for g = 9.81m/s^2: 30fps -> 9.81 / 900 m/f^2
+			immutable omega = 3.0, yVel = -omega * PI / 180.0 * sphereR, yTransl = yVel * parms.angle;
+			immutable parabY = yTransl - (-edge);
+			immutable parabZ = parabY > 0.0 ?
+				0.0 : -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY * parabY;
+
+			// Wait for the translation until pipe is defined
+			immutable sphereScale = scaling(Vec(sphereR, sphereR, sphereR));
+			immutable sphereRot = rotationX(omega * parms.angle);
+			immutable xCenter = topDist + topWidth / 2.0;
+
+			auto pipePig = new UniformPigment(Color(0.62, 0.1, 0.3));
+			auto pipeMaterial = Material(new DiffuseBRDF(pipePig));
+			immutable pipeR = 1.6 * sphereR;
+			// Sphere enter the cylinderShell when angle = 300.0
+			immutable cylYPos = yVel * 300.0, parabY300 = cylYPos - (-edge);
+			immutable parabZ300 = -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY300 * parabY300;
+			immutable pipeMax = Point(xCenter, cylYPos, legH + topHeight + sphereR + parabZ300);
+			immutable pipeMin = Point(xCenter, pipeMax.y + parabY300, pipeMax.z + parabZ300);
+
+			auto supportPig = new UniformPigment(Color(0.62, 0.1, 0.3));
+			auto supportMaterial = Material(new DiffuseBRDF(supportPig));
+			immutable supportR = 0.03;
+			immutable pipeDiff = pipeMax - pipeMin, pipeInf = Vec(pipeMax.x, pipeMax.y, pipeMax.z - pipeR);
+			immutable support1H = pipeMax.z - 0.28 * pipeDiff.z, support2H = pipeMax.z - 0.72 * pipeDiff.z;
+
+			// When parms.angle = 355.0 the sphere touches the bottom of the pipe
+			immutable pipeZMin = sphereR + parabZ300 + parabZ300 / parabY300 * (yTransl - pipeMax.y) - pipeR;
+			immutable sphereTransl = translation(Vec(xCenter,
+				yTransl,
+				legH + topHeight + sphereR + max(parabZ, pipeZMin)));
+
 			World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
 				new Plane(Transformation(), groundMaterial),
-				new Cylinder(translation(Vec(0.0, -0.65, 0.0)) * scaling(Vec(0.64, 0.64, 2.0)), cylinderMaterial),
-				new CylinderShell(translation(Vec(0.8, 3.2, 0.0)) * rotationY(-4) * scaling(Vec(0.38, 0.4, 3.0)), shellMaterial),
-				new Sphere(translation(Vec(0.0, -1.0, 3.2)) * scaling(Vec(0.76, 0.76, 0.76)), sphereMaterial),
-				new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
+				new CylinderShell(legR, legH, Vec(topDist + xMinLeg, yLeg, 0.0), legMaterial),
+				new CylinderShell(legR, legH, Vec(topDist + xMaxLeg, yLeg, 0.0), legMaterial),
+				new CylinderShell(legR, legH, Vec(topDist + xMaxLeg, -yLeg, 0.0), legMaterial),
+				new CylinderShell(legR, legH, Vec(topDist + xMinLeg, -yLeg, 0.0), legMaterial),
+				new AABox(translation(Vec(topDist, -edge, legH)) * topScale, topMaterial),
+				new Sphere(sphereTransl * sphereRot * sphereScale, sphereMaterial),
+				new CylinderShell(pipeR, pipeMin, pipeMax, pipeMaterial),
+				new CylinderShell(supportR, -support1H, pipeInf - 0.72 * pipeDiff, supportMaterial),
+				new CylinderShell(supportR, -support2H, pipeInf - 0.28 * pipeDiff, supportMaterial)
 				]);
 
 /// ***********************************************************************************************
 /// Decomment here for the wood
 /// ***********************************************************************************************
-// 			immutable Color groundColor1 = {0.1, 0.5, 0.1}, groundColor2 = {0.1, 0.5, 0.5};
-// 			CheckeredPigment groundPig = new CheckeredPigment(groundColor1, groundColor2);
-// 			DiffuseBRDF groundBRDF = new DiffuseBRDF(groundPig);
-// 			Material groundMaterial = Material(groundBRDF);
+			// immutable groundColor1 = Color(0.1, 0.5, 0.1), groundColor2 = Color(0.1, 0.5, 0.5);
+			// auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
+			// auto groundMaterial = Material(new DiffuseBRDF(groundPig));
 
-// 			immutable Color mirrorColor = {0.1, 0.4, 0.7};
-// 			UniformPigment mirrorPig = new UniformPigment(mirrorColor);
-// 			SpecularBRDF mirrorBRDF = new SpecularBRDF(mirrorPig);
-// 			Material mirrorMaterial = Material(mirrorBRDF);
+			// auto mirrorPig = new UniformPigment(Color(0.1, 0.4, 0.7));
+			// auto mirrorMaterial = Material(new SpecularBRDF(mirrorPig));
 
-//          // This is a tree
-// 			HDRImage cylinderImg = new HDRImage("corteccia.pfm");
-// 			ImagePigment cylinderPig = new ImagePigment(cylinderImg);
-// 			DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-// 			Material cylinderMaterial = Material(cylinderBRDF);
+        	// // This is a tree
+			// auto cylinderPig = new ImagePigment(new HDRImage("corteccia.pfm"));
+			// auto cylinderMaterial = Material(new DiffuseBRDF(cylinderPig));
 
-// 			HDRImage sphereImg = new HDRImage("foglie.pfm");
-// 			ImagePigment spherePig = new ImagePigment(sphereImg);
-// 			DiffuseBRDF sphereBRDF = new DiffuseBRDF(spherePig);
-// 			Material sphereMaterial = Material(sphereBRDF);
+			// auto spherePig = new ImagePigment(new HDRImage("foglie.pfm"));
+			// auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
 
-// 			World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
-// 			 	new Plane(Transformation(), groundMaterial),
+			// World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
+			//  	new Plane(Transformation(), groundMaterial),
 
-// 				new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			// 	new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+			// 	new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			//  	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			//  	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// 				new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			// 	new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
+			// 	new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			//  	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			//  	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// 				new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-// 				new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-// 			 	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			// 	new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
+			// 	new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
+			//  	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
+			//  	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
 
-// 				new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
-// 			]);
+			// 	new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
+			// ]);
 ///************************************************************************************************************
+
 			// Renderer: flat, on-off, path
 			Renderer renderer;
-			if (parms.renderer == "flat") renderer = new FlatRenderer(world);
-			else if (parms.renderer == "on-off") renderer = new OnOffRenderer(world);
+			if (parms.renderer == "on-off") renderer = new OnOffRenderer(world);
+			else if (parms.renderer == "flat") renderer = new FlatRenderer(world);
 			else
 			{
 				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);

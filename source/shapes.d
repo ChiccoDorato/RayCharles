@@ -48,6 +48,14 @@ pure nothrow @nogc @safe float[2] oneDimIntersections(in float origin, in float 
     return [t1, t2];
 }
 
+pure nothrow @nogc @safe float fixBoundary(in float coord, in float min = 0.0,
+    in float max = 1.0, in float epsilon = 1e-4)
+{
+    if (coord < min && coord > min - epsilon) return min;
+    if (coord > max && coord < max + epsilon) return max;
+    return coord;
+}
+
 ///******************** Shape ********************
 /// Abstract class for a generic Shape
 class Shape
@@ -80,10 +88,7 @@ class Sphere : Shape
     /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
     pure nothrow @nogc @safe Vec2d sphereUVPoint(in Point p) const
     {
-        float z = p.z;
-        if (z < -1.0 && z > -1.001) z = -1;
-        if (z > 1.0 && z < 1.001) z = 1;
-
+        immutable float z = fixBoundary(p.z, -1.0);
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
         return Vec2d(u < 0.0 ? u + 1.0 : u, acos(z) / PI);
     }
@@ -370,24 +375,19 @@ class AABox : Shape
 
     pure nothrow @nogc @safe Vec2d boxUVPoint(in Point p) const
     {
-        Vec2d boxUV;
-        if (areClose(p.x, 0.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.x, 1.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (1.0 - p.z) / 4.0);
-        else if (areClose(p.y, 0.0)) boxUV = Vec2d((1.0 - p.x) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.y, 1.0)) boxUV = Vec2d((2.0 + p.x) / 3.0, (2.0 + p.z) / 4.0);
-        else if (areClose(p.z, 0.0)) boxUV = Vec2d((1.0 + p.y) / 3.0, (2.0 - p.x) / 4.0);
+        float uBox, vBox;
+        if (areClose(p.x, 0.0)) uBox = (1.0 + p.y) / 3.0, vBox = (2.0 + p.z) / 4.0;
+        else if (areClose(p.x, 1.0)) uBox = (1.0 + p.y) / 3.0, vBox = (1.0 - p.z) / 4.0;
+        else if (areClose(p.y, 0.0)) uBox = (1.0 - p.x) / 3.0, vBox = (2.0 + p.z) / 4.0;
+        else if (areClose(p.y, 1.0)) uBox = (2.0 + p.x) / 3.0, vBox = (2.0 + p.z) / 4.0;
+        else if (areClose(p.z, 0.0)) uBox = (1.0 + p.y) / 3.0, vBox = (2.0 - p.x) / 4.0;
         else
         {
             assert(areClose(p.z, 1.0));
-            boxUV = Vec2d((1.0 + p.y) / 3.0, (3.0 + p.x) / 4.0);
+            uBox = (1.0 + p.y) / 3.0, vBox = (3.0 + p.x) / 4.0;
         }
 
-        if (boxUV.u < 0.0 && boxUV.u > -1e-4) boxUV.u = 0.0;
-        else if (boxUV.u > 1.0 && boxUV.u < 1.0001) boxUV.u = 1.0;
-        if (boxUV.v < 0.0 && boxUV.v > -1e-4) boxUV.v = 0.0;
-        else if (boxUV.v > 1.0 && boxUV.v < 1.0001) boxUV.v = 1.0;
-
-        return boxUV;
+        return Vec2d(fixBoundary(uBox), fixBoundary(vBox));
     }
 
     pure nothrow @nogc @safe Normal boxNormal(in Point p, in Vec v) const
@@ -654,8 +654,9 @@ class CylinderShell : Shape
     /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
     pure nothrow @nogc @safe Vec2d cylShellUVPoint(in Point p) const
     {
+        immutable float z = fixBoundary(p.z);
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
-        return Vec2d(u < 0.0 ? u + 1.0 : u, p.z);
+        return Vec2d(u < 0.0 ? u + 1.0 : u, z);
     }
 
     /// Create a Normal to a Vector in a Point of the Cylinder surface
@@ -674,11 +675,11 @@ class CylinderShell : Shape
         immutable float[2] tShell = cylShellIntersections(invR);
         if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return hit;
         immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
-        if (tShell[0] >= tZ[1] || tShell[1] <= tZ[0]) return hit;
+        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return hit;
 
         float firstHit;
-        if (tShell[0] > tZ[0] && tShell[0] > invR.tMin) firstHit = tShell[0];
-        else if (tShell[1] < tZ[1] && tShell[1] < invR.tMax) firstHit = tShell[1];
+        if (tShell[0] >= tZ[0] && tShell[0] > invR.tMin) firstHit = tShell[0];
+        else if (tShell[1] <= tZ[1] && tShell[1] < invR.tMax) firstHit = tShell[1];
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
@@ -750,6 +751,13 @@ class Cylinder : CylinderShell
         super(radius, length, translVec, m);
     }
 
+    pure nothrow @safe this(in float radius, in float length, in Vec translVec = Vec(),
+        in float xAngleInDegrees = 0.0, in float yAngleInDegrees = 0.0,
+        in float zAngleInDegrees = 0.0, Material m = Material())
+    {
+        super(radius, length, translVec, xAngleInDegrees, yAngleInDegrees, zAngleInDegrees, m);
+    }
+
     pure nothrow @nogc @safe float[2] cylinderIntersections(in Ray r) const
     {
         immutable float[2] tShell = cylShellIntersections(r);
@@ -786,7 +794,7 @@ class Cylinder : CylinderShell
         immutable float[2] t = cylinderIntersections(invR);
 
         float firstHit;
-        if (t[0] >= t[1]) return hit;
+        if (t[0] > t[1]) return hit;
         if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
         else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
         else return hit;
