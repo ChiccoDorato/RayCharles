@@ -88,7 +88,7 @@ class Sphere : Shape
     /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
     pure nothrow @nogc @safe Vec2d sphereUVPoint(in Point p) const
     {
-        immutable float z = fixBoundary(p.z, -1.0);
+        immutable float z = fixBoundary(p.z, -1.0, 1.0);
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
         return Vec2d(u < 0.0 ? u + 1.0 : u, acos(z) / PI);
     }
@@ -769,30 +769,25 @@ unittest
 {
     import hdrimage : Color;
     import materials : DiffuseBRDF, Material, UniformPigment;
-    immutable Color cylinderShellColor = {1.0, 0.0, 0.0};
-    UniformPigment cylinderShellPig = new UniformPigment(cylinderShellColor);
-    DiffuseBRDF cylinderShellBRDF = new DiffuseBRDF(cylinderShellPig);
-    Material cylinderShellMaterial = Material(cylinderShellBRDF);
+    immutable cylinderShellColor = Color(1.0, 0.0, 0.0);
+    auto cylinderShellPig = new UniformPigment(cylinderShellColor);
+    auto cylinderShellBRDF = new DiffuseBRDF(cylinderShellPig);
+    auto cylinderShellMaterial = Material(cylinderShellBRDF);
+    auto cylinderShellTransf = translation(vecY) * rotationX(45.0) * scaling(Vec(1.0, 1.0, sqrt(2.0)));
 
     // Rotation of a CylinderShell
-    // Conflict in Constructor 1: 
-    CylinderShell csRot1 = new CylinderShell(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderShellMaterial);
+    auto csRot1 = new CylinderShell(cylinderShellTransf, cylinderShellMaterial);
     
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
-    // quickRayIntersection finds the intersection
     assert(csRot1.quickRayIntersection(ray1));
-    // rayIntersection doesn't :(
-    Nullable!HitRecord h1 = csRot1.rayIntersection(ray1); 
-    assert(h1.isNull);
-    // import std.stdio;
-    // writeln(h1.worldPoint, " ", h1.normal, " ", h1.surfacePoint, " ", h1.t);
-    // assert(HitRecord(
-    //     Point(0.0, 1-sqrt(2.0), 0.0),
-    //     Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
-    //     Vec2d(0.0, sqrt(2.0)/2), 
-    //     (2+sqrt(2.0)), 
-    //     ray1,
-    //     csRot1).recordIsClose(hor1));
+    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord()); 
+    assert(HitRecord(
+        Point(0.0, 1.0 - sqrt(2.0), 0.0),
+        Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
+        Vec2d(0.75, sqrt(2.0) / 2.0), 
+        2.0 + sqrt(2.0), 
+        ray1,
+        csRot1).recordIsClose(h1));
 
     Ray ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
     assert(!csRot1.quickRayIntersection(ray2));
@@ -800,17 +795,16 @@ unittest
     assert(hit1.isNull);
 
     // Constructor 2
-    CylinderShell csRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
-    
+    auto csRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderShellMaterial);
     assert(csRot2.quickRayIntersection(ray1));
-    HitRecord hor2 = csRot2.rayIntersection(ray1).get(HitRecord());
+    HitRecord h2 = csRot2.rayIntersection(ray1).get(HitRecord());
     assert(HitRecord(
-        Point(0.0, 1-sqrt(2.0), 0.0),
-        Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
-        Vec2d(0.0, sqrt(2.0)/2), 
-        (2+sqrt(2.0)), 
+        Point(0.0, 1.0 - sqrt(2.0), 0.0),
+        Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
+        Vec2d(0.0, sqrt(2.0) / 2.0), // 0.0? Rotazioni molto male.
+        2.0 + sqrt(2.0), 
         ray1,
-        csRot2).recordIsClose(hor2));
+        csRot2).recordIsClose(h2));
 
     assert(!csRot2.quickRayIntersection(ray2));
     Nullable!HitRecord hit2 = csRot2.rayIntersection(ray2);
@@ -915,16 +909,16 @@ unittest
 {
     import hdrimage : Color;
     import materials : DiffuseBRDF, Material, UniformPigment;
-    immutable Color cylinderColor = {1.0, 0.0, 0.0};
-    UniformPigment cylinderPig = new UniformPigment(cylinderColor);
-    DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-    Material cylinderMaterial = Material(cylinderBRDF);
+    immutable cylinderColor = Color(1.0, 0.0, 0.0);
+    auto cylinderPig = new UniformPigment(cylinderColor);
+    auto cylinderBRDF = new DiffuseBRDF(cylinderPig);
+    auto cylinderMaterial = Material(cylinderBRDF);
 
-    Point pMin = {1.0, 1.0, 0.0};
+    auto pMin = Point(1.0, 1.0, 0.0);
     // Same behaviour for the three different Cylinders
-    Cylinder c1 = new Cylinder(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
-    Cylinder c2 = new Cylinder(1.0, pMin, pMin + 2 * vecZ, cylinderMaterial);
-    Cylinder c3 = new Cylinder(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderMaterial);
+    auto c1 = new Cylinder(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
+    auto c2 = new Cylinder(1.0, pMin, pMin + 2.0 * vecZ, cylinderMaterial);
+    auto c3 = new Cylinder(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderMaterial);
 
     Vec2d uv1, uv2, uv3;
     uv1 = c1.cylinderUVPoint(Point(0.0, 1.0, 0.0));
@@ -952,7 +946,7 @@ unittest
     assert(HitRecord(
         Point(0.2, 1.6, 0.0),
         Normal(0.0, 0.0, -0.5),
-        Vec2d((PI-acos(0.8))/(2*PI) , 0.25), 
+        Vec2d((PI - acos(0.8)) / (2.0 * PI) , 0.25), 
         1.2,
         r2,
         c1).recordIsClose(hit2));
@@ -979,21 +973,21 @@ unittest
 {
     import hdrimage : Color;
     import materials : DiffuseBRDF, Material, UniformPigment;
-    immutable Color cylinderColor = {1.0, 0.0, 0.0};
-    UniformPigment cylinderPig = new UniformPigment(cylinderColor);
-    DiffuseBRDF cylinderBRDF = new DiffuseBRDF(cylinderPig);
-    Material cylinderMaterial = Material(cylinderBRDF);
+    immutable cylinderColor = Color(1.0, 0.0, 0.0);
+    auto cylinderPig = new UniformPigment(cylinderColor);
+    auto cylinderBRDF = new DiffuseBRDF(cylinderPig);
+    auto cylinderMaterial = Material(cylinderBRDF);
     
     // Rotation of a Cylinder
     // Constructor 1 
-    Cylinder cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
+    auto cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
     
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     assert(cRot1.quickRayIntersection(ray1));
     HitRecord hit1 = cRot1.rayIntersection(ray1).get(HitRecord());
     assert(HitRecord(
         Point(0.0, 1.0, 0.0),
-        Normal(0.0, sqrt(2.0)/2, -sqrt(2.0)/2),
+        Normal(0.0, sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0),
         Vec2d(0.0, 0.0), 
         2.0, 
         ray1,
@@ -1003,10 +997,10 @@ unittest
     assert(cRot1.quickRayIntersection(ray2));
     HitRecord hit2 = cRot1.rayIntersection(ray2).get(HitRecord());
     assert(HitRecord(
-        Point(0.0, 0.292893, sqrt(2.0)/2),  // Not very clear why 0.292893
-        Normal(0.0, -sqrt(2.0)/2, sqrt(2.0)/2),
+        Point(0.0, 0.292893, sqrt(2.0) / 2.0),  // Not very clear why 0.292893
+        Normal(0.0, -sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
         Vec2d(0.0, 1.0), 
-        1+0.292893, 
+        1.0 + 0.292893, 
         ray2,
         cRot1).recordIsClose(hit2));
 
@@ -1021,10 +1015,10 @@ unittest
     assert(cRot2.quickRayIntersection(ray1));
     HitRecord h1 = cRot2.rayIntersection(ray1).get(HitRecord());
     assert(HitRecord(
-        Point(0.0, 1-sqrt(2.0), 0.0),
-        Normal(0.0, sqrt(2.0)/2, sqrt(2.0)/2),
-        Vec2d(0.0, sqrt(2.0)/2), 
-        (2+sqrt(2.0)), 
+        Point(0.0, 1 - sqrt(2.0), 0.0),
+        Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
+        Vec2d(0.0, sqrt(2.0) / 2.0), 
+        (2.0 + sqrt(2.0)), 
         ray1,
         cRot2).recordIsClose(h1));
 

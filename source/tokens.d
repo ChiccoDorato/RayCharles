@@ -3,6 +3,7 @@ module tokens;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
 import std.conv : ConvException, to;
+import std.file : read;
 import std.format : format;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
@@ -90,8 +91,26 @@ struct LiteralNumberToken
     SourceLocation tokenLocation;
 }
 
-alias Token = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
 alias KwOrId = SumType!(KeywordToken, IdentifierToken);
+alias Token = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
+
+pure nothrow @safe bool hasTokenValue(T)(Token token, T tokenValue)
+{
+    static if (is(T == char)) return token.match!(
+        (SymbolToken symToken) => symToken.symbol == tokenValue,
+        _ => false);
+    else static if (is(T == Keyword)) return token.match!(
+        (KeywordToken kwToken) => kwToken.kw == tokenValue,
+        _ => false);
+    else static if (is(T == string)) return token.match!(
+        (IdentifierToken idToken) => idToken.identifier == tokenValue,
+        (StringToken strToken) => strToken.literalString == tokenValue,
+        _ => false);
+    else static if (is(T == float)) return token.match!(
+        (LiteralNumberToken numToken) => numToken.literalNumber == tokenValue,
+        _ => false);
+    else return false;
+}
 
 immutable char[] whiteSpaces = [' ', '\t', '\n', '\r'];
 immutable char[] symbols = ['(', ')', '<', '>', '[', ']', '*'];
@@ -105,14 +124,18 @@ struct InputStream
     ubyte tabulations;
     Token savedToken;
 
-    pure nothrow @safe this(immutable char[] s, in string fileName, in ubyte tab = 4)
-    in (s.length != 0)
+    pure nothrow @safe this(in char[] s, in string fileName, in ubyte tab = 4)
     in (tab == 4 || tab == 8)
     {
-        stream = s;
+        stream = s.idup;
         location = SourceLocation(fileName, 1, 1);
         savedLocation = location;
         tabulations = tab;
+    }
+
+    this(in string fileName, in ubyte tab = 4)
+    {
+        this(cast(immutable char[])(fileName.read), fileName, tab);
     }
 
     /// Return the updated position after a char is read from the Lexer
@@ -202,7 +225,7 @@ struct InputStream
             return LiteralNumberToken(value, tokenLoc);
         }
 		catch (ConvException exc) throw new GrammarError(format(
-            "Invalid floating point number[%s] in %s", token, tokenLoc.toString));
+            "Invalid floating point number [%s] in %s", token, tokenLoc.toString));
     }
 
     pure @safe KwOrId parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
@@ -220,7 +243,7 @@ struct InputStream
         }
 
         static foreach (kw; EnumMembers!Keyword)
-            if (token == to!string(kw)) return KwOrId(KeywordToken(kw, tokenLoc));
+            if (token == kw) return KwOrId(KeywordToken(kw, tokenLoc));
         return KwOrId(IdentifierToken(token, tokenLoc));
     }
 
@@ -242,7 +265,7 @@ struct InputStream
         else if (c.isDigit || canFind(['+', '-', '.'], c)) return Token(parseFloatToken(c, location));
         else if (c.isAlpha || c == '_') return parseKeywordOrIdentifierToken(c, location).match!(
             (KeywordToken kwT) => Token(kwT), (IdentifierToken idT) => Token(idT));
-        else throw new GrammarError(format("Invalid character %s at %s", c, location.toString));
+        else throw new GrammarError(format("Invalid character [%s] at %s", c, location.toString));
     }
 
     pure nothrow @nogc void unreadToken(Token t)
@@ -250,4 +273,26 @@ struct InputStream
     {
         savedToken = t;
     }
+}
+
+unittest
+{
+    string str = "# This is a comment
+    # This is another comment
+    new material skyMaterial(
+        diffuse(image(\"my file.pfm\")),
+        <5.0, 500.0, 300.0>
+    ) # Comment at the end of the line";
+    auto inputFile = InputStream(str, "");
+
+    assert(inputFile.readToken.hasTokenValue(Keyword.newKeyword));
+    assert(inputFile.readToken.hasTokenValue(Keyword.material));
+    assert(inputFile.readToken.hasTokenValue("skyMaterial"));
+    assert(inputFile.readToken.hasTokenValue('('));
+    assert(inputFile.readToken.hasTokenValue(Keyword.diffuse));
+    assert(inputFile.readToken.hasTokenValue('('));
+    assert(inputFile.readToken.hasTokenValue(Keyword.image));
+    assert(inputFile.readToken.hasTokenValue('('));
+    assert(inputFile.readToken.hasTokenValue("my file.pfm"));
+    assert(inputFile.readToken.hasTokenValue(')'));
 }
