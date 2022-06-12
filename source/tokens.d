@@ -277,6 +277,54 @@ struct InputStream
 
 unittest
 {
+    auto stream = InputStream("abc   \nd\nef", "");
+
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 1);
+
+    assert(stream.readChar == 'a');
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 2);
+
+    stream.unreadChar('A');
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 1);
+
+    assert(stream.readChar == 'A');
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 2);
+
+    assert(stream.readChar == 'b');
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 3);
+
+    assert(stream.readChar == 'c');
+    assert(stream.location.line == 1);
+    assert(stream.location.col == 4);
+
+    stream.skipWhiteSpacesAndComments;
+
+    assert(stream.readChar == 'd');
+    assert(stream.location.line == 2);
+    assert(stream.location.col == 2);
+
+    assert(stream.readChar == '\n');
+    assert(stream.location.line == 3);
+    assert(stream.location.col == 1);
+
+    assert(stream.readChar == 'e');
+    assert(stream.location.line == 3);
+    assert(stream.location.col == 2);
+
+    assert(stream.readChar == 'f');
+    assert(stream.location.line == 3);
+    assert(stream.location.col == 3);
+
+    assert(stream.readChar == char.init);
+}
+
+unittest
+{
     string str = "# This is a comment
     # This is another comment
     new material skyMaterial(
