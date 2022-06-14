@@ -2,8 +2,10 @@ module ray;
 
 import geometry : Point, Vec, xyzIsClose; 
 
-///******************** Ray ********************
-/// struct a 3D Ray
+// ******************** Ray ********************
+/// struct of a 3D Ray 
+///
+/// Parameters: origin (Point), dir (Vec), tMin, tMax (float), depth (int) 
 struct Ray
 {
     Point origin;
@@ -12,13 +14,13 @@ struct Ray
     int depth = 0;
 
     /// Return the position of a Point at a given t
-    immutable(Point) at(in float t) const pure nothrow
+    pure nothrow @nogc @safe Point at(in float t) const
     {
         return origin + t * dir;
     }
 
     /// Verify if two Ray are close
-    immutable(bool) rayIsClose(in Ray rhs) const pure nothrow
+    pure nothrow @nogc @safe bool rayIsClose(in Ray rhs) const
     {
         return origin.xyzIsClose(rhs.origin) && dir.xyzIsClose(rhs.dir);
     }
