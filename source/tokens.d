@@ -1,5 +1,8 @@
 module tokens;
 
+import cameras : Camera;
+import materials : Material;
+import shapes : World;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
 import std.conv : ConvException, to;
@@ -7,6 +10,7 @@ import std.file : read;
 import std.format : format;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
+import std.typecons : Nullable;
 
 struct SourceLocation
 {
@@ -94,6 +98,46 @@ struct LiteralNumberToken
 alias KwOrId = SumType!(KeywordToken, IdentifierToken);
 alias Token = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
 
+// Works bad: no handling of T in case it is not a Token type.
+pure nothrow @safe bool isType(T)(Token token)
+{
+    return token.match!((T t) => true, _ => false);
+}
+
+unittest
+{
+    Token stop = StopToken(SourceLocation("noFile", 3, 5));
+    assert(isType!StopToken(stop));
+    assert(!isType!LiteralNumberToken(stop));
+
+    Token literalString = StringToken("I am a literal string token");
+    assert(isType!StringToken(literalString));
+    assert(!isType!SymbolToken(literalString));
+}
+
+// Not great to see: another implementation of tokens is ready to substitute the current one.
+pure nothrow @safe SourceLocation getTokenLocation(Token token)
+{
+    return token.match!(
+        (StopToken stopTok) => stopTok.tokenLocation,
+        (SymbolToken symToken) => symToken.tokenLocation,
+        (KeywordToken kwToken) => kwToken.tokenLocation,
+        (IdentifierToken idToken) => idToken.tokenLocation,
+        (StringToken strToken) => strToken.tokenLocation,
+        (LiteralNumberToken numToken) => numToken.tokenLocation
+    );
+}
+
+unittest
+{
+    Token keywordToken = KeywordToken(Keyword.camera, SourceLocation("testtokens.txt", 11, 2));
+    assert(getTokenLocation(keywordToken) == SourceLocation("testtokens.txt", 11, 2));
+
+    Token identifierToken = IdentifierToken("idToken", SourceLocation("identifiers"));
+    assert(getTokenLocation(identifierToken) == SourceLocation("identifiers", 0, 0));
+}
+
+// Unittest to do?
 pure nothrow @safe bool hasTokenValue(T)(Token token, T tokenValue)
 {
     static if (is(T == char)) return token.match!(
@@ -343,4 +387,37 @@ unittest
     assert(inputFile.readToken.hasTokenValue('('));
     assert(inputFile.readToken.hasTokenValue("my file.pfm"));
     assert(inputFile.readToken.hasTokenValue(')'));
+}
+
+// Probably not needed for our purposes. Associative arrays probably works better in
+// this case and best choice would be void[0][string]. Not cleat how it works, though.
+import std.container.rbtree;
+struct Scene
+{
+    Material[string] materials;
+    World world;
+    Nullable!Camera cam;
+    float[string] floatVars;
+    auto overriddenVars = make!(RedBlackTree!string);
+}
+
+// In InputStream. A different version of both the following is ready to be included
+// (because of a redefinition of Token).
+void expectSymbol(InputStream inpStr, char sym) const
+{
+    Token token = inpStr.readToken;
+    if (!canFind(symbols, sym) && !hasTokenValue(token, sym))
+        throw new GrammarError(format("Expected symbol [%s] at %s", sym, getTokenLocation(token)));
+}
+
+void expectKeyword(InputStream inpStr, Keyword[] keyword) const
+{
+    Token token = inpStr.readToken;
+    if(!token.isType!KeywordToken)
+        throw new GrammarError(format("Expected a keyword at %s", getTokenLocation(token)));
+
+    foreach (kw; keyword)
+        if (hasTokenValue(token, kw)) return;
+    throw new GrammarError(format("Expected one of the following keywords %s at %s",
+        keyword, getTokenLocation(token)));
 }
