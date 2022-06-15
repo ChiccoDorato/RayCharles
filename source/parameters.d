@@ -4,7 +4,7 @@ import std.conv : ConvException, to;
 import std.exception : enforce;
 import std.file : isFile;
 import std.format : format;
-import std.math : isFinite, sqrt, trunc;
+import std.math : isFinite, sqrt;
 
 // ************************* InvalidPfm2pngParms *************************
 /// Class used to recognise and throw exceptions in case of error in conversion pfm -> png
