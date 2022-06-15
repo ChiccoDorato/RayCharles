@@ -31,7 +31,7 @@ Again, `dub build --compiler ldc2` select another compiler. For more information
 
 ## Examples
 **Demo.**
-![demo bigger size](images/Big10-4-5.pfm)
+![demo bigger size](images/Big10-4-5.png)
 
 **Pfm2png.**
 | ![memorial.png factor 0.2](images/memorial-f02.png) | ![memorial.png factor 0.4](images/memorial-f04.png) |
