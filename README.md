@@ -23,7 +23,7 @@ which saves the files output.pfm and output.png in the directory. The generation
 
 ```bash
 $ dub build
-$ dub run -- pfm2png image.pfm image.png
+$ ./RayCharles pfm2png image.pfm image.png
 ```
 
 Again, `dub build --compiler ldc2` select another compiler. For more informations use the `--help` option.
