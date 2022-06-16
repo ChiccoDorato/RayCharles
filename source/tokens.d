@@ -8,6 +8,7 @@ import std.ascii : isAlpha, isAlphaNum, isDigit;
 import std.conv : ConvException, to;
 import std.file : read;
 import std.format : format;
+import std.math : isFinite, isInfinity;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
 import std.typecons : Nullable;
@@ -60,98 +61,80 @@ enum Keyword : string
     floatKeyword = "float"
 }
 
-struct StopToken
+struct StopToken {}
+
+struct SymbolToken { char symbol; }
+
+struct KeywordToken { Keyword keyword; }
+
+struct IdentifierToken { string identifier; }
+
+struct StringToken { string literalString; }
+
+struct LiteralNumberToken { float literalNumber; }
+
+alias TokenType = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
+
+struct Token
 {
-    SourceLocation tokenLocation;
+    TokenType type;
+    SourceLocation location;
+
+    pure nothrow @safe this(T)(in T tokenType, in SourceLocation tokenLocation = SourceLocation())
+    {
+        type = cast(TokenType)(tokenType);
+        location = tokenLocation;
+    }
+
+    pure nothrow @nogc void opAssign(Token rhs)
+    {
+        type = rhs.type;
+        location = rhs.location;
+    }
 }
 
-struct SymbolToken
+pure nothrow @safe bool isSpecificType(T)(Token token)
 {
-    char symbol;
-    SourceLocation tokenLocation;
-}
-
-struct KeywordToken
-{
-    Keyword kw;
-    SourceLocation tokenLocation;
-}
-
-struct IdentifierToken
-{
-    string identifier;
-    SourceLocation tokenLocation;
-}
-
-struct StringToken
-{
-    string literalString;
-    SourceLocation tokenLocation;
-}
-
-struct LiteralNumberToken
-{
-    float literalNumber;
-    SourceLocation tokenLocation;
-}
-
-alias KwOrId = SumType!(KeywordToken, IdentifierToken);
-alias Token = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
-
-// Works bad: no handling of T in case it is not a Token type.
-pure nothrow @safe bool isType(T)(Token token)
-{
-    return token.match!((T t) => true, _ => false);
+    return token.type.match!((T t) => true, _ => false);
 }
 
 unittest
 {
-    Token stop = StopToken(SourceLocation("noFile", 3, 5));
-    assert(isType!StopToken(stop));
-    assert(!isType!LiteralNumberToken(stop));
+    auto stop = Token(StopToken(), SourceLocation("noFile", 3, 5));
+    assert(isSpecificType!StopToken(stop));
+    assert(!isSpecificType!LiteralNumberToken(stop));
 
-    Token literalString = StringToken("I am a literal string token");
-    assert(isType!StringToken(literalString));
-    assert(!isType!SymbolToken(literalString));
+    auto literalString = Token(StringToken("I am a literal string token"));
+    assert(isSpecificType!StringToken(literalString));
+    assert(!isSpecificType!SymbolToken(literalString));
 }
 
-// Not great to see: another implementation of tokens is ready to substitute the current one.
-pure nothrow @safe SourceLocation getTokenLocation(Token token)
+pure @safe string stringTokenValue(Token token)
 {
-    return token.match!(
-        (StopToken stopTok) => stopTok.tokenLocation,
-        (SymbolToken symToken) => symToken.tokenLocation,
-        (KeywordToken kwToken) => kwToken.tokenLocation,
-        (IdentifierToken idToken) => idToken.tokenLocation,
-        (StringToken strToken) => strToken.tokenLocation,
-        (LiteralNumberToken numToken) => numToken.tokenLocation
+    return token.type.match!(
+        (StopToken stop) => "",
+        (SymbolToken sym) => to!string(sym.symbol),
+        (KeywordToken kw) => kw.keyword,
+        (IdentifierToken id) => id.identifier,
+        (StringToken str) => str.literalString,
+        (LiteralNumberToken number) => to!string(number.literalNumber)
     );
 }
 
-unittest
-{
-    Token keywordToken = KeywordToken(Keyword.camera, SourceLocation("testtokens.txt", 11, 2));
-    assert(getTokenLocation(keywordToken) == SourceLocation("testtokens.txt", 11, 2));
-
-    Token identifierToken = IdentifierToken("idToken", SourceLocation("identifiers"));
-    assert(getTokenLocation(identifierToken) == SourceLocation("identifiers", 0, 0));
-}
-
-// Unittest to do?
 pure nothrow @safe bool hasTokenValue(T)(Token token, T tokenValue)
 {
-    static if (is(T == char)) return token.match!(
-        (SymbolToken symToken) => symToken.symbol == tokenValue,
+    static if (is(T == char)) return token.type.match!(
+        (SymbolToken sym) => sym.symbol == tokenValue,
         _ => false);
-    else static if (is(T == Keyword)) return token.match!(
-        (KeywordToken kwToken) => kwToken.kw == tokenValue,
+    else static if (is(T == Keyword)) return token.type.match!(
+        (KeywordToken kw) => kw.keyword == tokenValue,
         _ => false);
-    else static if (is(T == string)) return token.match!(
-        (IdentifierToken idToken) => idToken.identifier == tokenValue,
-        (StringToken strToken) => strToken.literalString == tokenValue,
+    else static if (is(T == string)) return token.type.match!(
+        (IdentifierToken id) => id.identifier == tokenValue,
+        (StringToken str) => str.literalString == tokenValue,
         _ => false);
-    else static if (is(T == float)) return token.match!(
-        (LiteralNumberToken numToken) => numToken.literalNumber == tokenValue,
+    else static if (is(T == float)) return token.type.match!(
+        (LiteralNumberToken number) => number.literalNumber == tokenValue,
         _ => false);
     else return false;
 }
@@ -196,7 +179,7 @@ struct InputStream
     }
 
     /// Read and record a char, then update the position calling the function updatePos
-    pure nothrow @nogc @safe char readChar()
+    pure nothrow @safe char readChar()
     {
         if (index == stream.length) return char.init;
 
@@ -237,19 +220,19 @@ struct InputStream
         unreadChar(c);
     }
 
-    pure @safe StringToken parseStringToken(in SourceLocation tokenLoc)
+    pure @safe Token parseStringToken(in SourceLocation tokenLoc)
     {
         string token;
         while (index < stream.length)
         {
             immutable char c = readChar;
-            if (c == '"') return StringToken(token, tokenLoc);
+            if (c == '"') return Token(StringToken(token), tokenLoc);
             token ~= c;
         }
         throw new GrammarError(format("Unterminated string beginning at %s", tokenLoc.toString));
     }
 
-    pure @safe LiteralNumberToken parseFloatToken(in char firstChar, in SourceLocation tokenLoc)
+    pure @safe Token parseFloatToken(in char firstChar, in SourceLocation tokenLoc)
     {
         string token = [firstChar];
         while (index < stream.length)
@@ -266,13 +249,13 @@ struct InputStream
         try
         {
             float value = to!float(token);
-            return LiteralNumberToken(value, tokenLoc);
+            return Token(LiteralNumberToken(value), tokenLoc);
         }
 		catch (ConvException exc) throw new GrammarError(format(
-            "Invalid floating point number [%s] in %s", token, tokenLoc.toString));
+            "Invalid floating point number %s at %s", token, tokenLoc.toString));
     }
 
-    pure @safe KwOrId parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
+    pure @safe Token parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
     {
         string token = [firstChar];
         while(index < stream.length)
@@ -287,35 +270,91 @@ struct InputStream
         }
 
         static foreach (kw; EnumMembers!Keyword)
-            if (token == kw) return KwOrId(KeywordToken(kw, tokenLoc));
-        return KwOrId(IdentifierToken(token, tokenLoc));
+            if (token == kw) return Token(KeywordToken(kw), tokenLoc);
+        return Token(IdentifierToken(token), tokenLoc);
     }
 
     pure Token readToken()
     {
-        if (savedToken.match!((StopToken saved) => false, _ => true))
+        if (savedToken.type.match!((StopToken saved) => false, _ => true))
         {
             Token result = savedToken;
-            savedToken = StopToken();
+            savedToken = Token();
             return result;
         }
 
         skipWhiteSpacesAndComments;
 
         immutable char c = readChar;
-        if (c == char.init) return Token();
-        if (canFind(symbols, c)) return Token(SymbolToken(c, location));
-        else if (c == '"') return Token(parseStringToken(location));
-        else if (c.isDigit || canFind(['+', '-', '.'], c)) return Token(parseFloatToken(c, location));
-        else if (c.isAlpha || c == '_') return parseKeywordOrIdentifierToken(c, location).match!(
-            (KeywordToken kwT) => Token(kwT), (IdentifierToken idT) => Token(idT));
-        else throw new GrammarError(format("Invalid character [%s] at %s", c, location.toString));
+        if (c == char.init) return Token(StopToken(), location);
+        if (canFind(symbols, c)) return Token(SymbolToken(c), location);
+        else if (c == '"') return parseStringToken(location);
+        else if (c.isDigit || canFind(['+', '-', '.'], c)) return parseFloatToken(c, location);
+        else if (c.isAlpha || c == '_') return parseKeywordOrIdentifierToken(c, location);
+        else throw new GrammarError(format("Invalid character %s at %s", c, location.toString));
     }
 
     pure nothrow @nogc void unreadToken(Token t)
-    in (savedToken.match!((StopToken t) => true, _ => false))
+    in (savedToken.type.match!((StopToken stop) => true, _ => false))
     {
         savedToken = t;
+    }
+
+    pure void expectSymbol(InputStream inpStr, char sym)
+    {
+        Token token = inpStr.readToken;
+        if (!canFind(symbols, sym) && !hasTokenValue(token, sym))
+            throw new GrammarError(format("Got token %s instead of symbol %s at %s",
+                token.stringTokenValue, sym, token.location.toString));
+    }
+
+    pure Keyword expectKeyword(InputStream inpStr, Keyword[] keywords)
+    {
+        Token token = inpStr.readToken;
+        Nullable!Keyword actualKw;
+
+        token.type.match!(
+            (KeywordToken kwToken) => actualKw = kwToken.keyword,
+            _ => actualKw
+            );
+
+        if (!actualKw.isNull && canFind(keywords, actualKw.get)) return actualKw.get;
+        throw new GrammarError(format("Expected one of the following keywords %s instead of %s at %s",
+            keywords, token.stringTokenValue, token.location.toString));
+    }
+
+    pure float expectNumber(InputStream inpStr, Scene scene)
+    {
+        Token token = inpStr.readToken;
+        float value;
+
+        token.type.match!(
+            (LiteralNumberToken numberToken) => value = numberToken.literalNumber,
+            (IdentifierToken idToken) => value = scene.floatVars.get(idToken.identifier, float.infinity),
+            _ => value
+        );
+
+        if (value.isFinite) return value;
+        if (value.isInfinity) throw new GrammarError(format("Unknown variable %s at %s",
+            token.stringTokenValue, token.location.toString));
+        throw new GrammarError(format("Got token %s instead of a number at %s",
+            token.stringTokenValue, token.location.toString));
+    }
+
+    pure string expectString(InputStream inpStr)
+    {
+        Token token = inpStr.readToken;
+        if (isSpecificType!StringToken(token)) return token.stringTokenValue;
+        throw new GrammarError(format("Got a %s instead of a string at %s",
+            token.type, token.location.toString));
+    }
+
+    pure string expectIdentifier(InputStream inpStr)
+    {
+        Token token = inpStr.readToken;
+        if (isSpecificType!IdentifierToken(token)) return token.stringTokenValue;
+        throw new GrammarError(format("Got a %s instead of an identifier at %s",
+            token.type, token.location.toString));
     }
 }
 
@@ -390,7 +429,7 @@ unittest
 }
 
 // Probably not needed for our purposes. Associative arrays probably works better in
-// this case and best choice would be void[0][string]. Not cleat how it works, though.
+// this case and best choice would be void[0][string]. Not clear how it works, though.
 import std.container.rbtree;
 struct Scene
 {
@@ -399,25 +438,4 @@ struct Scene
     Nullable!Camera cam;
     float[string] floatVars;
     auto overriddenVars = make!(RedBlackTree!string);
-}
-
-// In InputStream. A different version of both the following is ready to be included
-// (because of a redefinition of Token).
-void expectSymbol(InputStream inpStr, char sym) const
-{
-    Token token = inpStr.readToken;
-    if (!canFind(symbols, sym) && !hasTokenValue(token, sym))
-        throw new GrammarError(format("Expected symbol [%s] at %s", sym, getTokenLocation(token)));
-}
-
-void expectKeyword(InputStream inpStr, Keyword[] keyword) const
-{
-    Token token = inpStr.readToken;
-    if(!token.isType!KeywordToken)
-        throw new GrammarError(format("Expected a keyword at %s", getTokenLocation(token)));
-
-    foreach (kw; keyword)
-        if (hasTokenValue(token, kw)) return;
-    throw new GrammarError(format("Expected one of the following keywords %s at %s",
-        keyword, getTokenLocation(token)));
 }

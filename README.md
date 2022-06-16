@@ -1,4 +1,3 @@
-
 # RayCharles
 A simple ray tracer which generates photorealistic images in pfm and png format. It also allows to convert an input pfm image into a new png image.
 
