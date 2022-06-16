@@ -109,6 +109,7 @@ unittest
     assert(!isSpecificType!SymbolToken(literalString));
 }
 
+// Try to make it better because of StopToken
 pure @safe string stringTokenValue(Token token)
 {
     return token.type.match!(
