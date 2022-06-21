@@ -13,20 +13,25 @@ import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
 import std.typecons : Nullable;
 
+// ************************* Source Location *************************
+/// Structure of a SourceLocation  - Members: fileName (string) and the number of line and col (uint)
 struct SourceLocation
 {
     string fileName;
     uint line;
     uint col;
 
+    /// Convert a SourceLocarion into a string
     pure nothrow @safe string toString() const
     {
         return fileName ~ "(" ~ to!string(line) ~ ", " ~ to!string(col) ~ ")";
     }
 }
 
+// ************************* GrammarError *************************
+/// Class of a GrammarError derivate of a Exception class - Members: message (string), file (string) and line number (size_t)
 class GrammarError : Exception
-{
+{   
     pure nothrow @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line);
@@ -61,31 +66,51 @@ enum Keyword : string
     floatKeyword = "float"
 }
 
+// ************************* StopToken *************************
+/// Struct of a StopToken: needed to stop the lecture
 struct StopToken {}
 
+// ************************* SymbolToken *************************
+/// Struct of a SymbolToken - Member: symbol (char)
 struct SymbolToken { char symbol; }
 
+// ************************* KeywordToken *************************
+/// Struct of a KeywordToken - Member: a type Keyword
 struct KeywordToken { Keyword keyword; }
 
+// ************************* IdentifierToken *************************
+/** Struct of a IdentifierToken - Member: identifier (string)
+* @param identifier (string)
+**/
 struct IdentifierToken { string identifier; }
 
+// ************************* StringToken *************************
+/// Struct of a StringToken - Member: literalString (string)
 struct StringToken { string literalString; }
 
+// ************************* IdentifierToken *************************
+/// Struct of a IdentifierToken - Member: an identifier (string)
 struct LiteralNumberToken { float literalNumber; }
 
+// ************************* TokenType *************************
+/// SumType of all the kind of Tokens one can find: StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken
 alias TokenType = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
 
+// ************************* Token *************************
+/// Struct of a Token - Members: type (TokenType) and location (SourceLocation)
 struct Token
 {
     TokenType type;
     SourceLocation location;
 
+    /// Build a certain type of Token - Parameters: TokenType, SourceLocation 
     pure nothrow @safe this(T)(in T tokenType, in SourceLocation tokenLocation = SourceLocation())
     {
         type = cast(TokenType)(tokenType);
         location = tokenLocation;
     }
 
+    /// Assignement operator between two Tokens
     pure nothrow @nogc void opAssign(Token rhs)
     {
         type = rhs.type;
@@ -93,17 +118,20 @@ struct Token
     }
 }
 
+/// Verify if a Token is of the specific type given 
 pure nothrow @safe bool isSpecificType(T)(Token token)
 {
     return token.type.match!((T t) => true, _ => false);
 }
 
+///
 unittest
 {
+    // isSpecificType: StopToken
     auto stop = Token(StopToken(), SourceLocation("noFile", 3, 5));
     assert(isSpecificType!StopToken(stop));
     assert(!isSpecificType!LiteralNumberToken(stop));
-
+    // isSpecificType: StringToken
     auto literalString = Token(StringToken("I am a literal string token"));
     assert(isSpecificType!StringToken(literalString));
     assert(!isSpecificType!SymbolToken(literalString));
@@ -143,6 +171,11 @@ pure nothrow @safe bool hasTokenValue(T)(Token token, T tokenValue)
 immutable char[] whiteSpaces = [' ', '\t', '\n', '\r'];
 immutable char[] symbols = ['(', ')', '<', '>', '[', ']', '*'];
 
+// ************************* InputStream *************************
+/// Struct of an InputStream 
+///
+/// Members: stream (immutable char[]), index (uint), savedChar (char), 
+/// location and savedLocation (SourceLocation), tabulations (ubyte), savedToken (Token)
 struct InputStream 
 {
     immutable char[] stream;
@@ -152,6 +185,7 @@ struct InputStream
     ubyte tabulations;
     Token savedToken;
 
+    /// Build an InputStream - Parameters: s (char[]), fileName (string), tab (ubyte)
     pure nothrow @safe this(in char[] s, in string fileName, in ubyte tab = 4)
     in (tab == 4 || tab == 8)
     {
@@ -161,6 +195,7 @@ struct InputStream
         tabulations = tab;
     }
 
+    /// Build an InputStream - Parameters: fileName (string), tab (ubyte)
     this(in string fileName, in ubyte tab = 4)
     {
         this(cast(immutable char[])(fileName.read), fileName, tab);
@@ -210,6 +245,7 @@ struct InputStream
         location = savedLocation;
     }
 
+    /// Find white spaces due to '\r' or '\n' and comments preceded by '#'
     pure @safe void skipWhiteSpacesAndComments()
     {
         char c = readChar;
@@ -221,6 +257,7 @@ struct InputStream
         unreadChar(c);
     }
 
+    /// Analyse if in a certain SourceLocation there is a StringToken - Parameter: tokenLoc (SourceLocation)
     pure @safe Token parseStringToken(in SourceLocation tokenLoc)
     {
         string token;
@@ -233,6 +270,7 @@ struct InputStream
         throw new GrammarError(format("Unterminated string beginning at %s", tokenLoc.toString));
     }
 
+    /// Analyse if in a certain SourceLocation there is a LiteralNumberToken  - Parameter: firstChar (char), tokenLoc (SourceLocation)
     pure @safe Token parseFloatToken(in char firstChar, in SourceLocation tokenLoc)
     {
         string token = [firstChar];
@@ -256,6 +294,7 @@ struct InputStream
             "Invalid floating point number %s at %s", token, tokenLoc.toString));
     }
 
+    /// Analyse if in a certain SourceLocation there is a KeywordToken or an IdentifierToken - Parameter: firstChar (char), tokenLoc (SourceLocation)
     pure @safe Token parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
     {
         string token = [firstChar];
@@ -275,15 +314,17 @@ struct InputStream
         return Token(IdentifierToken(token), tokenLoc);
     }
 
+    /// Read and Analyse a Token returning the correct kind
     pure Token readToken()
-    {
+    {   
+        // StopToken
         if (savedToken.type.match!((StopToken saved) => false, _ => true))
         {
             Token result = savedToken;
             savedToken = Token();
             return result;
         }
-
+        // Here white spaces and comments are skipped
         skipWhiteSpacesAndComments;
 
         immutable char c = readChar;
@@ -295,12 +336,14 @@ struct InputStream
         else throw new GrammarError(format("Invalid character %s at %s", c, location.toString));
     }
 
+    /// Unread a Token - Parameter: t (Token)
     pure nothrow @nogc void unreadToken(Token t)
     in (savedToken.type.match!((StopToken stop) => true, _ => false))
     {
         savedToken = t;
     }
 
+    /// Throw a GrammarError if the Token is not the expected one: a SymbolToken - Parameters: inpStr (InputStream), sym (char)
     pure void expectSymbol(InputStream inpStr, char sym)
     {
         Token token = inpStr.readToken;
@@ -309,6 +352,7 @@ struct InputStream
                 token.stringTokenValue, sym, token.location.toString));
     }
 
+    /// Throw a GrammarError if the Token is not the expected one: a KeywordToken - Parameters: inpStr (InputStream), keywords (Keyword[])
     pure Keyword expectKeyword(InputStream inpStr, Keyword[] keywords)
     {
         Token token = inpStr.readToken;
@@ -323,7 +367,8 @@ struct InputStream
         throw new GrammarError(format("Expected one of the following keywords %s instead of %s at %s",
             keywords, token.stringTokenValue, token.location.toString));
     }
-
+    
+    /// Throw a GrammarError if the Token is not the expected one: a LiteralNumberToken - Parameters: inpStr (InputStream), scene (Scene)
     pure float expectNumber(InputStream inpStr, Scene scene)
     {
         Token token = inpStr.readToken;
@@ -342,6 +387,7 @@ struct InputStream
             token.stringTokenValue, token.location.toString));
     }
 
+    /// Throw a GrammarError if the Token is not the expected one: a StringToken - Parameters: inpStr (InputStream)
     pure string expectString(InputStream inpStr)
     {
         Token token = inpStr.readToken;
@@ -350,6 +396,7 @@ struct InputStream
             token.type, token.location.toString));
     }
 
+    /// Throw a GrammarError if the Token is not the expected one: a IdentifierToken - Parameters: inpStr (InputStream)
     pure string expectIdentifier(InputStream inpStr)
     {
         Token token = inpStr.readToken;
@@ -359,6 +406,7 @@ struct InputStream
     }
 }
 
+///
 unittest
 {
     auto stream = InputStream("abc   \nd\nef", "");
@@ -407,8 +455,10 @@ unittest
     assert(stream.readChar == char.init);
 }
 
+///
 unittest
 {
+    // Lexer unittests
     string str = "# This is a comment
     # This is another comment
     new material skyMaterial(
