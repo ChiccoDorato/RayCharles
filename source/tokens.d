@@ -1,10 +1,10 @@
 module tokens;
 
-import cameras : Camera;
+import cameras : Camera, OrthogonalCamera, PerspectiveCamera;
 import geometry : Vec;
 import hdrimage : Color, HDRImage;
 import materials : BRDF, CheckeredPigment, DiffuseBRDF, ImagePigment, Material, Pigment, SpecularBRDF, UniformPigment;
-import shapes : World;
+import shapes : Cylinder, CylinderShell, Sphere, Plane, World;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
 import std.conv : ConvException, to;
@@ -13,7 +13,9 @@ import std.format : format;
 import std.math : isFinite, isInfinity;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
-import std.typecons : Nullable;
+import std.typecons : Nullable, tuple, Tuple;
+import transformations : Transformation, translation, rotationX, rotationY, rotationZ, scaling;
+
 
 // ************************* Source Location *************************
 /// Structure of a SourceLocation  - Members: fileName (string) and the number of line and col (uint)
@@ -584,4 +586,185 @@ BRDF parseBRDF(InputStream inpFile, Scene scene)
     }
 
     assert(false, "None will reach this line...");
-}   
+}
+
+/// Analyse an InputStream and return a Material - Parameters: inpFile (InputStream), scene (Scene)
+Tuple!(string, Material) parseMaterial(InputStream inpFile, Scene scene)
+{  
+    string name = inpFile.expectIdentifier(inpFile);
+    inpFile.expectSymbol(inpFile, '(');
+    BRDF brdf = parseBRDF(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    Pigment emittedRadiance = parsePigment(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+    Material mat = Material(brdf, emittedRadiance);
+    
+    return tuple(name, mat);
+}
+
+/// Analyse an InputStream and return a Transformation - Parameters: inpFile (InputStream), scene (Scene)
+Transformation parseTransformation(InputStream inpFile, Scene scene)
+{
+    Transformation result = Transformation();
+    Keyword[] transfKeys= [Keyword.identity, 
+                        Keyword.translation,
+                        Keyword.rotationX,
+                        Keyword.rotationY,
+                        Keyword.rotationZ,
+                        Keyword.scaling];
+    Keyword transfKeyword = inpFile.expectKeyword(inpFile, transfKeys);
+
+    while(true)
+    {
+        if (transfKeyword == Keyword.identity) 
+        {
+            continue; // Do nothing: this is a primitive form of Optimization. cit ZioTom
+        }
+        else if (transfKeyword == Keyword.translation)
+        {
+            inpFile.expectSymbol(inpFile, '(');
+            result = result * translation(parseVec(inpFile, scene));
+            inpFile.expectSymbol(inpFile, ')');
+        }
+        else if (transfKeyword == Keyword.rotationX)
+        {
+            inpFile.expectSymbol(inpFile, '(');
+            result = result * rotationX(inpFile.expectNumber(inpFile, scene));
+            inpFile.expectSymbol(inpFile, ')');
+        }
+        else if (transfKeyword == Keyword.rotationY)
+        {
+            inpFile.expectSymbol(inpFile, '(');
+            result = result * rotationY(inpFile.expectNumber(inpFile, scene));
+            inpFile.expectSymbol(inpFile, ')');
+        }
+        else if (transfKeyword == Keyword.rotationZ)
+        {
+            inpFile.expectSymbol(inpFile, '(');
+            result = result * rotationZ(inpFile.expectNumber(inpFile, scene));
+            inpFile.expectSymbol(inpFile, ')');
+        }
+        else if (transfKeyword == Keyword.scaling)
+        {
+            inpFile.expectSymbol(inpFile, '(');
+            result = result * scaling(parseVec(inpFile, scene));
+            inpFile.expectSymbol(inpFile, ')');
+        }
+
+    return result; // It's there now to avoid the warnings, once I figure out how to do the following lines I'll delete this return
+    }
+
+    // // Check if another Transformation is chained to the previous one or if the sequence ends, it's a LL(1) parser
+    // auto nextToken = inpFile.readToken(); // Not clear if he was using a kw or a token btw
+    // SymbolToken symT;
+    // if (!canFind(nextToken, symT) || (nextToken.symbol != '*')) 
+    // {
+    //     // Put the Token back!
+    //     inpFile.unreadToken(nextToken);
+    // }
+
+    // return result;
+}
+
+// Analyse an InputStream and return a Sphere - Parameters: inpFile (InputStream), scene (Scene)
+Sphere parseSphere( InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '(');
+    string matName = inpFile.expectIdentifier(inpFile);
+    if (!(matName in scene.materials))
+    {
+        throw new GrammarError(format("Unknown material %s located in %s", matName, inpFile.location));
+    }
+
+    inpFile.expectSymbol(inpFile, ',');
+    Transformation transf = parseTransformation(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+    
+    return new Sphere(transf, scene.materials[matName]);
+}
+
+// Analyse an InputStream and return a Plane - Parameters: inpFile (InputStream), scene (Scene)
+Plane parsePlane( InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '(');
+    string matName = inpFile.expectIdentifier(inpFile);
+    if (!(matName in scene.materials))
+    {
+        throw new GrammarError(format("Unknown material %s located in %s", matName, inpFile.location));
+    }
+
+    inpFile.expectSymbol(inpFile, ',');
+    Transformation transf = parseTransformation(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+    
+    return new Plane(transf, scene.materials[matName]);
+}
+
+
+// Analyse an InputStream and return a CylinderShell - Parameters: inpFile (InputStream), scene (Scene)
+CylinderShell parseCylinderShell( InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '(');
+    string matName = inpFile.expectIdentifier(inpFile);
+    if (!(matName in scene.materials))
+    {
+        throw new GrammarError(format("Unknown material %s located in %s", matName, inpFile.location));
+    }
+
+    inpFile.expectSymbol(inpFile, ',');
+    Transformation transf = parseTransformation(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+    
+    return new CylinderShell(transf, scene.materials[matName]); // We have to do it with all the constructors!
+}
+
+// Analyse an InputStream and return a Cylinder - Parameters: inpFile (InputStream), scene (Scene)
+Cylinder parseCylinder( InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '(');
+    string matName = inpFile.expectIdentifier(inpFile);
+    if (!(matName in scene.materials))
+    {
+        throw new GrammarError(format("Unknown material %s located in %s", matName, inpFile.location));
+    }
+
+    inpFile.expectSymbol(inpFile, ',');
+    Transformation transf = parseTransformation(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+    
+    return new Cylinder(transf, scene.materials[matName]); // We have to do it with all the constructors!
+}
+
+// Analyse an InputStream and return a Camera - Parameters: inpFile (InputStream), scene (Scene)
+Camera parseCamera(InputStream inpFile, Scene scene)
+{
+    Camera result;
+    inpFile.expectSymbol(inpFile, '(');
+    Keyword[] camKeys = [Keyword.perspective, Keyword.orthogonal];
+    Keyword typeKw = inpFile.expectKeyword(inpFile, camKeys);
+    inpFile.expectSymbol(inpFile, ',');
+    Transformation transf = parseTransformation(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float aspectRatio = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float distance = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
+
+    if (typeKw == Keyword.perspective)
+    {
+        result = new PerspectiveCamera(distance, aspectRatio, transf);
+    } 
+    else if (typeKw == Keyword.orthogonal)
+    {
+        result = new OrthogonalCamera(aspectRatio, transf);
+    }
+
+    return result;
+}
+
+// Analyse an InputStream, read the scene description and return a Scene - Parameters: inpFile (InputStream), a tuple of a string and a float
+// Scene parseScene(InputStream inpFile,  Tuple!(str, float) variables)
+// {
+//     Scene scene = Scene();
+//     return scene;
+// }
