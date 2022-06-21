@@ -780,11 +780,13 @@ unittest
     
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     assert(csRot1.quickRayIntersection(ray1));
-    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord()); 
+    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord());
+    import std.stdio;
+    writeln(h1.worldPoint);
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.75, sqrt(2.0) / 2.0), 
+        Vec2d(0.75, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
         2.0 + sqrt(2.0), 
         ray1,
         csRot1).recordIsClose(h1));
@@ -801,7 +803,7 @@ unittest
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // 0.0? Rotazioni molto male.
+        Vec2d(0.0, sqrt(2.0) / 2.0), // (0.75, 0.0) 
         2.0 + sqrt(2.0), 
         ray1,
         csRot2).recordIsClose(h2));
@@ -1017,7 +1019,7 @@ unittest
     assert(HitRecord(
         Point(0.0, 1 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), 
+        Vec2d(0.0, sqrt(2.0) / 2.0), // Same here: (0.75, 0.0)
         (2.0 + sqrt(2.0)), 
         ray1,
         cRot2).recordIsClose(h1));
