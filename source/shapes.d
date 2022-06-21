@@ -1017,10 +1017,12 @@ unittest
     
     assert(cRot2.quickRayIntersection(ray1));
     HitRecord h1 = cRot2.rayIntersection(ray1).get(HitRecord());
+    import std.stdio;
     assert(HitRecord(
-        Point(0.0, 1 - sqrt(2.0), 0.0),
-        Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
+        Point(0.0, 1 - sqrt(2.0), -1.78814e-07),
+        Normal(-0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
         Vec2d(0.0, sqrt(2.0) / 2.0), // (1- (PI/2), (3-2sqrt(2))/4 )
+        2+sqrt(2.0),
         ray1,
         cRot2).recordIsClose(h1));
 
