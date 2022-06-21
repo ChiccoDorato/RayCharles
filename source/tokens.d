@@ -3,7 +3,7 @@ module tokens;
 import cameras : Camera;
 import geometry : Vec;
 import hdrimage : Color, HDRImage;
-import materials : BRDF, CheckeredPigment, ImagePigment, Material, Pigment, SpecularBRDF, UniformPigment;
+import materials : BRDF, CheckeredPigment, DiffuseBRDF, ImagePigment, Material, Pigment, SpecularBRDF, UniformPigment;
 import shapes : World;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
@@ -498,90 +498,90 @@ struct Scene
     auto overriddenVars = make!(RedBlackTree!string);
 }
 
-// /// Analyse an InputStream and return a 3D Vec (x,y,z) - Parameters: inpFile (InputStream), scene (Scene)
-// Vec parseVec(InputStream inpFile, Scene scene)
-// {
-//     expectSymbol(inpFile, "[");
-//     float x = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, ",");
-//     float y = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, ",");
-//     float z = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, "]");
+/// Analyse an InputStream and return a 3D Vec (x,y,z) - Parameters: inpFile (InputStream), scene (Scene)
+pure Vec parseVec(InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '[');
+    float x = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float y = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float z = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ']');
 
-//     return Vec(x, y, z);
-// }
+    return Vec(x, y, z);
+}
 
-// /// Analyse an InputStream and return a Color (r,g,b) - Parameters: inpFile (InputStream), scene (Scene)
-// Color parseColor(InputStream inpFile, Scene scene)
-// {
-//     expectSymbol(inpFile, "<");
-//     float r = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, ",");
-//     float g = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, ",");
-//     float b = expectNumber(inpFile, scene);
-//     expectSymbol(inpFile, ">");
+/// Analyse an InputStream and return a Color (r,g,b) - Parameters: inpFile (InputStream), scene (Scene)
+Color parseColor(InputStream inpFile, Scene scene)
+{
+    inpFile.expectSymbol(inpFile, '<');
+    float r = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float g = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ',');
+    float b = inpFile.expectNumber(inpFile, scene);
+    inpFile.expectSymbol(inpFile, '>');
 
-//     return Color(r, g, b);
-// }
+    return Color(r, g, b);
+}
 
-// /// Analyse an InputStream and return a Pigment - Parameters: inpFile (InputStream), scene (Scene)
-// Pigment parsePigment(InputStream inpFile, Scene scene)
-// {
-//     Keyword[] keys = [Keyword.uniform, Keyword.checkered, Keyword.image];
-//     Keyword k = expectKeyword(inpFile, keys);
-//     Pigment result;
-//     expectSymbol(inpFile, "(");
+/// Analyse an InputStream and return a Pigment - Parameters: inpFile (InputStream), scene (Scene)
+Pigment parsePigment(InputStream inpFile, Scene scene)
+{
+    Keyword[] keys = [Keyword.uniform, Keyword.checkered, Keyword.image];
+    Keyword k = inpFile.expectKeyword(inpFile, keys);
+    Pigment result;
+    inpFile.expectSymbol(inpFile, '(');
 
-//     if(k.hasTokenValue(Keyword.uniform))
-//     {
-//         Color color = parseColor(inpFile, scene);
-//         result = new UniformPigment(color);
-//     }  
-//     else if (k.hasTokenValue(Keyword.checkered))
-//     {
-//         Color color1 = parseColor(inpFile, scene);
-//         expectSymbol(inpFile, ",");
-//         Color color2 = parseColor(inpFile, scene);
-//         expectSymbol(inpFile, ",");
-//         int numOfSteps = cast(int)(expectNumber(inpFile, scene));
-//         result = CheckeredPigment(color1, color2, numOfSteps);
-//     }
-//     else if (k.hasTokenValue(Keyword.image))
-//     {
-//         string fileName = expectString(inpFile);
-//         HDRImage image = writePFMFile(fileName);
-//         result = new ImagePigment(image);
-//     }
-//     else
-//         assert(false, "None will reach this line..."); 
+    if(k == Keyword.uniform)
+    {
+        Color color = parseColor(inpFile, scene);
+        result = new UniformPigment(color);
+    }  
+    else if (k == Keyword.checkered)
+    {
+        Color color1 = parseColor(inpFile, scene);
+        inpFile.expectSymbol(inpFile, ',');
+        Color color2 = parseColor(inpFile, scene);
+        inpFile.expectSymbol(inpFile, ',');
+        int numOfSteps = cast(int)(inpFile.expectNumber(inpFile, scene));
+        result = new CheckeredPigment(color1, color2, numOfSteps);
+    }
+    else if (k == Keyword.image)
+    {
+        string fileName = inpFile.expectString(inpFile);
+        HDRImage image;
+        image.writePFMFile(fileName);
+        result = new ImagePigment(image);
+    }
+    else
+        assert(false, "None will reach this line..."); 
 
-//     expectSymbol(inpFile, ")");
-//     return result;
-// }
+    inpFile.expectSymbol(inpFile, ')');
+    return result;
+}
 
-// BRDF parseBRDF(InputStream inpFile, Scene scene)
-// {
-//     Keyword[] keys = [Keyword.diffuse, Keyword.specular];
-//     Keyword brdfKeyword = expectKeywords(inpFile, keys);
-//     BRDF result;
-//     expectSymbol(inpFile, "(");
-//     Pigment pigment = parsePigment(inpFile, scene);
-//     expectSymbol(inpFile, ")");
+/// Analyse an InputStream and return a BRDF - Parameters: inpFile (InputStream), scene (Scene)
+BRDF parseBRDF(InputStream inpFile, Scene scene)
+{
+    Keyword[] keys = [Keyword.diffuse, Keyword.specular];
+    Keyword brdfKeyword = inpFile.expectKeyword(inpFile, keys);
+    BRDF result;
+    inpFile.expectSymbol(inpFile, '(');
+    Pigment pigment = parsePigment(inpFile, scene);
+    inpFile.expectSymbol(inpFile, ')');
 
-//     if (brdfKeyword.hasTokenValue(Keyword.diffuse)) 
-//     {
-//         result = DiffuseBRDF(pigment);
-//         return result;
-//     }
-//     else if (brdfKeyword.hasTokenValue(Keyword.specular))
-//     {
-//         result = SpecularBRDF(pigment);
-//         return result;
-//     }
+    if (brdfKeyword == Keyword.diffuse) 
+    {
+        result = new DiffuseBRDF(pigment);
+        return result;
+    }
+    else if (brdfKeyword == Keyword.specular)
+    {
+        result = new SpecularBRDF(pigment);
+        return result;
+    }
 
-//     assert(false, "None will reach this line...");
-// }
-    
-    
+    assert(false, "None will reach this line...");
+}   
