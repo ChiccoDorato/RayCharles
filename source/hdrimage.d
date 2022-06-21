@@ -375,7 +375,7 @@ class HDRImage
 	}
 
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
-	/* @safe */ void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
+	/* @safe */ void file(string fileName, in Endian endianness = Endian.littleEndian) const
 	{
 		if (fileName == [])
 		{
