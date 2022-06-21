@@ -781,8 +781,6 @@ unittest
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     assert(csRot1.quickRayIntersection(ray1));
     HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord());
-    import std.stdio;
-    writeln(h1.worldPoint);
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
@@ -803,7 +801,7 @@ unittest
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // (0.75, 0.0) 
+        Vec2d(0.0, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
         2.0 + sqrt(2.0), 
         ray1,
         csRot2).recordIsClose(h2));
@@ -917,7 +915,7 @@ unittest
     auto cylinderMaterial = Material(cylinderBRDF);
 
     auto pMin = Point(1.0, 1.0, 0.0);
-    // Same behaviour for the three different Cylinders
+    // Same behaviour for the three different Cylinders 
     auto c1 = new Cylinder(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
     auto c2 = new Cylinder(1.0, pMin, pMin + 2.0 * vecZ, cylinderMaterial);
     auto c3 = new Cylinder(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderMaterial);
@@ -995,14 +993,17 @@ unittest
         ray1,
         cRot1).recordIsClose(hit1));
 
-    Ray ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+    Ray ray2 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
     assert(cRot1.quickRayIntersection(ray2));
     HitRecord hit2 = cRot1.rayIntersection(ray2).get(HitRecord());
+
+    // import std.stdio;
+    // writeln(hit2.worldPoint);
     assert(HitRecord(
-        Point(0.0, 0.292893, sqrt(2.0) / 2.0),  // Not very clear why 0.292893
+        Point(0.0, 0.0, sqrt(2.0) -1), 
         Normal(0.0, -sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, 1.0), 
-        1.0 + 0.292893, 
+        Vec2d(0.75, 0.957107), // (0.0, 0.25 + 0.5*(sqrt(2)-1))
+        2-sqrt(2.0), 
         ray2,
         cRot1).recordIsClose(hit2));
 
@@ -1019,8 +1020,7 @@ unittest
     assert(HitRecord(
         Point(0.0, 1 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // Same here: (0.75, 0.0)
-        (2.0 + sqrt(2.0)), 
+        Vec2d(0.0, sqrt(2.0) / 2.0), // (1- (PI/2), (3-2sqrt(2))/4 )
         ray1,
         cRot2).recordIsClose(h1));
 
