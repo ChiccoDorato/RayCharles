@@ -79,7 +79,7 @@ class Shape
 /// Class for a 3D Sphere centered in the origin of the axis
 class Sphere : Shape
 {
-    /// Build a sphere - also with a tranformation and a material
+    /// Build a sphere - Parameters: Tranformation and Material
     pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
@@ -221,7 +221,7 @@ unittest
 /// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
 class Plane : Shape
 {
-    /// Build a plane - also with a tranformation and a material
+    /// Build a plane - Parameters: Tranformation and Material
     pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
