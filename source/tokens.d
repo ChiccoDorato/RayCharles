@@ -766,5 +766,131 @@ Camera parseCamera(InputStream inpFile, Scene scene)
 // Scene parseScene(InputStream inpFile,  Tuple!(str, float) variables)
 // {
 //     Scene scene = Scene();
+
+
 //     return scene;
+// }
+
+///
+// unittest
+// {
+//     auto stream = InputStream("
+//         float clock(150)
+    
+//         material skyMaterial(
+//             diffuse(uniform(<0, 0, 0>)),
+//             uniform(<0.7, 0.5, 1>)
+//         )
+    
+//         # Here is a comment
+    
+//         material groundMaterial(
+//             diffuse(checkered(<0.3, 0.5, 0.1>,
+//                               <0.1, 0.2, 0.5>, 4)),
+//             uniform(<0, 0, 0>)
+//         )
+    
+//         material sphereMaterial(
+//             specular(uniform(<0.5, 0.5, 0.5>)),
+//             uniform(<0, 0, 0>)
+//         )
+    
+//         plane (skyMaterial, translation([0, 0, 100]) * rotationY(clock))
+//         plane (groundMaterial, identity)
+    
+//         sphere(sphereMaterial, translation([0, 0, 1]))
+    
+//         camera(perspective, rotationZ(30) * translation([-4, 0, 1]), 1.0, 2.0)");
+
+//     Scene scene = parseScene(stream);
+
+//     // Veify if the float variables are correct
+//     assert(len(scene.floatVars) == 1);
+//     assert("clock" in scene.floatVars.keys);
+//     assert(scene.floatVars["clock"] == 150.0);
+
+//     // Verify if the float variables are correct
+//     assert(len(scene.materials) == 3);
+//     assert("sphereMaterial" in scene.materials);
+//     assert("skyMaterial" in scene.materials);
+//     assert("groundMaterial" in scene.materials);
+
+//     Material sphereMaterial = scene.materials["sphereMaterial"];
+//     Material skyMaterial = scene.materials["skyMaterial"];
+//     Material groundMaterial = scene.materials["groundMaterial"];
+
+//     token.type.match!((T t) => true, _ => false);
+
+//     assert(skyMaterial.brdf.match!((DiffuseBRDF) => true, _ => false));
+//     assert(skyMaterial.brdf.pigment.match!((UniformPigment) => true, _ => false));
+//     assert(skyMaterial.brdf.pigment.colorIsClose(Color(0, 0, 0));
+
+//     assert(groundMaterial.brdf.match!((DiffuseBRDF) => true, _ => false));
+//     assert(groundMaterial.brdf.pigment.match!((CheckeredPigment) => true, _ => false));
+//     assert(groundMaterial.brdf.pigment.color1.colorIsClose(Color(0.3, 0.5, 0.1)));
+//     assert(groundMaterial.brdf.pigment.color2.colorIsClose(Color(0.1, 0.2, 0.5)));
+//     assert(groundMaterial.brdf.pigment.numberOfSteps == 4);
+
+//     assert(sphereMaterial.brdf.match!((SpecularBRDF) => true, _ => false));
+//     assert(sphereMaterial.brdf.pigment.match!((UniformPigment) => true, _ => false));
+//     assert(sphereMaterial.brdf.pigment.color.colorIsClose(Color(0.5, 0.5, 0.5)));
+
+//     assert(skyMaterial.emittedRadiance.match!((UniformPigment)=> true, _ => false));
+//     assert(skyMaterial.emittedRadiance.color.colorIsClose(Color(0.7, 0.5, 1.0)));
+//     assert(groundMaterial.emittedRadiance.match!((UniformPigment)=> true, _ => false));
+//     assert(groundMaterial.emittedRadiance.color.colorIsClose(Color(0, 0, 0)));
+//     assert(sphereMaterial.emittedRadiance.match!((UniformPigment)=> true, _ => false));
+//     assert(sphereMaterial.emittedRadiance.color.colorIsClose(Color(0, 0, 0)));
+
+//     // Verify if the shapes are correct
+
+//     assert(len(scene.world.shapes) == 3);
+//     assert(scene.world.shapes[0].match!((Plane)=> true, _ => false));
+//     assert(scene.world.shapes[0].transformation.colorIsClose(translation(Vec(0, 0, 100)) * rotationY(150.0)));
+//     assert((scene.world.shapes[1].match!((Plane)=> true, _ => false)));
+//     assert(scene.world.shapes[1].transformation.colorIsClose(Transformation()));
+//     assert(scene.world.shapes[2].match!((Sphere)=> true, _ => false));
+//     assert(scene.world.shapes[2].transformation.colorIsClose(translation(Vec(0, 0, 1))));
+
+//      // Verify if the camera is correct
+//     assert(isinstance(scene.camera.match!((PerspectiveCamera)=> true, _ => false)));
+//     assert(scene.camera.transformation.colorIsClose(rotationZ(30) * translation(Vec(-4, 0, 1))));
+//     assert(scene.camera.aspectRatio == 1.0);
+//     assert(scene.camera.distance == 2.0);
+// }
+
+// ///
+// unittest
+// {
+
+// // Verify if unknown materials raise a GrammarError
+//     auto stream = InputStream("
+//     plane(thisMaterialDoesNotExist, identity)
+//     ");
+
+//         try
+//         {
+//         _ = parseScene(InputStream(stream));
+//         assert(false, "the code did not throw an exception");
+//         throw new GrammarError(format("Unknown material"));
+//         pass;
+//         }     
+// }
+
+// ///
+// unittest
+// {
+// // Verify that defining two cameras in the same file raises a GrammarError
+//     auto stream = InputStream("
+//     camera(perspective, rotationZ(30) * translation([-4, 0, 1]), 1.0, 1.0)
+//     camera(orthogonal, identity, 1.0, 1.0)
+//     ");
+
+//     try
+//     {
+//         _ = parseScene(InputStream(stream));
+//         assert(false, "the code did not throw an exception");
+//         throw new GrammarError(format("Two cameras have been defined. Only one needed!"));
+//         pass;
+//     }
 // }
