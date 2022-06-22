@@ -841,7 +841,6 @@ Camera parseCamera(InputStream inpFile, Scene scene)
 //     assert(sphereMaterial.emittedRadiance.color.colorIsClose(Color(0, 0, 0)));
 
 //     // Verify if the shapes are correct
-
 //     assert(len(scene.world.shapes) == 3);
 //     assert(scene.world.shapes[0].match!((Plane)=> true, _ => false));
 //     assert(scene.world.shapes[0].transformation.colorIsClose(translation(Vec(0, 0, 100)) * rotationY(150.0)));
