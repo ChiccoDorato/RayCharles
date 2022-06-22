@@ -766,8 +766,6 @@ Camera parseCamera(InputStream inpFile, Scene scene)
 // Scene parseScene(InputStream inpFile,  Tuple!(str, float) variables)
 // {
 //     Scene scene = Scene();
-
-
 //     return scene;
 // }
 
@@ -862,7 +860,6 @@ Camera parseCamera(InputStream inpFile, Scene scene)
 // ///
 // unittest
 // {
-
 // // Verify if unknown materials raise a GrammarError
 //     auto stream = InputStream("
 //     plane(thisMaterialDoesNotExist, identity)
