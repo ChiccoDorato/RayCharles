@@ -56,7 +56,7 @@ pure nothrow @nogc @safe float fixBoundary(in float coord, in float min = 0.0,
     return coord;
 }
 
-///******************** Shape ********************
+// ******************** Shape ********************
 /// Abstract class for a generic Shape
 class Shape
 {
