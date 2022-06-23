@@ -1,7 +1,9 @@
 module tokens;
 
 import cameras : Camera;
-import materials : Material;
+import geometry : Vec;
+import hdrimage : Color;
+import materials;
 import shapes : World;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
@@ -301,17 +303,17 @@ struct InputStream
         savedToken = t;
     }
 
-    pure void expectSymbol(InputStream inpStr, char sym)
+    pure void expectSymbol(char sym)
     {
-        Token token = inpStr.readToken;
+        Token token = readToken();
         if (!canFind(symbols, sym) && !hasTokenValue(token, sym))
             throw new GrammarError(format("Got token %s instead of symbol %s at %s",
                 token.stringTokenValue, sym, token.location.toString));
     }
 
-    pure Keyword expectKeyword(InputStream inpStr, Keyword[] keywords)
+    pure Keyword expectKeyword(Keyword[] keywords)
     {
-        Token token = inpStr.readToken;
+        Token token = readToken();
         Nullable!Keyword actualKw;
 
         token.type.match!(
@@ -324,9 +326,9 @@ struct InputStream
             keywords, token.stringTokenValue, token.location.toString));
     }
 
-    pure float expectNumber(InputStream inpStr, Scene scene)
+    pure float expectNumber(Scene scene)
     {
-        Token token = inpStr.readToken;
+        Token token = readToken();
         float value;
 
         token.type.match!(
@@ -342,21 +344,75 @@ struct InputStream
             token.stringTokenValue, token.location.toString));
     }
 
-    pure string expectString(InputStream inpStr)
+    pure string expectString()
     {
-        Token token = inpStr.readToken;
+        Token token = readToken();
         if (isSpecificType!StringToken(token)) return token.stringTokenValue;
         throw new GrammarError(format("Got a %s instead of a string at %s",
             token.type, token.location.toString));
     }
 
-    pure string expectIdentifier(InputStream inpStr)
+    pure string expectIdentifier()
     {
-        Token token = inpStr.readToken;
+        Token token = readToken();
         if (isSpecificType!IdentifierToken(token)) return token.stringTokenValue;
         throw new GrammarError(format("Got a %s instead of an identifier at %s",
             token.type, token.location.toString));
     }
+
+    pure Vec parseVector(Scene scene)
+    {
+        expectSymbol('[');
+        immutable x = expectNumber(scene);
+        expectSymbol(',');
+        immutable y = expectNumber(scene);
+        expectSymbol(',');
+        immutable z = expectNumber(scene);
+        expectSymbol(']');
+        return Vec(x, y, z);
+    }
+
+    pure Color parseColor(Scene scene)
+    {
+        expectSymbol('<');
+        immutable red = expectNumber(scene);
+        expectSymbol(',');
+        immutable green = expectNumber(scene);
+        expectSymbol(',');
+        immutable blue = expectNumber(scene);
+        expectSymbol('>');
+        return Color(red, green, blue);
+    }
+
+    // pure Pigment parsePigment(Scene scene)
+    // {
+    //     auto kw = expectKeyword([Keyword.uniform, Keyword.checkered, Keyword.image]);
+    //     Pigment pigment;
+
+    //     expectSymbol('(');
+    //     if (kw == Keyword.uniform)
+    //     {
+    //         immutable col = parseColor(scene);
+    //         pigment = new UniformPigment(col);
+    //     }
+    //     else if (kw == Keyword.checkered)
+    //     {
+    //         immutable col1 = parseColor(scene);
+    //         expectSymbol(',');
+    //         immutable col2 = parseColor(scene);
+    //         expectSymbol(',');
+    //         immutable numOfSteps = cast(int)(expectNumber(scene));
+    //         pigment = new CheckeredPigment(col1, col2, numOfSteps);
+    //     }
+    //     else if (kw == Keyword.image)
+    //     {
+    //         string fileName = expectString();
+    //     }
+    //     else assert(false, "This line should be unreachable");
+
+    //     expectSymbol(')');
+    //     return pigment;
+    // }
 }
 
 unittest
