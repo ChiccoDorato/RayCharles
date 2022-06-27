@@ -56,7 +56,7 @@ pure nothrow @nogc @safe float fixBoundary(in float coord, in float min = 0.0,
     return coord;
 }
 
-///******************** Shape ********************
+// ******************** Shape ********************
 /// Abstract class for a generic Shape
 class Shape
 {
@@ -79,7 +79,7 @@ class Shape
 /// Class for a 3D Sphere centered in the origin of the axis
 class Sphere : Shape
 {
-    /// Build a sphere - also with a tranformation and a material
+    /// Build a sphere - Parameters: Tranformation and Material
     pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
@@ -221,7 +221,7 @@ unittest
 /// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
 class Plane : Shape
 {
-    /// Build a plane - also with a tranformation and a material
+    /// Build a plane - Parameters: Tranformation and Material
     pure nothrow @safe this(in Transformation t = Transformation(), Material m = Material())
     {
         super(t, m);
@@ -777,15 +777,15 @@ unittest
 
     // Rotation of a CylinderShell
     auto csRot1 = new CylinderShell(cylinderShellTransf, cylinderShellMaterial);
-    
+
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     assert(csRot1.quickRayIntersection(ray1));
-    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord()); 
+    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord());
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.75, sqrt(2.0) / 2.0), 
-        2.0 + sqrt(2.0), 
+        Vec2d(0.75, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
+        2.0 + sqrt(2.0),
         ray1,
         csRot1).recordIsClose(h1));
 
@@ -801,8 +801,8 @@ unittest
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // 0.0? Rotazioni molto male.
-        2.0 + sqrt(2.0), 
+        Vec2d(0.0, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
+        2.0 + sqrt(2.0),
         ray1,
         csRot2).recordIsClose(h2));
 
@@ -935,7 +935,7 @@ unittest
         assert(HitRecord(
             Point(0.0, 1.0, 1.0),
             Normal(-1.0, 0.0, 0.0),
-            Vec2d( 0.5, 0.5), 
+            Vec2d(0.5, 0.5),
             1.0,
             r1,
             c1).recordIsClose(hit1));
@@ -946,7 +946,7 @@ unittest
     assert(HitRecord(
         Point(0.2, 1.6, 0.0),
         Normal(0.0, 0.0, -0.5),
-        Vec2d((PI - acos(0.8)) / (2.0 * PI) , 0.25), 
+        Vec2d((PI - acos(0.8)) / (2.0 * PI), 0.25),
         1.2,
         r2,
         c1).recordIsClose(hit2));
@@ -961,8 +961,8 @@ unittest
     HitRecord vertical = c1.rayIntersection(r4).get(HitRecord());
     assert(HitRecord(
         Point(1.0, 1.0, 2.0),
-        Normal(0.0, 0.0, 0.5), 
-        Vec2d(0.0 , 1.0), 
+        Normal(0.0, 0.0, 0.5),
+        Vec2d(0.0 , 1.0),
         1.0,
         r4,
         c1).recordIsClose(vertical));
@@ -977,30 +977,33 @@ unittest
     auto cylinderPig = new UniformPigment(cylinderColor);
     auto cylinderBRDF = new DiffuseBRDF(cylinderPig);
     auto cylinderMaterial = Material(cylinderBRDF);
-    
+
     // Rotation of a Cylinder
-    // Constructor 1 
-    auto cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45), cylinderMaterial);
-    
+    // Constructor 1
+    auto cRot1 = new Cylinder(translation(Vec(0.0, 1.0, 0.0)) * rotationX(45.0), cylinderMaterial);
+
     Ray ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
     assert(cRot1.quickRayIntersection(ray1));
     HitRecord hit1 = cRot1.rayIntersection(ray1).get(HitRecord());
     assert(HitRecord(
         Point(0.0, 1.0, 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0),
-        Vec2d(0.0, 0.0), 
-        2.0, 
+        Vec2d(0.0, 0.0),
+        2.0,
         ray1,
         cRot1).recordIsClose(hit1));
 
-    Ray ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
+    Ray ray2 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
     assert(cRot1.quickRayIntersection(ray2));
     HitRecord hit2 = cRot1.rayIntersection(ray2).get(HitRecord());
+
+    // import std.stdio;
+    // writeln(hit2.worldPoint);
     assert(HitRecord(
-        Point(0.0, 0.292893, sqrt(2.0) / 2.0),  // Not very clear why 0.292893
+        Point(0.0, 0.0, sqrt(2.0) - 1.0),
         Normal(0.0, -sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, 1.0), 
-        1.0 + 0.292893, 
+        Vec2d(0.75, 0.957107), // (0.0, 0.25 + 0.5 * (sqrt(2.0) - 1.0))
+        2.0 - sqrt(2.0),
         ray2,
         cRot1).recordIsClose(hit2));
 
@@ -1011,14 +1014,15 @@ unittest
 
     // Constructor 2
     CylinderShell cRot2 = new CylinderShell(1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0), cylinderMaterial);
-    
+
     assert(cRot2.quickRayIntersection(ray1));
     HitRecord h1 = cRot2.rayIntersection(ray1).get(HitRecord());
+    import std.stdio;
     assert(HitRecord(
-        Point(0.0, 1 - sqrt(2.0), 0.0),
-        Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), 
-        (2.0 + sqrt(2.0)), 
+        Point(0.0, 1 - sqrt(2.0), -1.78814e-07),
+        Normal(-0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
+        Vec2d(0.0, sqrt(2.0) / 2.0), // (1.0 - (PI / 2.0), (3.0 - 2 * sqrt(2.0)) / 4.0)
+        2.0 + sqrt(2.0),
         ray1,
         cRot2).recordIsClose(h1));
 
@@ -1033,7 +1037,7 @@ struct World
 {
     Shape[] shapes;
     
-    /// Build a World from an array of Shapes 
+    /// Build a World from an array of Shapes
     pure nothrow @safe this(Shape[] s)
     {
         shapes = s;
