@@ -260,7 +260,7 @@ class SpecularBRDF : BRDF
         in int depth) const
     {
         immutable Vec rayDir = incomingDir.normalize;
-        immutable Vec normal = n.convert.normalize;
+        immutable Vec normal = n.toVec.normalize;
         immutable float proDot = normal * rayDir;
         return Ray(
             interactionPoint,

@@ -203,6 +203,7 @@ struct Vec
 
     /// Convert a Vec into a Normal
     mixin convert!(Vec, Normal);
+    alias toNormal = Vec.convert;
 }
 
 /// Cartesian Versors in x, y and z direction
@@ -269,6 +270,7 @@ struct Point
     mixin rightMul!Point;
     /// Convert a Point into a Vec
     mixin convert!(Point, Vec);
+    alias toVec = Point.convert;
 }
 
 ///
@@ -336,6 +338,7 @@ struct Normal
 
     /// Convert a Normal into a Vec
     mixin convert!(Normal, Vec);
+    alias toVec = Normal.convert;
 }
 
 ///

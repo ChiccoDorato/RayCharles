@@ -97,14 +97,14 @@ class Sphere : Shape
     pure nothrow @nogc @safe Normal sphereNormal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, p.z);
-        return p.convert * v < 0.0 ? n : -n;
+        return p.toVec * v < 0.0 ? n : -n;
     }
 
     /// Check and record an intersection between a Ray and a Sphere
     override pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray r)
     {
         immutable Ray invR = transf.inverse * r;
-        immutable Vec originVec = invR.origin.convert;
+        immutable Vec originVec = invR.origin.toVec;
 
         immutable float halfB = originVec * invR.dir;
         immutable float a = invR.dir.squaredNorm;
@@ -136,7 +136,7 @@ class Sphere : Shape
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
-        immutable Vec originVec = invR.origin.convert;
+        immutable Vec originVec = invR.origin.toVec;
 
         immutable float halfB = originVec * invR.dir;
         immutable float a = invR.dir.squaredNorm;
@@ -356,7 +356,7 @@ class AABox : Shape
         in float zAngleInDegrees = 0.0, Material m = Material())
     {
         Transformation scale = scaling(max - min);
-        Transformation transl = translation(min.convert);
+        Transformation transl = translation(min.toVec);
 
         Transformation rotation;
         if (xAngleInDegrees % 360 != 0) rotation = rotationX(xAngleInDegrees) * rotation;
@@ -600,7 +600,7 @@ class CylinderShell : Shape
     {
         immutable float length = (maxCenter - minCenter).norm;
         Transformation scale = scaling(Vec(radius, radius, length));
-        Transformation transl = translation(minCenter.convert);
+        Transformation transl = translation(minCenter.toVec);
 
         Transformation rotation;
         immutable float colatCosine = (maxCenter.z - minCenter.z) / length;
@@ -737,7 +737,7 @@ unittest
 
     Point pMin = {1.0, 1.0, 0.0};
     // Same behaviour for the three different CylinderShells
-    CylinderShell c1 = new CylinderShell(translation(pMin.convert)*scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
+    CylinderShell c1 = new CylinderShell(translation(pMin.toVec)*scaling(Vec(1.0, 1.0, 2.0)), cylinderShellMaterial);
     CylinderShell c2 = new CylinderShell(1.0, pMin, pMin + 2 * vecZ, cylinderShellMaterial);
     CylinderShell c3 = new CylinderShell(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderShellMaterial);
 
@@ -916,7 +916,7 @@ unittest
 
     auto pMin = Point(1.0, 1.0, 0.0);
     // Same behaviour for the three different Cylinders
-    auto c1 = new Cylinder(translation(pMin.convert) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
+    auto c1 = new Cylinder(translation(pMin.toVec) * scaling(Vec(1.0, 1.0, 2.0)), cylinderMaterial);
     auto c2 = new Cylinder(1.0, pMin, pMin + 2.0 * vecZ, cylinderMaterial);
     auto c3 = new Cylinder(1.0, 2.0, Vec(1.0, 1.0, 0.0), cylinderMaterial);
 

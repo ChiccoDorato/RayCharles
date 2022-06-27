@@ -810,8 +810,8 @@ unittest
     assert(inputFile.readToken.hasTokenValue(')'));
 }
 
-// Probably not needed for our purposes. Associative arrays probably works better in
-// this case and best choice would be void[0][string]. Not clear how it works, though.
+// RBTree probably not needed for our purposes. Associative arrays probably works better
+// in this case and best choice would be void[0][string]. Not clear how it works, though.
 import std.container.rbtree;
 struct Scene
 {
