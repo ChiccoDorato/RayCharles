@@ -7,14 +7,16 @@ import std.bitmanip;
 import std.conv;
 import std.exception : assertThrown, assertNotThrown, enforce;
 import std.file : read;
-import std.format;
+import std.format : format, FormatSpec, formatValue;
 import std.math : abs, isNaN, log10, pow, round;
 import std.range : isOutputRange, put;
 import std.stdio : File, writeln;
 import std.system : endian;
 
 /// Verify if the difference between two floating point x and y is smaller than epsilon = 1e-5 (default)
-pure nothrow @nogc @safe bool areClose(in float x, in float y, in float epsilon = 1e-5)
+pure nothrow @nogc @safe bool areClose(
+	in float x, in float y, in float epsilon = 1e-5
+	)
 {
 	return abs(x - y) < epsilon;
 }
@@ -101,17 +103,19 @@ unittest
 /// Class used to throw exceptions in case of compilation errors
 class InvalidPFMFileFormat : Exception
 {
-    pure nothrow @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
+    pure nothrow @nogc @safe this(
+		string msg, string file = __FILE__, size_t line = __LINE__
+		)
     {
         super(msg, file, line);
     }
 }
 
 /// Read a line from an array of ubyte, given a starting position
-pure nothrow @safe ubyte[] readLine(in ubyte[] stream, in uint startingPosition)
+pure nothrow @safe ubyte[] readLine(in ubyte[] stream, in uint startingPos)
 {
 	auto line = appender!(ubyte[]);
-	for (uint i = startingPosition; i < stream.length; ++i)
+	for (uint i = startingPos; i < stream.length; ++i)
 	{
 		line.put(stream[i]);
 		if (stream[i] == 10) break;
@@ -179,7 +183,8 @@ unittest
 	assertThrown!InvalidPFMFileFormat(parseImgSize(emptyArray));
 
 	ubyte[] floatDimension = [50, 46, 32, 51, 10];
-	ubyte[] zeroDimension = [52, 32, 48, 10], negativeDimension = [45, 50, 32, 52, 10];
+	ubyte[] zeroDimension = [52, 32, 48, 10];
+	ubyte[] negativeDimension = [45, 50, 32, 52, 10];
 	ubyte[] manyDimensions = [53, 32, 53, 32, 49, 10];
 	assertThrown!InvalidPFMFileFormat(parseImgSize(floatDimension));
 	assertThrown!InvalidPFMFileFormat(parseImgSize(zeroDimension));
@@ -214,14 +219,16 @@ pure @safe float parseEndiannessLine(in ubyte[] endiannessLine)
 ///
 unittest
 {
-	ubyte[] positiveNumber = [48, 55, 46, 50, 10], negativeNumber = [45, 56, 49, 10];
+	ubyte[] positiveNumber = [48, 55, 46, 50, 10];
+	ubyte[] negativeNumber = [45, 56, 49, 10];
 	assert(areClose(parseEndiannessLine(positiveNumber), 7.2));
 	assert(areClose(parseEndiannessLine(negativeNumber), -81));
 
 	ubyte[] emptyArray;
 	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(emptyArray));
 
-	ubyte[] zero = [48, 46, 48, 48, 10], epsilon = [46, 48, 48, 48, 48, 48, 48, 48, 48, 50, 10];
+	ubyte[] zero = [48, 46, 48, 48, 10];
+	ubyte[] epsilon = [46, 48, 48, 48, 48, 48, 48, 48, 48, 50, 10];
 	ubyte[] notNumber = [50, 60, 70, 10];
 	assertThrown!InvalidPFMFileFormat(parseEndiannessLine(zero));
 	assertNotThrown(parseEndiannessLine(epsilon));
@@ -229,12 +236,13 @@ unittest
 }
 
 /// Read a floating point number from an array of ubyte.
-pure float readFloat(in ubyte[] stream, in int startingPosition, in float endiannessValue)
-in (stream.length - startingPosition > 3,
-	format("Only %s bytes left in the stream", stream.length - startingPosition))
+pure float readFloat(
+	in ubyte[] stream, in int startingPos, in float endiannessValue
+	)
+in (stream.length - startingPos > 3, "Less than 4 bytes left in the stream")
 in (!areClose(endiannessValue, 0, 1e-20), "Endianness must differ from zero")
 {
-	uint nativeValue = *cast(uint*)(stream.ptr + startingPosition);
+	uint nativeValue = *cast(uint*)(stream.ptr + startingPos);
 	if (endian == Endian.littleEndian && endiannessValue > 0)
 		nativeValue = nativeValue.swapEndian;
 	if (endian == Endian.bigEndian && endiannessValue < 0)
@@ -346,7 +354,9 @@ class HDRImage
 	}
 	
 	/// Write a PFM file with Endianness "little Endian" from an array of ubyte
-	pure nothrow @safe ubyte[] writePFM(in Endian endianness = Endian.littleEndian) const
+	pure nothrow @safe ubyte[] writePFM(
+		in Endian endianness = Endian.littleEndian
+		) const
 	{
 		immutable ubyte[3] magic = [80, 70, 10], endOfHeader = [49, 46, 48];
 		immutable ubyte space = 32, endLine = 10;
@@ -391,11 +401,13 @@ class HDRImage
 
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
 	// Not safe on windows
-	/* @safe */ void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
+	/* @safe */ void writePFMFile(
+		string fileName, in Endian endianness = Endian.littleEndian
+		) const
 	{
 		if (fileName == [])
 		{
-			writeln("WARNING: file not written because no name was provided");
+			writeln("WARNING: file not written since no name was provided");
 			return;
 		}
 
@@ -413,7 +425,7 @@ class HDRImage
 	{
 		if (fileName == [])
 		{
-			writeln("WARNING: png file not written because no name was provided");
+			writeln("WARNING: png file not written since no name was provided");
 			return;
 		}
 
@@ -441,7 +453,9 @@ class HDRImage
 	}
 
 	/// Normalize each pixel of an HDRImage multiplying by the ratio: factor / luminosity
-	pure nothrow @safe void normalizeImage(in float factor, float luminosity = float.init)
+	pure nothrow @safe void normalizeImage(
+		in float factor, float luminosity = float.init
+		)
 	{
 		if (luminosity.isNaN) luminosity = averageLuminosity;
 		for (int i = 0; i < pixels.length; ++i)
@@ -535,7 +549,8 @@ unittest
 	0x00, 0x00, 0x2f, 0x44, 0x00, 0x00, 0x48, 0x44, 0x00, 0x00, 0x61, 0x44,
 	0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0xa0, 0x41, 0x00, 0x00, 0xf0, 0x41,
 	0x00, 0x00, 0x20, 0x42, 0x00, 0x00, 0x48, 0x42, 0x00, 0x00, 0x70, 0x42,
-	0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42];
+	0x00, 0x00, 0x8c, 0x42, 0x00, 0x00, 0xa0, 0x42, 0x00, 0x00, 0xb4, 0x42
+	];
 
 	ubyte[83] beReferenceBytes = [
 	0x50, 0x46, 0x0a, 0x33, 0x20, 0x32, 0x0a, 0x31, 0x2e, 0x30, 0x0a, 0x42,
@@ -544,7 +559,8 @@ unittest
 	0x2f, 0x00, 0x00, 0x44, 0x48, 0x00, 0x00, 0x44, 0x61, 0x00, 0x00, 0x41,
 	0x20, 0x00, 0x00, 0x41, 0xa0, 0x00, 0x00, 0x41, 0xf0, 0x00, 0x00, 0x42,
 	0x20, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x42, 0x70, 0x00, 0x00, 0x42,
-	0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00];
+	0x8c, 0x00, 0x00, 0x42, 0xa0, 0x00, 0x00, 0x42, 0xb4, 0x00, 0x00
+	];
 	
 	// writePFM
 	assert(img.writePFM == leReferenceBytes);
@@ -554,7 +570,7 @@ unittest
 ///
 unittest
 {
-	auto files = ["reference_le.pfm", "reference_be.pfm"];
+	auto files = ["pfmImages/reference_le.pfm", "pfmImages/reference_be.pfm"];
 
 	foreach (string fileName; files)
 	{
