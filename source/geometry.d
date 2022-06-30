@@ -2,8 +2,6 @@ module geometry;
 
 import hdrimage : areClose;
 import pcg;
-import std.array : split;
-import std.conv : to;
 import std.format : FormatSpec, formatValue;
 import std.math : sqrt;
 import std.meta : AliasSeq;

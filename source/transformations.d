@@ -1,10 +1,10 @@
 module transformations;
 
-import geometry : Normal, Point, Vec, vecX, vecY, vecZ;
+import geometry : Normal, Point, Vec;
 import hdrimage : areClose;
 import ray;
 import std.format : FormatSpec, formatValue;
-import std.math : cos, PI, sin, sqrt;
+import std.math : cos, PI, sin;
 import std.range : isOutputRange, put;
 
 /// The Identity 4x4 Matrix
@@ -409,6 +409,9 @@ pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 ///
 unittest
 {
+    import geometry : vecX, vecY, vecZ;
+    import std.math : sqrt;
+
     // rotationX,rotationY, rotationZ
     assert(rotationX(0.1).isConsistent);
     assert(rotationY(0.1).isConsistent);

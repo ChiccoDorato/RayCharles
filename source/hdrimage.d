@@ -5,7 +5,7 @@ import std.algorithm : endsWith, max, min;
 import std.array : appender, split;
 import std.bitmanip;
 import std.conv;
-import std.exception : assertThrown, assertNotThrown, enforce;
+import std.exception : enforce;
 import std.file : read;
 import std.format : format, FormatSpec, formatValue;
 import std.math : abs, isNaN, log10, pow, round;
@@ -175,6 +175,8 @@ pure @safe int[2] parseImgSize(in ubyte[] imgSize)
 ///
 unittest
 {
+	import std.exception : assertThrown;
+
 	ubyte[] dimensionsLine = [51, 32, 50, 10];
 	// parseImgSize
 	assert(parseImgSize(dimensionsLine) == [3, 2]);
@@ -219,6 +221,8 @@ pure @safe float parseEndiannessLine(in ubyte[] endiannessLine)
 ///
 unittest
 {
+	import std.exception : assertThrown, assertNotThrown;
+
 	ubyte[] positiveNumber = [48, 55, 46, 50, 10];
 	ubyte[] negativeNumber = [45, 56, 49, 10];
 	assert(areClose(parseEndiannessLine(positiveNumber), 7.2));
