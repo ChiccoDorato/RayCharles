@@ -139,19 +139,19 @@ unittest
         [5.75, -4.75, 2.0, 1.0],
         [-2.25, 2.25, -1.0, -2.0],
         [0.0, 0.0, 0.0, 1.0]];
-    Transformation t = Transformation(m1, m2);
+    auto t = Transformation(m1, m2);
     assert(t.isConsistent);
 
     // Vec product
-    Vec expectedV = {14.0, 38.0, 51.0};
+    auto expectedV = Vec(14.0, 38.0, 51.0);
     assert(expectedV.xyzIsClose(t * Vec(1.0, 2.0, 3.0)));
 
     // Point product
-    Point expectedP = {18.0, 46.0, 58.0};
+    auto expectedP = Point(18.0, 46.0, 58.0);
     assert(expectedP.xyzIsClose(t * Point(1.0, 2.0, 3.0)));
 
     // Normal product
-    Point expectedN = {-8.75, 7.75, -3.0};
+    auto expectedN = Normal(-8.75, 7.75, -3.0);
     assert(expectedN.xyzIsClose(t * Normal(3.0, 2.0, 4.0)));
 }
 
