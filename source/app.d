@@ -21,8 +21,10 @@ void main(string[] args)
 			.add(new Option("g", "gamma",
 				"gamma correction value. Default: 1.0")
 				.defaultValue("1.0")))
-	///********************* demo ********************
-		.add(new Command("demo")
+	///********************* render ********************
+		.add(new Command("render")
+			.add(new Argument("inputSceneName",
+				"name of the file defining the scene"))
 			.add(new Option("W", "width",
 				"width in pixels of the image to render. Default: 640")
 				.defaultValue("640"))
@@ -32,9 +34,6 @@ void main(string[] args)
 			.add(new Option("alg", "algorithm",
 				"algorithm to render an image. Default: path, options: flat, on-off, path")
 				.defaultValue("path"))
-			.add(new Option("a", "angleDeg",
-				"angle of view in degree. Default: 0.0")
-				.defaultValue("0.0"))
 			.add(new Option("pfm", "pfmOutput",
 				"name of the pfm file to create/override. Default: output.pfm")
 				.defaultValue("output.pfm"))
@@ -51,13 +50,14 @@ void main(string[] args)
 				"number of rays departing from each surface point. Effective only when --algorithm=path. Default: 10")
 				.defaultValue("10"))
 			.add(new Option("d", "depth",
-				"maximum number of rays reflections. Effective only when --algorithm=path. Default: 2")
-				.defaultValue("2"))
+				"maximum number of rays reflections. Effective only when --algorithm=path. Default: 3")
+				.defaultValue("3"))
 			.add(new Option("spp", "samplesPerPixel",
 				"number of samples per pixel. Allowed perfect squares only. Default: 0")
 				.defaultValue("0"))
-			.add(new Flag("o", "orthogonal",
-				"use an orthogonal camera. Default: perspective camera")))
+			.add(new Option("df", "declareFloat",
+				"declare a variable. The syntax is --declareFloat=NAME:VALUE, e.g. --declareFloat=clock:150")
+				.repeating))
 		.parse(args);
 
 	rayC
@@ -92,196 +92,135 @@ void main(string[] args)
 			}
 			catch (InvalidPFMFileFormat exc)
 			{
-				writeln(format("Error! [%s] is not a PFM file: ", parms.pfmInput), exc.msg);
+				writeln(format("Error! %s is not a PFM file: ", parms.pfmInput), exc.msg);
 				return;
 			}
 		})
-		.on("demo", (rayC)
+		.on("render", (rayC)
 		{
 			import cameras;
-			import geometry : Point, Vec, vecX, vecZ;
 			import hdrimage : black, Color, white;
 			import materials;
 			import pcg;
 			import ray;
 			import renderers;
 			import shapes;
-			import std.algorithm : max, min;
-			import std.math : PI;
+			import tokens;
 			import transformations;
 
-			DemoParameters* parms;
-			try parms = new DemoParameters(
-				[rayC.option("width"),
+			RenderParameters* parms;
+			try parms = new RenderParameters(
+				[rayC.arg("inputSceneName"),
+				rayC.option("width"),
 				rayC.option("height"),
 				rayC.option("algorithm"),
-				rayC.option("angleDeg"),
 				rayC.option("pfmOutput"),
 				rayC.option("pngOutput"),
 				rayC.option("initialState"),
 				rayC.option("initialSequence"),
 				rayC.option("numberOfRays"),
 				rayC.option("depth"),
-				rayC.option("samplesPerPixel"),
-				rayC.flag("orthogonal") == true ? "o" : ""]);
-			catch (InvalidDemoParms exc)
+				rayC.option("samplesPerPixel")],
+				rayC.options("declareFloat")
+				);
+			catch (FileException exc)
+			{
+				writeln("Error! ", exc.msg);
+				return;
+			}
+			catch (InvalidRenderParms exc)
 			{
 				writeln("Error! ", exc.msg);
 				return;
 			}
 
-			auto cameraTr = rotationZ(30 - 0.25 * parms.angle) * rotationY(0.015 * parms.angle)
-				* translation(Vec(-1.4 + 0.75 * PI / 60.0 * 0.14 * parms.angle, 0.0, 1.4));
-			Camera camera;
-			if (parms.orthogonal) camera = new OrthogonalCamera(parms.aspRat, cameraTr);
-			else camera = new PerspectiveCamera(1.0, parms.aspRat, cameraTr);
+			auto inputStream = InputStream(parms.sceneFileName);
+			Scene scene;
+			try
+			{
+				scene = inputStream.parseScene(parms.variableTable);
+			}
+			catch (GrammarError exc)
+			{
+				writeln("Error! ", exc.msg);
+				return;
+			}
 
 			auto image = new HDRImage(parms.width, parms.height);
+			if (scene.cam.isNull)
+				writeln("\nWARNING: no camera provided. A default perspective camera will be used\n");
+			auto camera = scene.cam.get(new PerspectiveCamera());
 			auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
-
-/// A Plane as a sky
-			auto skyPig = new UniformPigment(black);
-			auto skyEmittedRadiance = new UniformPigment(Color(1.0, 0.9, 0.5));
-			auto skyMaterial = Material(new DiffuseBRDF(skyPig), skyEmittedRadiance);
-			immutable skyTransl = translation(Vec(0.0, 0.0, 0.4));
-			immutable skyScale = scaling(Vec(200.0, 200.0, 200.0));
-
-/// ***********************************************************************************************
-/// Decomment here to have the image required as homework
-/// ***********************************************************************************************
-			// immutable groundColor1 = Color(0.3, 0.5, 0.1), groundColor2 = Color(0.1, 0.2, 0.5);
-			// auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
-			// auto groundMaterial = Material(new DiffuseBRDF(groundPig));
-
-			// auto spherePig = new UniformPigment(Color(0.3, 0.4, 0.8));
-			// // auto spherePig = new ImagePigment(new HDRImage("worldmap.pfm"));
-			// auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
-
-			// auto mirrorPig = new UniformPigment(Color(0.6, 0.2, 0.3));
-			// auto mirrorMaterial = Material(new SpecularBRDF(mirrorPig));
-
-			// World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
-			// 	new Plane(Transformation(), groundMaterial),
-			// 	new Sphere(translation(vecZ), sphereMaterial),
-			// 	new Sphere(translation(Vec(1.0, 2.5, 0.0)), mirrorMaterial)
-			// 	]);
 
 /// ***********************************************************************************************
 /// Decomment here for the table
 /// ***********************************************************************************************
-			immutable groundColor1 = Color(0.3, 0.5, 0.1), groundColor2 = Color(0.1, 0.2, 0.5);
-			auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
-			auto groundMaterial = Material(new DiffuseBRDF(groundPig));
+			// immutable topDist = -0.3, edge = topLength / 2.0;
 
-			auto topPig = new UniformPigment(Color(0.75, 0.6, 0.2));
-			auto topMaterial = Material(new DiffuseBRDF(topPig));
-			immutable topWidth = 0.86, topLength = 1.5, topHeight = 0.03, topDist = -0.3;
-			immutable edge = topLength / 2.0;
-			immutable topScale = scaling(Vec(topWidth, topLength, topHeight));
+			// // sphereOmega is the angular velocity in degrees per frame (dpf), e.g. 3.0dpm and 30fps -> 90°/s
+			// // Same idea for g = 9.81m/s^2: 30fps -> 9.81 / 900 m/f^2
+			// immutable omega = 3.0, yVel = -omega * PI / 180.0 * sphereR, yTransl = yVel * parms.variableTable["clock"];
+			// immutable parabY = yTransl - (-edge);
+			// immutable parabZ = parabY > 0.0 ?
+			// 	0.0 : -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY * parabY;
 
-			auto legPig = new UniformPigment(Color(0.82, 0.64, 0.1));
-			auto legMaterial = Material(new DiffuseBRDF(legPig));
-			immutable legR = 0.027, legH = 0.75;
-			immutable xMinLeg = 0.068, xMaxLeg = topWidth - xMinLeg, yLeg = edge - xMinLeg;
+			// // Wait for the translation until pipe is defined
+			// immutable sphereRot = rotationX(omega * parms.variableTable["clock"]);
+			// immutable xCenter = topDist + topWidth / 2.0;
 
-			auto spherePig = new ImagePigment(new HDRImage("worldmap.pfm"));
-			auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
-			immutable sphereR = 0.14;
+			// auto pipePig = new UniformPigment(Color(0.62, 0.1, 0.3));
+			// auto pipeMaterial = Material(new DiffuseBRDF(pipePig));
+			// immutable pipeR = 1.6 * sphereR;
+			// // Sphere enter the cylinderShell when angle = 300.0
+			// immutable cylYPos = yVel * 300.0, parabY300 = cylYPos - (-edge);
+			// immutable parabZ300 = -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY300 * parabY300;
+			// immutable pipeMax = Point(xCenter, cylYPos, legH + topHeight + sphereR + parabZ300);
+			// immutable pipeMin = Point(xCenter, pipeMax.y + parabY300, pipeMax.z + parabZ300);
 
-			// sphereOmega is the angular velocity in degrees per frame (dpf), e.g. 3.0dpm and 30fps -> 90°/s
-			// Same idea for g = 9.81m/s^2: 30fps -> 9.81 / 900 m/f^2
-			immutable omega = 3.0, yVel = -omega * PI / 180.0 * sphereR, yTransl = yVel * parms.angle;
-			immutable parabY = yTransl - (-edge);
-			immutable parabZ = parabY > 0.0 ?
-				0.0 : -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY * parabY;
+			// auto supportPig = new UniformPigment(Color(0.62, 0.1, 0.3));
+			// auto supportMaterial = Material(new DiffuseBRDF(supportPig));
+			// immutable supportR = 0.03;
+			// immutable pipeDiff = pipeMax - pipeMin, pipeInf = Vec(pipeMax.x, pipeMax.y, pipeMax.z - pipeR);
+			// immutable support1H = pipeMax.z - 0.28 * pipeDiff.z, support2H = pipeMax.z - 0.72 * pipeDiff.z;
 
-			// Wait for the translation until pipe is defined
-			immutable sphereScale = scaling(Vec(sphereR, sphereR, sphereR));
-			immutable sphereRot = rotationX(omega * parms.angle);
-			immutable xCenter = topDist + topWidth / 2.0;
+			// // When parms.variableTable["clock"] = 355.0 the sphere touches the bottom of the pipe
+			// immutable pipeZMin = sphereR + parabZ300 + parabZ300 / parabY300 * (yTransl - pipeMax.y) - pipeR;
+			// immutable sphereTransl = translation(Vec(xCenter,
+			// 	yTransl,
+			// 	legH + topHeight + sphereR + max(parabZ, pipeZMin)));
 
-			auto pipePig = new UniformPigment(Color(0.62, 0.1, 0.3));
-			auto pipeMaterial = Material(new DiffuseBRDF(pipePig));
-			immutable pipeR = 1.6 * sphereR;
-			// Sphere enter the cylinderShell when angle = 300.0
-			immutable cylYPos = yVel * 300.0, parabY300 = cylYPos - (-edge);
-			immutable parabZ300 = -9.81 / (810_000.0 * 2.0 * yVel * yVel) * parabY300 * parabY300;
-			immutable pipeMax = Point(xCenter, cylYPos, legH + topHeight + sphereR + parabZ300);
-			immutable pipeMin = Point(xCenter, pipeMax.y + parabY300, pipeMax.z + parabZ300);
-
-			auto supportPig = new UniformPigment(Color(0.62, 0.1, 0.3));
-			auto supportMaterial = Material(new DiffuseBRDF(supportPig));
-			immutable supportR = 0.03;
-			immutable pipeDiff = pipeMax - pipeMin, pipeInf = Vec(pipeMax.x, pipeMax.y, pipeMax.z - pipeR);
-			immutable support1H = pipeMax.z - 0.28 * pipeDiff.z, support2H = pipeMax.z - 0.72 * pipeDiff.z;
-
-			// When parms.angle = 355.0 the sphere touches the bottom of the pipe
-			immutable pipeZMin = sphereR + parabZ300 + parabZ300 / parabY300 * (yTransl - pipeMax.y) - pipeR;
-			immutable sphereTransl = translation(Vec(xCenter,
-				yTransl,
-				legH + topHeight + sphereR + max(parabZ, pipeZMin)));
-
-			World world = World([new Sphere(skyTransl * skyScale, skyMaterial),
-				new Plane(Transformation(), groundMaterial),
-				new CylinderShell(legR, legH, Vec(topDist + xMinLeg, yLeg, 0.0), legMaterial),
-				new CylinderShell(legR, legH, Vec(topDist + xMaxLeg, yLeg, 0.0), legMaterial),
-				new CylinderShell(legR, legH, Vec(topDist + xMaxLeg, -yLeg, 0.0), legMaterial),
-				new CylinderShell(legR, legH, Vec(topDist + xMinLeg, -yLeg, 0.0), legMaterial),
-				new AABox(translation(Vec(topDist, -edge, legH)) * topScale, topMaterial),
-				new Sphere(sphereTransl * sphereRot * sphereScale, sphereMaterial),
-				new CylinderShell(pipeR, pipeMin, pipeMax, pipeMaterial),
-				new CylinderShell(supportR, -support1H, pipeInf - 0.72 * pipeDiff, supportMaterial),
-				new CylinderShell(supportR, -support2H, pipeInf - 0.28 * pipeDiff, supportMaterial)
-				]);
-
-/// ***********************************************************************************************
-/// Decomment here for the wood
-/// ***********************************************************************************************
-			// immutable groundColor1 = Color(0.1, 0.5, 0.1), groundColor2 = Color(0.1, 0.5, 0.5);
-			// auto groundPig = new CheckeredPigment(groundColor1, groundColor2);
-			// auto groundMaterial = Material(new DiffuseBRDF(groundPig));
-
-			// auto mirrorPig = new UniformPigment(Color(0.1, 0.4, 0.7));
-			// auto mirrorMaterial = Material(new SpecularBRDF(mirrorPig));
-
-        	// // This is a tree
-			// auto cylinderPig = new ImagePigment(new HDRImage("corteccia.pfm"));
-			// auto cylinderMaterial = Material(new DiffuseBRDF(cylinderPig));
-
-			// auto spherePig = new ImagePigment(new HDRImage("foglie.pfm"));
-			// auto sphereMaterial = Material(new DiffuseBRDF(spherePig));
-
-			// World world = World([new Sphere(skyScale * skyTransl, skyMaterial),
-			//  	new Plane(Transformation(), groundMaterial),
-
-			// 	new Cylinder(translation(Vec(2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-			// 	new Sphere(translation(Vec(2.0, 2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-			// 	new Cylinder(translation(Vec(-2.0, -2.0, 0.0)), cylinderMaterial, 0.4),
-			// 	new Sphere(translation(Vec(-2.0, -2.0, 2.2)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-1.6, -1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-2.4, -2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-			// 	new Cylinder(translation(Vec(-2.0, 2.0, 0.0)), cylinderMaterial, 0.4),
-			// 	new Sphere(translation(Vec(-2.0, 2.0, 2.0)) * scaling(Vec(0.8, 0.8, 1.2)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-1.6, 1.6, 2.0)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-			//  	new Sphere(translation(Vec(-2.4, 2.4, 2.5)) * scaling(Vec(0.3, 0.3, 0.3)), sphereMaterial),
-
-			// 	new Sphere(translation(Vec(0.0, 0.0, 0.0)) * scaling(Vec(1.5, 1.5, 1.5)), mirrorMaterial)
-			// ]);
+			// World world = World([
+			// 	new Sphere(sphereTransl * sphereRot * sphereScale, sphereMaterial),
+			// 	new CylinderShell(pipeR, pipeMin, pipeMax, pipeMaterial),
+			// 	new CylinderShell(supportR, -support1H, pipeInf - 0.72 * pipeDiff, supportMaterial),
+			// 	new CylinderShell(supportR, -support2H, pipeInf - 0.28 * pipeDiff, supportMaterial)
+			// 	]);
 ///************************************************************************************************************
 
 			// Renderer: flat, on-off, path
 			Renderer renderer;
-			if (parms.renderer == "on-off") renderer = new OnOffRenderer(world);
-			else if (parms.renderer == "flat") renderer = new FlatRenderer(world);
-			else
+			switch (parms.renderer)
 			{
-				PCG randomGenerator = new PCG(parms.initialState, parms.initialSequence);
-				renderer = new PathTracer(world, black, randomGenerator, parms.numberOfRays, parms.depth, 5);
+				case ValidRenderers.flat:
+					writeln("Using flat renderer");
+					renderer = new FlatRenderer(scene.world);
+					break;
+
+				case ValidRenderers.onoff:
+					writeln("Using on-off renderer");
+					renderer = new OnOffRenderer(scene.world);
+					break;
+
+				case ValidRenderers.path:
+				writeln("Using a path tracer");
+					auto randGen = new PCG(parms.initialState, parms.initialSequence);
+					renderer = new PathTracer(scene.world, black, randGen, parms.numberOfRays, parms.depth);
+					break;
+
+				default:
+					return;
 			}
+
 			MonoTime startRendering = MonoTime.currTime;
 			tracer.fireAllRays((Ray r) => renderer.call(r));
 			MonoTime endRendering = MonoTime.currTime;
@@ -289,6 +228,10 @@ void main(string[] args)
 			writeln("Rendering completed in ", timeElapsed);
 
 			image.writePFMFile(parms.pfmOutput);
+			writeln("HDR image written to ", parms.pfmOutput);
+			image.normalizeImage(1.0);
+			image.clampImage;
 			image.writePNG(parms.pngOutput.dup);
+			writeln("PNG image written to ", parms.pngOutput);
 		});
 }
