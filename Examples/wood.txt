@@ -1,0 +1,53 @@
+# Camera
+camera(perspective, translation([-4.0, 0.0, 1.5]), 1.33333, 1.0)
+
+# Sky
+material skyMaterial(
+    diffuse(uniform(<0.0 ,0.0, 0.0>)),
+    uniform(<1.0, 0.9, 0.5>)
+)
+sphere(skyMaterial, translation([0.0, 0.0, 0.4]) * scaling([200.0, 200.0, 200.0]))
+
+# Ground
+material groundMaterial(
+    diffuse(checkered(<0.1, 0.5, 0.1>,
+                      <0.1, 0.5, 0.5>,
+                      10)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+plane(groundMaterial, identity)
+
+# Mirror sphere
+material mirrorMaterial(
+    specular(uniform(<0.1, 0.4, 0.7>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+sphere(mirrorMaterial, scaling([1.5, 1.5, 1.5]))
+
+# Trunk and foliage appearance
+material trunkMaterial(
+    diffuse(image("corteccia.pfm")),
+    uniform(<0.0, 0.0, 0.0>)
+)
+material foliageMaterial(
+    diffuse(image("foglie.pfm")),
+    uniform(<0.0, 0.0, 0.0>)
+)
+
+# Tree1
+cylinder(trunkMaterial, translation([2.0, 2.0, 0.0]) * scaling([0.4, 0.4, 2.0]))
+sphere(foliageMaterial, translation([2.0, 2.0, 2.2]) * scaling([0.8, 0.8, 1.2]))
+sphere(foliageMaterial, translation([1.6, 1.6, 2.0]) * scaling([0.3, 0.3, 0.3]))
+sphere(foliageMaterial, translation([2.4, 2.4, 2.5]) * scaling([0.3, 0.3, 0.3]))
+
+# Tree2
+cylinder(trunkMaterial, translation([-2.0, -2.0, 0.0]) * scaling([0.4, 0.4, 2.0]))
+sphere(foliageMaterial, translation([-2.0, -2.0, 2.2]) * scaling([0.8, 0.8, 1.2]))
+sphere(foliageMaterial, translation([-1.6, -1.6, 2.0]) * scaling([0.3, 0.3, 0.3]))
+sphere(foliageMaterial, translation([-2.4, -2.4, 2.5]) * scaling([0.3, 0.3, 0.3]))
+
+# Tree3
+cylinder(trunkMaterial, translation([-2.0, 2.0, 0.0]) * scaling([0.4, 0.4, 2.0]))
+sphere(foliageMaterial, translation([-2.0, 2.0, 2.0]) * scaling([0.8, 0.8, 1.2]))
+sphere(foliageMaterial, translation([-1.6, 1.6, 2.0]) * scaling([0.3, 0.3, 0.3]))
+sphere(foliageMaterial, translation([-2.4, 2.4, 2.5]) * scaling([0.3, 0.3, 0.3]))
