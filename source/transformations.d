@@ -326,21 +326,19 @@ unittest
 }
 
 /// Return a Rotation around the X axis - Parameter: cosine and sine of an angle (float)
-pure nothrow @nogc @safe Transformation rotationX(
-    in float cosine, in float sine
-    )
-in (areClose(cosine * cosine + sine * sine, 1.0))
+pure nothrow @nogc @safe Transformation rotationX(in float c, in float s)
+in (areClose(c * c + s * s, 1.0))
 {
     immutable float[4][4] m = [
         [1.0, 0.0, 0.0, 0.0],
-        [0.0, cosine, -sine, 0.0],
-        [0.0, sine, cosine, 0.0],
+        [0.0, c, -s, 0.0],
+        [0.0, s, c, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
     immutable float[4][4] invM = [
         [1.0, 0.0, 0.0, 0.0],
-        [0.0, cosine, sine, 0.0],
-        [0.0, -sine, cosine, 0.0],
+        [0.0, c, s, 0.0],
+        [0.0, -s, c, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
     return Transformation(m, invM);
@@ -355,21 +353,19 @@ pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 }
 
 /// Return a Rotation around the Y axis - Parameter: cosine and sine of an angle (float)
-pure nothrow @nogc @safe Transformation rotationY(
-    in float cosine, in float sine
-    )
-in (areClose(cosine * cosine + sine * sine, 1.0))
+pure nothrow @nogc @safe Transformation rotationY(in float c, in float s)
+in (areClose(c * c + s * s, 1.0))
 {
     immutable float[4][4] m = [
-        [cosine, 0.0, sine, 0.0],
+        [c, 0.0, s, 0.0],
         [0.0, 1.0, 0.0, 0.0],
-        [-sine, 0.0, cosine, 0.0],
+        [-s, 0.0, c, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
     immutable float[4][4] invM = [
-        [cosine, 0.0, -sine, 0.0],
+        [c, 0.0, -s, 0.0],
         [0.0, 1.0, 0.0, 0.0],
-        [sine, 0.0, cosine, 0.0],
+        [s, 0.0, c, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
     return Transformation(m, invM);
@@ -384,20 +380,18 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 }
 
 /// Return a Rotation around the Z axis - Parameter: cosine and sine of an angle (float)
-pure nothrow @nogc @safe Transformation rotationZ(
-    in float cosine, in float sine
-    )
-in (areClose(cosine * cosine + sine * sine, 1.0))
+pure nothrow @nogc @safe Transformation rotationZ(in float c, in float s)
+in (areClose(c * c + s * s, 1.0))
 {
     immutable float[4][4] m = [
-        [cosine, -sine, 0.0, 0.0],
-        [sine, cosine, 0.0, 0.0],
+        [c, -s, 0.0, 0.0],
+        [s, c, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
     immutable float[4][4] invM = [
-        [cosine, sine, 0.0, 0.0],
-        [-sine, cosine, 0.0, 0.0],
+        [c, s, 0.0, 0.0],
+        [-s, c, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0],
         [0.0, 0.0, 0.0, 1.0]
         ];
