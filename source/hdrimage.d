@@ -7,7 +7,7 @@ import std.bitmanip;
 import std.conv;
 import std.exception : enforce;
 import std.file : read;
-import std.format : format, FormatSpec, formatValue;
+import std.format : format, FormatSpec, formattedWrite, formatValue;
 import std.math : abs, isNaN, log10, pow, round;
 import std.range : isOutputRange, put;
 import std.stdio : File, writeln;
@@ -330,6 +330,13 @@ class HDRImage
 		auto stream = cast(immutable ubyte[])(fileName.read);
 		this(stream);
 	}
+
+	@safe void toString(
+		scope void delegate(scope const(char)[]) @safe sink
+		) const
+    {
+		sink.formattedWrite!"Image %s×%s"(width, height);
+    }
 
 	/// Check if the two integer coordinates (x and y) are inside the surface of the HDRImage 
 	pure nothrow @nogc @safe bool validCoordinates(in int x, in int y) const

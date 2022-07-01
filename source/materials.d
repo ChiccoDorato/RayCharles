@@ -2,6 +2,7 @@ module materials;
 
 import geometry : createONBFromZ, Normal, Point, Vec, Vec2d;
 import hdrimage : black, Color, HDRImage, white;
+import std.format : formattedWrite;
 import std.math : abs, acos, cos, floor, PI, sin, sqrt;
 import pcg;
 import ray;
@@ -19,6 +20,26 @@ class Pigment
     /// Get the Color of a given bidimensional vector: Vec2d (u, v)
     abstract pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v));
+
+    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    {
+        if (typeid(this) == typeid(UniformPigment))
+        {
+            auto unif = cast(UniformPigment)this;
+            sink.formattedWrite!"Uniform %s"(unif.color);
+        }
+        else if (typeid(this) == typeid(CheckeredPigment))
+        {
+            auto check = cast(CheckeredPigment)this;
+            sink.formattedWrite!"Checkered %s, %s"(check.color1, check.color2);
+        }
+        else if (typeid(this) == typeid(ImagePigment))
+        {
+            auto img = cast(ImagePigment)this;
+            img.image.toString(sink);
+        }
+        else sink("Pigment");
+    }
 }
 
 // ************************* UniformPigment *************************
@@ -166,6 +187,11 @@ class BRDF
         in Normal n,
         in int depth
         ) const;
+    
+    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    {
+        pigment.toString(sink);
+    }
 }
 
 // ************************* DiffuseBRDF *************************
@@ -225,6 +251,14 @@ class DiffuseBRDF : BRDF
             depth
             );
     }
+
+    override void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
+    {
+        sink("Diffuse: ");
+        super.toString(sink);
+    }
 }
 
 // ************************* SpecularBRDF *************************
@@ -283,6 +317,14 @@ class SpecularBRDF : BRDF
             float.infinity,
             depth);
     }
+
+    override void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
+    {
+        sink("Specular: ");
+        super.toString(sink);
+    }
 }
 
 // ************************* Material *************************
@@ -291,4 +333,12 @@ struct Material
 {
     BRDF brdf = new DiffuseBRDF();
     Pigment emittedRadiance = new UniformPigment();
+
+    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    {
+        sink("1) ");
+        brdf.toString(sink);
+        sink("\n2) ");
+        emittedRadiance.toString(sink);
+    }
 }
