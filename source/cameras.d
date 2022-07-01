@@ -1,10 +1,10 @@
 module cameras;
 
-import geometry : Point, Vec, vecX, vecY;
-import hdrimage : areClose, Color, HDRImage;
+import geometry : Point, Vec;
+import hdrimage : Color, HDRImage;
 import pcg;
 import ray;
-import transformations : rotationZ, Transformation, translation;
+import transformations : Transformation;
 
 // ************************* Camera *************************
 /// Class representing a 3D observer
@@ -38,7 +38,7 @@ class OrthogonalCamera : Camera
     {
         auto r = Ray(
             Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2.0 * v - 1.0),
-            vecX
+            Vec(1.0, 0.0, 0.0)
             );
         r = transformation * r;
         r.tMin = 1.0;
@@ -49,8 +49,9 @@ class OrthogonalCamera : Camera
 ///
 unittest
 {
-    auto cam = new OrthogonalCamera(2.0);
+    import hdrimage : areClose;
 
+    auto cam = new OrthogonalCamera(2.0);
     Ray r1 = cam.fireRay(0.0, 0.0);
     Ray r2 = cam.fireRay(1.0, 0.0);
     Ray r3 = cam.fireRay(0.0, 1.0);
@@ -71,6 +72,9 @@ unittest
 ///
 unittest
 {
+    import geometry : vecY;
+    import transformations : rotationZ, translation;
+
     auto cam = new OrthogonalCamera(
         1.0,
         translation(-vecY * 2.0) * rotationZ(90.0)
@@ -115,7 +119,6 @@ unittest
 unittest
 {
     auto cam = new PerspectiveCamera(1.0, 2.0);
-
     Ray r1 = cam.fireRay(0.0, 0.0);
     Ray r2 = cam.fireRay(1.0, 0.0);
     Ray r3 = cam.fireRay(0.0, 1.0);
@@ -136,6 +139,9 @@ unittest
 ///
 unittest
 {
+    import geometry : vecY;
+    import transformations : rotationZ, translation;
+
     auto cam = new PerspectiveCamera(
         1.0,
         1.0,

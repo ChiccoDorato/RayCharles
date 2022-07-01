@@ -15,7 +15,7 @@ class PCG
         this.random();
     }
 
-    pure nothrow @nogc @safe this(ref scope inout PCG rhs) inout
+    pure nothrow @nogc @safe this(ref return scope inout PCG rhs) inout
     {
         state = rhs.state;
         inc = rhs.inc;

@@ -148,7 +148,7 @@ pure @safe int[2] parseImgSize(in ubyte[] imgSize)
 		"invalid number of dimensions"
 		);
 	enforce!InvalidPFMFileFormat(
-		dimensions[][0].length != 0 && dimensions[][1].length != 0,
+		dimensions[][0].length > 0 && dimensions[][1].length > 0,
 		"invalid number of dimensions"
 		);
 
@@ -207,7 +207,7 @@ pure @safe float parseEndiannessLine(in ubyte[] endiannessLine)
 	try
 	{
 		immutable endiannessValue = to!float(endiannessArray);
-		if (areClose(endiannessValue, 0, 1e-20))
+		if (areClose(endiannessValue, 0.0, 1e-20))
 			throw new InvalidPFMFileFormat(
 				"endianness cannot be too close to zero"
 				);
@@ -244,12 +244,12 @@ pure float readFloat(
 	in ubyte[] stream, in int startingPos, in float endiannessValue
 	)
 in (stream.length - startingPos > 3, "Less than 4 bytes left in the stream")
-in (!areClose(endiannessValue, 0, 1e-20), "Endianness must differ from zero")
+in (!areClose(endiannessValue, 0.0, 1e-20), "Endianness must differ from zero")
 {
 	uint nativeValue = *cast(uint*)(stream.ptr + startingPos);
-	if (endian == Endian.littleEndian && endiannessValue > 0)
+	if (endian == Endian.littleEndian && endiannessValue > 0.0)
 		nativeValue = nativeValue.swapEndian;
-	if (endian == Endian.bigEndian && endiannessValue < 0)
+	if (endian == Endian.bigEndian && endiannessValue < 0.0)
 		nativeValue = nativeValue.swapEndian;
 	return *cast(float*)(&nativeValue);
 }
@@ -265,7 +265,7 @@ unittest
 
 /// Return the clamped floating point number
 pure nothrow @nogc @safe float clamp(float x)
-in (x >= 0)
+in (x >= 0.0)
 {
 	return x / (1.0 + x);
 }
@@ -278,7 +278,7 @@ class HDRImage
 	Color[] pixels;
 	
 	/// Build an HDRImage from two integers: width (w) and height (h)
-	pure @safe this(in int w, in int h)
+	pure nothrow @safe this(in int w, in int h)
 	in (w > 0 && h > 0)
 	{
 		width = w;
@@ -344,14 +344,14 @@ class HDRImage
 	}
 	
 	/// Return the Color of a Pixel if it is inside the HDRImage
-	pure nothrow @safe Color getPixel(in int x, in int y) const
+	pure nothrow @nogc @safe Color getPixel(in int x, in int y) const
 	in (validCoordinates(x, y))
 	{
 		return pixels[pixelOffset(x, y)];
 	}
 
 	/// Set the Color given in a specific Pixel defined by two integer coordinates (x and y) 
-	pure nothrow @safe void setPixel(in int x, in int y, Color c)
+	pure nothrow @nogc @safe void setPixel(in int x, in int y, Color c)
 	in (validCoordinates(x, y))
 	{
 		pixels[pixelOffset(x, y)] = c;
@@ -441,15 +441,17 @@ class HDRImage
 		auto rgb = appender!(ubyte[]);
 		foreach (Color c; pixels)
 		{
-			rgb.put(to!ubyte(round(255 * pow(c.r, 1 / gamma))));
-			rgb.put(to!ubyte(round(255 * pow(c.g, 1 / gamma))));
-			rgb.put(to!ubyte(round(255 * pow(c.b, 1 / gamma))));
+			rgb.put(to!ubyte(round(255.0 * pow(c.r, 1.0 / gamma))));
+			rgb.put(to!ubyte(round(255.0 * pow(c.g, 1.0 / gamma))));
+			rgb.put(to!ubyte(round(255.0 * pow(c.b, 1.0 / gamma))));
 		}
 		imageformats.png.write_png(fileName, width, height, rgb.data, 0);
 	}
 
 	/// Return the average luminosity of an HDRImage
-	pure nothrow @safe float averageLuminosity(in float delta=1e-10) const
+	pure nothrow @nogc @safe float averageLuminosity(
+		in float delta = 1e-10
+		) const
 	{
 		float lumSum = 0.0;
         foreach (Color p; pixels[]) lumSum += log10(delta + p.luminosity);
@@ -457,7 +459,7 @@ class HDRImage
 	}
 
 	/// Normalize each pixel of an HDRImage multiplying by the ratio: factor / luminosity
-	pure nothrow @safe void normalizeImage(
+	pure nothrow @nogc @safe void normalizeImage(
 		in float factor, float luminosity = float.init
 		)
 	{
@@ -467,7 +469,7 @@ class HDRImage
 	}
 
 	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
-	pure nothrow @safe void clampImage()
+	pure nothrow @nogc @safe void clampImage()
 	{
 		for (int i = 0; i < pixels.length; ++i)
 		{
@@ -481,7 +483,7 @@ class HDRImage
 ///
 unittest
 {
-	auto img = new HDRImage(7,4);
+	auto img = new HDRImage(7, 4);
 
 	// validCoordinates
 	assert(img.validCoordinates(0, 0)); 
@@ -498,7 +500,7 @@ unittest
 ///
 unittest
 {
-	auto img = new HDRImage(2,1);
+	auto img = new HDRImage(2, 1);
 	auto c1 = Color(5.0, 10.0, 15.0), c2 = Color(500.0, 1000.0, 1500.0);
 	img.setPixel(0, 0, c1);
 	img.setPixel(1, 0, c2);
@@ -529,16 +531,16 @@ unittest
 	foreach (Color pixel; img.pixels)
 	{
 		// Check RGB boundaries
-		assert(pixel.r >= 0 && pixel.r <= 1);
-		assert(pixel.g >= 0 && pixel.g <= 1);
-		assert(pixel.b >= 0 && pixel.b <= 1);
+		assert(pixel.r >= 0.0 && pixel.r <= 1.0);
+		assert(pixel.g >= 0.0 && pixel.g <= 1.0);
+		assert(pixel.b >= 0.0 && pixel.b <= 1.0);
 	}
 }
 
 ///
 unittest
 {
-	auto img = new HDRImage(3,2);
+	auto img = new HDRImage(3, 2);
 	img.setPixel(0, 0, Color(1.0e1, 2.0e1, 3.0e1));
 	img.setPixel(1, 0, Color(4.0e1, 5.0e1, 6.0e1));
 	img.setPixel(2, 0, Color(7.0e1, 8.0e1, 9.0e1));
@@ -584,12 +586,12 @@ unittest
 		assert(img.height == 2);
 
 		// getPixel
-		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
-		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
-        assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
-        assert(img.getPixel(0,1).colorIsClose(Color(1.0e2, 2.0e2, 3.0e2)));
-        assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
-        assert(img.getPixel(1,1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
-        assert(img.getPixel(2,1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
+		assert(img.getPixel(0, 0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1, 0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
+        assert(img.getPixel(2, 0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
+        assert(img.getPixel(0, 1).colorIsClose(Color(1.0e2, 2.0e2, 3.0e2)));
+        assert(img.getPixel(0, 0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+        assert(img.getPixel(1, 1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
+        assert(img.getPixel(2, 1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
 	}
 }
