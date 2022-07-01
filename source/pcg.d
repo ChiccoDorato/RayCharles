@@ -15,6 +15,12 @@ class PCG
         this.random();
     }
 
+    pure nothrow @nogc @safe this(ref scope inout PCG rhs) inout
+    {
+        state = rhs.state;
+        inc = rhs.inc;
+    }
+
     /// Return a pseudo-random number
     pure nothrow @nogc @safe uint random()
     {

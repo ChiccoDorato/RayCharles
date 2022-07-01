@@ -24,8 +24,10 @@ class Camera
 class OrthogonalCamera : Camera
 {   
     /// Build an orthogonal camera - Default: unitary aspect ratio and Identity transformation applied
-    pure nothrow @nogc @safe this(in float aspRat = 1.0, in Transformation transf = Transformation())
-    in (aspRat > 0)
+    pure nothrow @nogc @safe this(
+        in float aspRat = 1.0, in Transformation transf = Transformation()
+        )
+    in (aspRat > 0.0)
     {
         aspectRatio = aspRat;
         transformation = transf;
@@ -34,7 +36,10 @@ class OrthogonalCamera : Camera
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
     override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
     {
-        Ray r = {Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2 * v - 1), vecX};
+        auto r = Ray(
+            Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2.0 * v - 1.0),
+            vecX
+            );
         r = transformation * r;
         r.tMin = 1.0;
         return r;
@@ -44,7 +49,7 @@ class OrthogonalCamera : Camera
 ///
 unittest
 {
-    OrthogonalCamera cam = new OrthogonalCamera(2.0);
+    auto cam = new OrthogonalCamera(2.0);
 
     Ray r1 = cam.fireRay(0.0, 0.0);
     Ray r2 = cam.fireRay(1.0, 0.0);
@@ -66,7 +71,10 @@ unittest
 ///
 unittest
 {
-    Camera cam = new OrthogonalCamera(1.0, translation(-vecY * 2.0) * rotationZ(90));
+    auto cam = new OrthogonalCamera(
+        1.0,
+        translation(-vecY * 2.0) * rotationZ(90.0)
+        );
     Ray r = cam.fireRay(0.5, 0.5);
     // fireRay
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
@@ -77,9 +85,13 @@ unittest
  class PerspectiveCamera : Camera 
 {
     /// Build a perspective camera - Default: unitary aspect ratio and Identity transformation applied
-    pure nothrow @nogc @safe this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation())
-    in (dist > 0)
-    in (aspRat > 0)
+    pure nothrow @nogc @safe this(
+        in float dist = 1.0,
+        in float aspRat = 1.0,
+        in Transformation transf = Transformation()
+        )
+    in (dist > 0.0)
+    in (aspRat > 0.0)
     {
         d = dist;
         aspectRatio = aspRat;
@@ -89,7 +101,10 @@ unittest
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
     override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
     {
-        Ray r = {Point(-d, 0.0, 0.0), Vec(d, (1.0 - 2 * u) * aspectRatio, 2 * v - 1)};
+        auto r = Ray(
+            Point(-d, 0.0, 0.0),
+            Vec(d, (1.0 - 2.0 * u) * aspectRatio, 2.0 * v - 1.0)
+            );
         r = transformation * r;
         r.tMin = 1.0;
         return r;
@@ -99,7 +114,7 @@ unittest
 ///
 unittest
 {
-    Camera cam = new PerspectiveCamera(1.0, 2.0);
+    auto cam = new PerspectiveCamera(1.0, 2.0);
 
     Ray r1 = cam.fireRay(0.0, 0.0);
     Ray r2 = cam.fireRay(1.0, 0.0);
@@ -121,7 +136,11 @@ unittest
 ///
 unittest
 {
-    Camera cam = new PerspectiveCamera(1.0, 1.0, translation(-vecY * 2.0) * rotationZ(90));
+    auto cam = new PerspectiveCamera(
+        1.0,
+        1.0,
+        translation(-vecY * 2.0) * rotationZ(90.0)
+        );
     Ray r = cam.fireRay(0.5, 0.5);
     // fireRay
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
@@ -138,90 +157,109 @@ struct ImageTracer
 
     /// Build an ImageTracer with the anti-aliasing to remove the Moire effect
     // when samplesPerPixel > 0 stratified sampling is applied to every pixel using the random generator
-    pure nothrow @safe this(HDRImage img, Camera cam, int samPerSide = 0, PCG randGen = new PCG())
+    pure nothrow @safe this(
+        HDRImage img, Camera cam, in int samPerSide = 0, PCG randGen = new PCG()
+        )
     {
         image = img;
         camera = cam;
         samplesPerSide = samPerSide;
-        pcg = randGen;
+        pcg = new PCG(randGen);
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
-    pure nothrow @nogc @safe Ray fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const
+    pure nothrow @nogc @safe Ray fireRay(
+        in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5
+        ) const
     in (col + uPixel >= 0 && col + uPixel <= image.width)
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {
-        immutable float u = (col + uPixel) / image.width;
-        immutable float v = 1.0 - (row + vPixel) / image.height;
-        return camera.fireRay(u, v);
+        return camera.fireRay(
+            (col + uPixel) / image.width,
+            1.0 - (row + vPixel) / image.height
+            );
+    }
+
+    /// Solve the rendering equation for a given pixel
+    pure nothrow void coloringPixel(
+        in uint col,
+        in uint row,
+        in Color delegate(Ray) pure nothrow solveRendering
+        )
+    {
+        if (samplesPerSide > 0)
+        {
+            auto colSum = Color(0.0, 0.0, 0.0);
+            for (uint pixelRow = 0; pixelRow < samplesPerSide; ++pixelRow)
+            {
+                for (uint pixelCol = 0; pixelCol < samplesPerSide; ++pixelCol)
+                {
+                    Ray r = fireRay(
+                        col,
+                        row,
+                        (pixelCol + pcg.randomFloat) / samplesPerSide,
+                        (pixelRow + pcg.randomFloat) / samplesPerSide
+                        );
+                    colSum = colSum + solveRendering(r);
+                }
+            }
+            image.setPixel(
+                col,
+                row,
+                colSum * (1.0 / (samplesPerSide * samplesPerSide))
+                );
+        }
+        else
+        {
+            Ray r = fireRay(col, row);
+            image.setPixel(col, row, solveRendering(r));
+        }
     }
 
     /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
-    void fireAllRays(in Color delegate(Ray) solveRendering)
+    pure nothrow void fireAllRays(
+        in Color delegate(Ray) pure nothrow solveRendering
+        )
     {
         for (uint row = 0; row < image.height; ++row)
-        {
             for (uint col = 0; col < image.width; ++col)
-            {
-                Color colSum = Color(0.0, 0.0, 0.0);
-
-                if (samplesPerSide > 0)
-                {
-                    for (uint interPixelRow = 0; interPixelRow < samplesPerSide; ++interPixelRow)
-                    {
-                        for (uint interPixelCol = 0; interPixelCol < samplesPerSide; ++interPixelCol)
-                        {
-                            immutable float u = (interPixelCol + pcg.randomFloat) / samplesPerSide;
-                            immutable float v = (interPixelRow + pcg.randomFloat) / samplesPerSide;
-                            Ray r = fireRay(col, row, u, v);
-                            colSum = colSum + solveRendering(r);
-                        }
-                    }
-                    image.setPixel(col, row, colSum * (1.0 / (samplesPerSide * samplesPerSide)));
-                }
-                else
-                {
-                    Ray r = fireRay(col, row);
-                    image.setPixel(col, row, solveRendering(r));
-                }
-            }
-        }
+                coloringPixel(col, row, solveRendering);
     }
-}
-
-/// Test method "at" of the Tracer
-void testOrientation(in ImageTracer tracer)
-{
-    immutable Ray topLeftRay = tracer.fireRay(0, 0, 0.0, 0.0);
-    assert(Point(0.0, 2.0, 1.0).xyzIsClose(topLeftRay.at(1)));
-
-    immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1.0, 1.0);
-    assert(Point(0.0, -2.0, -1.0).xyzIsClose(bottomRightRay.at(1)));
-}
-
-/// Test fireRay of the Tracer
-void testUVSubMapping(in ImageTracer tracer)
-{
-    immutable Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
-    immutable Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
-    assert(r1.rayIsClose(r2));
-}
-
-/// Test fireAllRays of the Tracer
-void testImageCoverage(ImageTracer tracer)
-{
-    tracer.fireAllRays(Ray => Color(1.0, 2.0, 3.0));
-    for (uint row = 0; row < tracer.image.height; ++row)
-        for (uint col = 0; col < tracer.image.width; ++col)
-            assert(tracer.image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
 }
 
 ///
 unittest
 {
-    HDRImage image = new HDRImage(4, 2);
-    Camera camera = new PerspectiveCamera(1.0, 2.0);
-    ImageTracer tracer = ImageTracer(image, camera);
+    auto image = new HDRImage(4, 2);
+    auto camera = new PerspectiveCamera(1.0, 2.0);
+    auto tracer = ImageTracer(image, camera);
+
+    /// Test method "at" of the Tracer
+    void testOrientation(in ImageTracer tracer)
+    {
+        immutable Ray topLeftRay = tracer.fireRay(0, 0, 0.0, 0.0);
+        assert(Point(0.0, 2.0, 1.0).xyzIsClose(topLeftRay.at(1.0)));
+
+        immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1.0, 1.0);
+        assert(Point(0.0, -2.0, -1.0).xyzIsClose(bottomRightRay.at(1.0)));
+    }
+
+    /// Test fireRay of the Tracer
+    void testUVSubMapping(in ImageTracer tracer)
+    {
+        immutable Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
+        immutable Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
+        assert(r1.rayIsClose(r2));
+    }
+
+    /// Test fireAllRays of the Tracer
+    void testImageCoverage(ImageTracer tracer)
+    {
+        tracer.fireAllRays(Ray => Color(1.0, 2.0, 3.0));
+        for (uint row = 0; row < tracer.image.height; ++row)
+            for (uint col = 0; col < tracer.image.width; ++col)
+                assert(tracer.image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
+    }
 
     // xyzIsClose
     testOrientation(tracer);
