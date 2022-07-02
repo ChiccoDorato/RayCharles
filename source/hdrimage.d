@@ -49,7 +49,7 @@ struct Color
 	}
 
 	/// Return the three components of a Color in a string.
-	@safe void toString(W)(ref W w, scope const ref FormatSpec!char fmt) const
+	@safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
 		put(w, "<");

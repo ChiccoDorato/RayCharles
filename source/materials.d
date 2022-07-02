@@ -21,7 +21,9 @@ class Pigment
     abstract pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v));
 
-    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    @trusted void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
     {
         if (typeid(this) == typeid(UniformPigment))
         {
@@ -175,7 +177,7 @@ class BRDF
     }
 
     /// Evaluate the Color in a 2D point (u, v) - Parameters: Normal, inDir and ourDir (Vec), Vec2d
-    abstract pure nothrow @safe Color eval(
+    abstract pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
         ) const;
 
@@ -188,7 +190,9 @@ class BRDF
         in int depth
         ) const;
     
-    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    @trusted void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
     {
         pigment.toString(sink);
     }
@@ -252,7 +256,7 @@ class DiffuseBRDF : BRDF
             );
     }
 
-    override void toString(
+    override @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
     {
@@ -318,7 +322,7 @@ class SpecularBRDF : BRDF
             depth);
     }
 
-    override void toString(
+    override @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
     {
@@ -334,7 +338,9 @@ struct Material
     BRDF brdf = new DiffuseBRDF();
     Pigment emittedRadiance = new UniformPigment();
 
-    void toString(scope void delegate(scope const(char)[]) @safe sink) const
+    @trusted void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
     {
         sink("1) ");
         brdf.toString(sink);

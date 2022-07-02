@@ -22,7 +22,7 @@ pure nothrow @nogc @safe bool isXYZ(T)()
 mixin template toString()
 {
     static assert(isXYZ!(typeof(this)), "toString defined in non-xyz type");
-    @safe void toString(W)(ref W w, scope const ref FormatSpec!char fmt) const
+    @safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
 		put(w, "(");
@@ -415,6 +415,16 @@ struct Vec2d
     pure nothrow @nogc @safe bool uvIsClose(in Vec2d v2d) const
     {
         return areClose(u, v2d.u) && areClose(v, v2d.v);
+    }
+
+    @safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
+    if (isOutputRange!(W, char))
+    {
+		put(w, "(");
+        formatValue(w, u, fmt);
+        put(w, ", ");
+        formatValue(w, v, fmt);
+        put(w, ")");
     }
 }
 
