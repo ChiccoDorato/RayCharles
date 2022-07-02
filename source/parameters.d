@@ -4,10 +4,51 @@ import std.algorithm : canFind;
 import std.array : split;
 import std.conv : ConvException, to;
 import std.exception : enforce;
-import std.file : isFile;
+import std.file : FileException, isFile;
 import std.format : format;
 import std.math : isFinite, sqrt;
 import std.traits : EnumMembers;
+
+class WrongSign : Exception
+{
+	// Build an Exception of type InvalidPfm2pngParms
+    pure @nogc @safe this(
+		string msg, string file = __FILE__, size_t line = __LINE__
+		)
+    {
+        super(msg, file, line);
+    }
+}
+
+pure nothrow @safe @nogc isComparison(string cmp)
+{
+	return cmp == ">" || cmp == ">=" || cmp == "<" || cmp == "<=";
+}
+
+pure @safe T toSign(T, string cmp)(string cand, string parmName = "assignment")
+if ((is(T == int) || is(T == float)) && isComparison(cmp))
+{
+	try
+	{
+		T number = to!T(cand);
+		static if (is(T == float)) enforce!WrongSign(
+			number.isFinite,
+			format("Invalid %s: %s is not a finite number",parmName, cand)
+			);
+		enforce!WrongSign(
+			mixin("number" ~ cmp ~ "0"),
+			format("Invalid %s: %s %s 0 does not hold", parmName, cand, cmp)
+			);
+		return number;
+	}
+	catch (ConvException exc)
+		throw new WrongSign(format("Invalid %s: %s", parmName, exc.msg));
+}
+
+alias toPositive(T) = toSign!(T, ">");
+alias toNonNegative(T) = toSign!(T, ">=");
+alias toNegative(T) = toSign!(T, "<");
+alias toNonPositive(T) = toSign!(T, "<=");
 
 // ************************* InvalidPfm2pngParms *************************
 /// Class used to recognise and throw exceptions in case of error in conversion pfm -> png
@@ -15,7 +56,9 @@ import std.traits : EnumMembers;
 class InvalidPfm2pngParms : Exception
 {
 	// Build an Exception of type InvalidPfm2pngParms
-    pure @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
+    pure @nogc @safe this(
+		string msg, string file = __FILE__, size_t line = __LINE__
+		)
     {
         super(msg, file, line);
     }
@@ -37,30 +80,18 @@ struct Pfm2pngParameters
 	{	
 		assert(args.length == 4);
 
-		enforce(args[0].isFile);
+		try args[0].isFile;
+		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
 		pngOutput = args[1];
 
 		try
 		{
-			//factor
-			factor = to!float(args[2]);
-			enforce!InvalidPfm2pngParms(isFinite(factor) && factor > 0,
-				"Factor must be a positive number");
+			factor = toPositive!float(args[2], "factor");
+			gamma = toPositive!float(args[3], "gamma");
 		}
-		catch (ConvException exc)
-			throw new InvalidPfm2pngParms(format("Invalid factor [%s]", args[2]));
-
-		try
-		{
-			// gamma
-			gamma = to!float(args[3]);
-			enforce!InvalidPfm2pngParms(isFinite(gamma) && gamma > 0,
-				"Gamma must be a positive number");
-		}
-		catch (ConvException exc)
-			throw new InvalidPfm2pngParms(format("Invalid gamma [%s]", args[3]));
+		catch (WrongSign exc) throw new InvalidPfm2pngParms(exc.msg);
 	}
 }
 
@@ -70,18 +101,21 @@ struct Pfm2pngParameters
 class InvalidRenderParms : Exception
 {
 	/// Build an Exception of type InvalidRenderParms
-    pure @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
+    pure @nogc @safe this(
+		string msg, string file = __FILE__, size_t line = __LINE__
+		)
     {
         super(msg, file, line);
     }
 }
 
-enum ValidRenderers : string
+enum Renderers : string
 {
 	flat = "flat",
 	onoff = "on-off",
 	path = "path"
 }
+alias validRenderers = EnumMembers!Renderers;
 
 // ************************* RenderParameters *************************
 /// Struct used to record all the parameters introduced in the command line by the user.
@@ -107,30 +141,21 @@ struct RenderParameters
 	{		
 		assert(args.length == 11);
 
-		enforce(args[0].isFile);
+		try args[0].isFile;
+		catch (FileException exc) throw new InvalidRenderParms(exc.msg);
 		sceneFileName = args[0];
 
 		try
 		{
-			/// width
-			width = to!int(args[1]);
-			enforce!InvalidRenderParms(width > 0, format("Invalid width [%s]", args[1]));
+			width = toPositive!int(args[1], "width");
+			height = toPositive!int(args[2], "height");
 		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid width [%s]", args[1]));
+		catch (WrongSign exc) throw new InvalidRenderParms(exc.msg);
 
-		try
-		{
-			/// height
-			height = to!int(args[2]);
-			enforce!InvalidRenderParms(height > 0, format("Invalid height [%s]", args[2]));
-		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid height [%s]", args[2]));
-
-		enforce!InvalidRenderParms(canFind([EnumMembers!ValidRenderers], args[3]),
-			format("Option algorithm must be one of the following values: %s",
-			EnumMembers!ValidRenderers));
+		enforce!InvalidRenderParms(
+			canFind([validRenderers], args[3]),
+			format("Valid options for algorithm: %s", validRenderers)
+			);
 		renderer = args[3];
 
 		pfmOutput = args[4];
@@ -138,66 +163,36 @@ struct RenderParameters
 
 		/// pgc initialization: seed and sequence
 		try
-		{	
-			initialState = to!int(args[6]);
-			enforce!InvalidRenderParms(initialState > 0, format("Invalid initialState [%s]", args[6]));
-		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid initialState [%s]", args[6]));
-
-		try
 		{
-			initialSequence = to!int(args[7]);
-			enforce!InvalidRenderParms(initialSequence > 0, format("Invalid initialSequence [%s]", args[7]));
-		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid initialSequence [%s]", args[7]));
+			initialState = toPositive!int(args[6], "initialState");
+			initialSequence = toPositive!int(args[7], "initialSequence");
+			numberOfRays = toPositive!int(args[8], "numberOfRays");
+			depth = toPositive!int(args[9], "depth");
 
-		try
-		{
-			/// number of rays shot
-			numberOfRays = to!int(args[8]);
-			enforce!InvalidRenderParms(numberOfRays > 0, format("Invalid numberOfRays [%s]", args[8]));
+			auto sampPerPixel = toNonNegative!int(args[10], "samplesPerPixel");
+			samplesPerSide = cast(int)(sqrt(cast(double)sampPerPixel));
+			enforce!InvalidRenderParms(
+				samplesPerSide * samplesPerSide == sampPerPixel,
+				format(
+					"Invalid samplesPerPixel: %s is not a perfect square",
+					args[10]
+					)
+				);
 		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid numberOfRays [%s]", args[8]));
-
-		try
-		{
-			/// depth travelled by the ray
-			depth = to!int(args[9]);
-			enforce!InvalidRenderParms(depth > 0, format("Invalid depth [%s]", args[9]));
-		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format("Invalid depth [%s]", args[9]));
-
-		try
-		{	
-			/// number of samples per pixel 	
-			immutable int samplesPerPixel = to!int(args[10]);
-			enforce!InvalidRenderParms(samplesPerPixel >= 0, format(
-				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
-
-			samplesPerSide = cast(immutable int)(sqrt(cast(double)samplesPerPixel));
-			enforce!InvalidRenderParms((samplesPerSide * samplesPerSide) == samplesPerPixel, format(
-				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
-		}
-		catch (ConvException exc)
-			throw new InvalidRenderParms(format(
-				"Invalid samplesPerPixel [%s]. It must be a perfect square: 0, 1, 4, 9...", args[10]));
+		catch (WrongSign exc) throw new InvalidRenderParms(exc.msg);
 
 		foreach (string newVar; declaredFloat)
 		{
 			string[] nameAndValue = newVar.split(":");
-			enforce!InvalidRenderParms(nameAndValue.length == 2,
-				format("%s does not follow the definition pattern NAME:VALUE", newVar));
-			try
-			{
-				variableTable[nameAndValue[0]] = to!float(nameAndValue[1]);
-			}
-			catch (ConvException exc)
-				throw new InvalidRenderParms(format("Invalid value [%s] for variable %s",
-					nameAndValue[1], nameAndValue[0]));
+			enforce!InvalidRenderParms(
+				nameAndValue.length == 2,
+				format("%s does not follow the pattern NAME:VALUE", newVar)
+				);
+			try variableTable[nameAndValue[0]] = to!float(nameAndValue[1]);
+			catch (ConvException exc) throw new InvalidRenderParms(format(
+					"Invalid variable %s: %s",
+					nameAndValue[0], exc.msg)
+					);
 		}
 	}
 
