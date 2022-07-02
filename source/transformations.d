@@ -33,7 +33,7 @@ struct Transformation
         ];
 
 	/// Return the two matrices of a Transformation in a string.
-	@safe void toString(W)(ref W w, scope const ref FormatSpec!char fmt) const
+	@safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
 		put(w, "m: ");
@@ -98,6 +98,16 @@ struct Transformation
         ) const if (op == "*")
     {
 		return Transformation(matProd(m, rhs.m), matProd(rhs.invM, invM));
+	}
+
+// overload for *=. NOTE: this makes this = rhs * this and NOT this = this * rot
+    pure nothrow @nogc @safe ref Transformation opOpAssign(string op)(
+        in Transformation rhs
+        ) if (op == "*")
+    {
+		m = matProd(rhs.m, m);
+        invM = matProd(invM, rhs.invM);
+        return this;
 	}
 
     /// Return the product (*) between a matrix and a Point 
