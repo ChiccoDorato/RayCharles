@@ -48,6 +48,22 @@ struct Color
 		return mixin("Color(alfa*r, alfa*g, alfa*b)");
 	}
 
+// overload for +=, -= and *=.
+	pure nothrow @nogc @safe ref Color opOpAssign(string op)(in Color rhs)
+	if (op == "+" || op == "-" || op == "*")
+    {
+		this = mixin("this" ~ op ~ "rhs");
+        return this;
+	}
+
+// overload for *= with a scalar.
+	pure nothrow @nogc @safe ref Color opOpAssign(string op)(in float alfa)
+	if (op == "*")
+    {
+		this = this * alfa;
+        return this;
+	}
+
 	/// Return the three components of a Color in a string.
 	@safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
@@ -472,7 +488,7 @@ class HDRImage
 	{
 		if (luminosity.isNaN) luminosity = averageLuminosity;
 		for (int i = 0; i < pixels.length; ++i)
-			pixels[i] = pixels[i] * (factor / luminosity);
+			pixels[i] *= factor / luminosity;
 	}
 
 	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
