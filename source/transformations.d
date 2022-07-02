@@ -105,8 +105,7 @@ struct Transformation
         in Transformation rhs
         ) if (op == "*")
     {
-		m = matProd(rhs.m, m);
-        invM = matProd(invM, rhs.invM);
+		this = rhs * this;
         return this;
 	}
 

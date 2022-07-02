@@ -159,7 +159,7 @@ struct ImageTracer
     HDRImage image;
     Camera camera;
     int samplesPerSide;
-    PCG pcg;
+    PCG pcg = new PCG();
 
     /// Build an ImageTracer with the anti-aliasing to remove the Moire effect
     // when samplesPerPixel > 0 stratified sampling is applied to every pixel using the random generator
@@ -206,7 +206,7 @@ struct ImageTracer
                         (pixelCol + pcg.randomFloat) / samplesPerSide,
                         (pixelRow + pcg.randomFloat) / samplesPerSide
                         );
-                    colSum = colSum + solveRendering(r);
+                    colSum += solveRendering(r);
                 }
             }
             image.setPixel(

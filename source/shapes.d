@@ -1175,7 +1175,7 @@ struct World
     Shape[] shapes;
     
     /// Build a World from an array of Shapes
-    pure nothrow @safe this(Shape[] s)
+    pure nothrow @nogc @safe this(Shape[] s)
     {
         shapes = s;
     }
