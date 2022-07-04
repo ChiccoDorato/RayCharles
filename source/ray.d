@@ -1,6 +1,7 @@
 module ray;
 
 import geometry : Point, Vec, xyzIsClose; 
+import std.format : formattedWrite;
 
 // ******************** Ray ********************
 /// struct of a 3D Ray 
@@ -12,6 +13,13 @@ struct Ray
     Vec dir;
     float tMin = 1e-5, tMax = float.infinity; 
     int depth = 0;
+
+    @safe void toString(
+        scope void delegate(scope const(char)[]) @safe sink
+        ) const
+    {
+        sink.formattedWrite!"Or:%s  Dir:%s  -  Depth: %s"(origin, dir, depth);
+    }
 
     /// Return the position of a Point at a given t
     pure nothrow @nogc @safe Point at(in float t) const
