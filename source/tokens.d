@@ -14,6 +14,7 @@ import std.file : read;
 import std.format : format, FormatSpec, formatValue;
 import std.math : isFinite, isInfinity;
 import std.range : isOutputRange, put;
+import std.stdio : writeln;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
 import std.typecons : Nullable, tuple, Tuple;
@@ -66,9 +67,8 @@ class GrammarError : Exception
         source = t.location;
     }
 
-    @safe void printError()
+    @safe void printError() const
     {
-        import std.stdio : writeln;
         writeln(format("%s: ", source).bold, "Error: ".bold.red, msg);
     }
 }
@@ -917,6 +917,14 @@ struct Scene
     Nullable!Camera camera;
     float[string] floatVars;
     auto overriddenVars = make!(RedBlackTree!string);
+
+    @safe void cameraWarning() const
+    {
+        writeln(
+            "Warning: ".bold.green,
+            "no camera provided. A default perspective camera will be used"
+            );
+    }
 }
 
 ///

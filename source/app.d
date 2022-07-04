@@ -127,7 +127,7 @@ void main(string[] args)
 					image.normalizeImage(parms.factor);
 					image.clampImage;
 
-					image.writePNG(parms.pngOutput.dup, parms.gamma);
+					image.writePNG(parms.pngOutput, parms.gamma);
 					writeln(format(
 						"File %s has been written to disk",
 						parms.pngOutput
@@ -185,10 +185,7 @@ void main(string[] args)
 				}
 
 				auto image = new HDRImage(parms.width, parms.height);
-				if (scene.camera.isNull) writeln(
-					"\nWARNING: no camera provided.
-					A default perspective camera will be used\n"
-					);
+				if (scene.camera.isNull) scene.cameraWarning;
 				auto camera = scene.camera.get(new PerspectiveCamera());
 				auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
