@@ -197,7 +197,7 @@ unittest
     assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
     auto r1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
-    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    HitRecord h1 = s.rayIntersection(r1).get;
     // recordIsClose
     assert(HitRecord(
         Point(0.0, 0.0, 1.0),
@@ -208,7 +208,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(3.0, 0.0, 0.0), -vecX);
-    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -218,7 +218,7 @@ unittest
         ).recordIsClose(h2));
 
     auto r3 = Ray(Point(0.0, 0.0, 0.0), vecX);
-    HitRecord h3 = s.rayIntersection(r3).get(HitRecord());
+    HitRecord h3 = s.rayIntersection(r3).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
         Normal(-1.0, 0.0, 0.0),
@@ -240,7 +240,7 @@ unittest
     assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
 
     auto r1 = Ray(Point(10.0, 0.0, 2.0), -vecZ);
-    HitRecord h1 = s.rayIntersection(r1).get(HitRecord());
+    HitRecord h1 = s.rayIntersection(r1).get;
     assert(HitRecord(
         Point(10.0, 0.0, 1.0),
         Normal(0.0, 0.0, 1.0),
@@ -250,7 +250,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(13.0, 0.0, 0.0), -vecX);
-    HitRecord h2 = s.rayIntersection(r2).get(HitRecord());
+    HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(11.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -315,7 +315,7 @@ unittest
     auto p = new Plane();
 
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
-    HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
+    HitRecord h1 = p.rayIntersection(r1).get;
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(0.0, 0.0, 1.0),
@@ -346,7 +346,7 @@ unittest
     auto p = new Plane(rotationY(90.0));
 
     auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
-    HitRecord h1 = p.rayIntersection(r1).get(HitRecord());
+    HitRecord h1 = p.rayIntersection(r1).get;
     // Verify if the Plane is correctly rotated
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
@@ -513,13 +513,13 @@ class AABox : Shape
 unittest
 {
     auto p1 = Point(1.0, 2.0, 4.0), p2 = Point(-1.0, 5.0, 5.0);
-    auto pointsConstructorBox = new AABox(p1, p2, 0.0, 330.0, 0.0);
+    auto box = new AABox(p1, p2, 0.0, 330.0, 0.0);
 
     // checking the constructor
     auto scale = scaling(Vec(-2.0, 3.0, 1.0));
     auto rotY = rotationY(-30.0);
     auto transl = translation(Vec(1.0, 2.0, 4.0));
-    assert(pointsConstructorBox.transf.transfIsClose(transl * rotY * scale));
+    assert(box.transf.transfIsClose(transl * rotY * scale));
 }
 
 ///
@@ -539,7 +539,7 @@ unittest
     // recordIsClose
     auto r2 = Ray(Point(0.0, 0.3, 0.7), vecY);
     assert(box.quickRayIntersection(r2));
-    HitRecord h2 = box.rayIntersection(r2).get(HitRecord());
+    HitRecord h2 = box.rayIntersection(r2).get;
     assert(HitRecord(
         Point(0.0, 1.0, 0.7),
         Normal(-1.0, 0.0, 0.0),
@@ -551,7 +551,7 @@ unittest
 
     auto r3 = Ray(Point(-4.0, -1.0, -2.0), Vec(8.0, 3.0, 6.0));
     assert(box.quickRayIntersection(r3));
-    HitRecord h3 = box.rayIntersection(r3).get(HitRecord());
+    HitRecord h3 = box.rayIntersection(r3).get;
     assert(HitRecord(
         Point(0.0, 0.5, 1.0),
         Normal(-1.0, 0.0, 0.0),
@@ -571,7 +571,7 @@ unittest
     auto rotY = rotationY(-30.0);
     auto transl = translation(Vec(-1.0, 2.0, 4.0));
     // AABox with tranformation
-    AABox box = new AABox(transl * rotY * scale);
+    auto box = new AABox(transl * rotY * scale);
     float z = 4.0 - sqrt(3.0) / 3.0;
 
     auto p1 = Point(-1.0, 2.0, 4.0), p2 = Point(1.0, 5.0, 3.2);
@@ -592,7 +592,7 @@ unittest
 
     auto r3 = Ray(Point(-2.0 / 3.0, 8.0, z), -vecY);
     assert(box.quickRayIntersection(r3));
-    HitRecord h3 = box.rayIntersection(r3).get(HitRecord());
+    HitRecord h3 = box.rayIntersection(r3).get;
     assert(HitRecord(
         Point(-2.0 / 3.0, 5.0, z),
         0.5 * Normal(-sqrt(3.0) / 2.0, 0.0, -0.5),
@@ -604,7 +604,7 @@ unittest
 
     auto r4 = Ray(Point(-0.5, 8.0, z), -vecY);
     assert(box.quickRayIntersection(r4));
-    HitRecord h4 = box.rayIntersection(r4).get(HitRecord());
+    HitRecord h4 = box.rayIntersection(r4).get;
     assert(HitRecord(
         Point(-0.5, 5.0, z),
         (1.0 / 3.0) * Normal(0.0, 1.0, 0.0),
@@ -616,7 +616,7 @@ unittest
 
     auto r5 = Ray(Point(-2.0 / 5.0, 0.0, z), vecY);
     assert(box.quickRayIntersection(r5));
-    HitRecord h5 = box.rayIntersection(r5).get(HitRecord());
+    HitRecord h5 = box.rayIntersection(r5).get;
     assert(HitRecord(
         Point(-0.4, 2.0, z),
         (1.0 / 3.0) * Normal(0.0, -1.0, 0.0),
@@ -636,30 +636,30 @@ unittest
     Nullable!HitRecord h7 = box.rayIntersection(r7);
     assert(h7.isNull);
 
-    auto vertical1 = Ray(Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.5), -vecZ);
-    assert(box.quickRayIntersection(vertical1));
-    HitRecord hVert1 = box.rayIntersection(vertical1).get(HitRecord());
+    auto vert1 = Ray(Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.5), -vecZ);
+    assert(box.quickRayIntersection(vert1));
+    HitRecord hVert1 = box.rayIntersection(vert1).get;
     assert(HitRecord(
         Point(sqrt(3.0) / 4.0 - 1.0, 3.8, 4.25),
         1.25 * Normal(-0.5, 0.0, sqrt(3.0) / 2.0),
         Vec2d(8.0 / 15.0, 0.4375),
         0.25,
-        vertical1,
+        vert1,
         box
         ).recordIsClose(hVert1));
 
-    auto vertical2 = Ray(
+    auto vert2 = Ray(
         Point(sqrt(3.0) - 0.9, 3.0, 5.0 + 0.9 * sqrt(3.0)),
         -vecZ
         );
-    assert(box.quickRayIntersection(vertical2));
-    HitRecord hVert2 = box.rayIntersection(vertical2).get(HitRecord());
+    assert(box.quickRayIntersection(vert2));
+    HitRecord hVert2 = box.rayIntersection(vert2).get;
     assert(HitRecord(
         Point(sqrt(3.0) - 0.9, 3.0, 5.0 - 0.1 * sqrt(3.0)),
         0.5 * Normal(sqrt(3.0) / 2.0, 0.0, 0.5),
         Vec2d(4.0 / 9.0, 0.1875),
         sqrt(3.0),
-        vertical2,
+        vert2,
         box
         ).recordIsClose(hVert2));
 }
@@ -749,6 +749,7 @@ class CylinderShell : Shape
                             r.origin.y * r.origin.y -
                             1.0;
         if (areClose(r.dir.x, 0.0) && areClose(r.dir.y, 0.0))
+// <= because this is useful only for cylinders. Cylindershell will result not hit by a vertical ray
             return (c <= 0.0) ?
                 [-float.infinity, float.infinity] :
                 [float.infinity, -float.infinity];
@@ -828,99 +829,109 @@ class CylinderShell : Shape
 ///
 unittest
 {
-    import geometry : vecX, vecZ;
-    import hdrimage : Color;
-    import materials : DiffuseBRDF, Material, UniformPigment;
+    import geometry : vecX;
 
-    auto pMin = Point(1.0, 1.0, 0.0), pMax = pMin + 2.0 * vecZ;
-    auto cylShellPig = new UniformPigment(Color(1.0, 0.0, 0.0));
-    auto cylShellMaterial = Material(new DiffuseBRDF(cylShellPig));
-    // Same behaviour for the three different CylinderShells
-    auto c1 = new CylinderShell(
-        translation(pMin.toVec) * scaling(pMax.toVec),
-        cylShellMaterial
+    auto shell = new CylinderShell(
+        translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
-    auto c2 = new CylinderShell(1.0, pMin, pMax, cylShellMaterial);
-    auto c3 = new CylinderShell(1.0, 2.0, pMin.toVec, cylShellMaterial);
 
-    Vec2d uv1 = c1.cylShellUVPoint(Point(0.0, 1.0, 0.0));
-    Vec2d uv2 = c2.cylShellUVPoint(Point(0.0, 1.0, 0.0));
-    Vec2d uv3 = c3.cylShellUVPoint(Point(0.0, 1.0, 0.0));
-
-    assert(uv1.uvIsClose(uv2));
-    assert(uv1.uvIsClose(uv3));
-    assert(uv2.uvIsClose(uv3));
-
-    auto r1 = Ray(Point(-1.0, 1.0, 1.0), vecX);
-    assert(c1.quickRayIntersection(r1));
-    HitRecord h1 = c1.rayIntersection(r1).get;
-    assert(h1.worldPoint.xyzIsClose(Point(0.0, 1.0, 1.0)));
+    auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
+    assert(shell.quickRayIntersection(r1));
+    HitRecord h1 = shell.rayIntersection(r1).get;
+    assert(HitRecord(
+        Point(0.0, 1.0, 1.2),
+        Normal(-1.0, 0.0, 0.0),
+        Vec2d(0.5, 0.6),
+        1.0,
+        r1,
+        shell
+        ).recordIsClose(h1));
 
     auto r2 = Ray(Point(-1.0, 1.0, 0.0), Vec(1.0, 0.5, 0.0));
-    assert(c1.quickRayIntersection(r2));
+    assert(shell.quickRayIntersection(r2));
+    HitRecord h2 = shell.rayIntersection(r2).get;
+    assert(HitRecord(
+        Point(0.2, 1.6, 0.0),
+        Normal(-0.8, 0.6, 0.0),
+        Vec2d(0.5 - acos(0.8) / (2 * PI), 0.0),
+        1.2,
+        r2,
+        shell
+        ).recordIsClose(h2));
 
     auto r3 = Ray(Point(-1.0, 1.0, -1e-10), vecX);
-    assert(!c1.quickRayIntersection(r3));
+    assert(!shell.quickRayIntersection(r3));
+    Nullable!HitRecord h3 = shell.rayIntersection(r3);
+    assert(h3.isNull);
 
-    auto r4 = Ray(Point(1.0, 1.0, 3.0), -vecZ);
-    assert(!c1.quickRayIntersection(r4));
+    auto r4 = Ray(Point(1.0, 1.0, 3.0), Vec(0.0, 0.5, -1.0));
+    assert(shell.quickRayIntersection(r4));
+    HitRecord h4 = shell.rayIntersection(r4).get;
+    assert(HitRecord(
+        Point(1.0, 2.0, 1.0),
+        Normal(0.0, -1.0, 0.0),
+        Vec2d(0.25, 0.5),
+        2.0,
+        r4,
+        shell
+        ).recordIsClose(h4));
+
+    immutable float halfRayX = 1.0 + sqrt(3.0) / 2.0;
+    auto r5 = Ray(Point(halfRayX, 1.0, 3.0), Vec(0.0, 0.5, -1.0));
+    assert(!shell.quickRayIntersection(r5));
+    Nullable!HitRecord h5 = shell.rayIntersection(r5);
+    assert(h5.isNull);
 }
 
 ///
 unittest
 {
     import geometry : vecY;
-    import hdrimage : Color;
-    import materials : DiffuseBRDF, Material, UniformPigment;
 
-    auto cylShellTransf = translation(vecY) *
-                          rotationX(45.0) *
-                          scaling(Vec(1.0, 1.0, sqrt(2.0)));
-    auto cylShellPig = new UniformPigment(Color(1.0, 0.0, 0.0));
-    auto cylShellMaterial = Material(new DiffuseBRDF(cylShellPig));
+    auto shellTransf = translation(vecY) *
+                       rotationX(45.0) *
+                       scaling(Vec(1.0, 1.0, sqrt(2.0)));
     // Rotation of a CylinderShell
-    auto csRot1 = new CylinderShell(cylShellTransf, cylShellMaterial);
+    // Constructor 1
+    auto shell1 = new CylinderShell(shellTransf);
     // Constructor 2
-    auto csRot2 = new CylinderShell(
-        1.0,
-        Point(0.0, 1.0, 0.0),
-        Point(0.0, 0.0, 1.0),
-        cylShellMaterial
+    auto shell2 = new CylinderShell(
+        1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0)
         );
 
     auto ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
 
-    assert(csRot1.quickRayIntersection(ray1));
-    HitRecord h1 = csRot1.rayIntersection(ray1).get(HitRecord());
+    assert(shell1.quickRayIntersection(ray1));
+    HitRecord h1 = shell1.rayIntersection(ray1).get;
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.75, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
+        Vec2d(0.75, sqrt(2.0) / 2.0),
         2.0 + sqrt(2.0),
         ray1,
-        csRot1
+        shell1
         ).recordIsClose(h1));
 
-    assert(csRot2.quickRayIntersection(ray1));
-    HitRecord h2 = csRot2.rayIntersection(ray1).get(HitRecord());
+    assert(shell2.quickRayIntersection(ray1));
+    HitRecord h2 = shell2.rayIntersection(ray1).get;
     assert(HitRecord(
         Point(0.0, 1.0 - sqrt(2.0), 0.0),
         Normal(0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // (0.75, 0.0) bad
+        Vec2d(0.0, sqrt(2.0) / 2.0),
         2.0 + sqrt(2.0),
         ray1,
-        csRot2
+        shell2
         ).recordIsClose(h2));
 
     auto ray2 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, -1.0));
 
-    assert(!csRot1.quickRayIntersection(ray2));
-    Nullable!HitRecord hit1 = csRot1.rayIntersection(ray2);
-    assert(hit1.isNull);
+    assert(!shell1.quickRayIntersection(ray2));
+    Nullable!HitRecord notH1 = shell1.rayIntersection(ray2);
+    assert(notH1.isNull);
 
-    assert(!csRot2.quickRayIntersection(ray2));
-    Nullable!HitRecord hit2 = csRot2.rayIntersection(ray2);
-    assert(hit2.isNull);
+    assert(!shell2.quickRayIntersection(ray2));
+    Nullable!HitRecord notH2 = shell2.rayIntersection(ray2);
+    assert(notH2.isNull);
 }
 
 // ************************* Cylinder *************************
@@ -976,7 +987,7 @@ class Cylinder : CylinderShell
     {
         float u = atan2(p.y, p.x) / (2.0 * PI);
         if (u < 0.0) ++u;
-        immutable float quarterRho = 0.25 * (p.x * p.x + p.y * p.y);
+        immutable float quarterRho = 0.25 * sqrt(p.x * p.x + p.y * p.y);
 
         if (areClose(p.z, 0.0)) return Vec2d(u, quarterRho);
         if (areClose(p.z, 1.0)) return Vec2d(u, 1.0 - quarterRho);
@@ -1033,139 +1044,170 @@ class Cylinder : CylinderShell
 unittest
 {
     import geometry : vecX, vecZ;
-    import hdrimage : Color;
-    import materials : DiffuseBRDF, Material, UniformPigment;
 
-    auto pMin = Point(1.0, 1.0, 0.0), pMax = pMin + 2.0 * vecZ;
-    auto cylPigment = new UniformPigment(Color(1.0, 0.0, 0.0));
-    auto cylMaterial = Material(new DiffuseBRDF(cylPigment));
-    // Same behaviour for the three different Cylinders
-    auto c1 = new Cylinder(
-        translation(pMin.toVec) * scaling(pMax.toVec),
-        cylMaterial
+    auto cyl = new Cylinder(
+        translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
-    auto c2 = new Cylinder(1.0, pMin, pMax, cylMaterial);
-    auto c3 = new Cylinder(1.0, 2.0, pMin.toVec, cylMaterial);
 
-    Vec2d uv1 = c1.cylinderUVPoint(Point(0.0, 1.0, 0.0));
-    Vec2d uv2 = c2.cylinderUVPoint(Point(0.0, 1.0, 0.0));
-    Vec2d uv3 = c3.cylinderUVPoint(Point(0.0, 1.0, 0.0));
-
-    assert(uv1.uvIsClose(uv2));
-    assert(uv1.uvIsClose(uv3));
-    assert(uv2.uvIsClose(uv3));
-
-    auto r1 = Ray(Point(-1.0, 1.0, 1.0), vecX);
-    assert(c1.quickRayIntersection(r1));
-    HitRecord hit1 = c1.rayIntersection(r1).get(HitRecord());
+    auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
+    assert(cyl.quickRayIntersection(r1));
+    HitRecord h1 = cyl.rayIntersection(r1).get;
     assert(HitRecord(
-        Point(0.0, 1.0, 1.0),
+        Point(0.0, 1.0, 1.2),
         Normal(-1.0, 0.0, 0.0),
-        Vec2d(0.5, 0.5),
+        Vec2d(0.5, 0.55),
         1.0,
         r1,
-        c1
-        ).recordIsClose(hit1));
+        cyl
+        ).recordIsClose(h1));
 
     auto r2 = Ray(Point(-1.0, 1.0, 0.0), Vec(1.0, 0.5, 0.0));
-    assert(c1.quickRayIntersection(r2));
-    HitRecord hit2 = c1.rayIntersection(r2).get(HitRecord());
+    assert(cyl.quickRayIntersection(r2));
+    HitRecord h2 = cyl.rayIntersection(r2).get;
     assert(HitRecord(
         Point(0.2, 1.6, 0.0),
         Normal(0.0, 0.0, -0.5),
-        Vec2d((PI - acos(0.8)) / (2.0 * PI), 0.25),
+        Vec2d(0.5 - acos(0.8) / (2 * PI), 0.25),
         1.2,
         r2,
-        c1
-        ).recordIsClose(hit2));
+        cyl
+        ).recordIsClose(h2));
 
     auto r3 = Ray(Point(-1.0, 1.0, -1e-10), vecX);
-    assert(!c1.quickRayIntersection(r3));
-    Nullable!HitRecord hit3 = c1.rayIntersection(r3);
-    assert(hit3.isNull);
+    assert(!cyl.quickRayIntersection(r3));
+    Nullable!HitRecord h3 = cyl.rayIntersection(r3);
+    assert(h3.isNull);
     
-    auto r4 = Ray(Point(1.0, 1.0, 3.0), -vecZ);
-    assert(c1.quickRayIntersection(r4));
-    HitRecord vertical = c1.rayIntersection(r4).get(HitRecord());
+    auto r4 = Ray(Point(1.0, 1.0, 3.7), -vecZ);
+    assert(cyl.quickRayIntersection(r4));
+    HitRecord h4 = cyl.rayIntersection(r4).get;
     assert(HitRecord(
         Point(1.0, 1.0, 2.0),
-        Normal(0.0, 0.0, 0.5),
-        Vec2d(0.0 , 1.0),
-        1.0,
+        0.5 * Normal(0.0, 0.0, 1.0),
+        Vec2d(0.0, 1.0),
+        1.7,
         r4,
-        c1
-        ).recordIsClose(vertical));
+        cyl
+        ).recordIsClose(h4));
+
+    auto r5 = Ray(Point(1.0, 1.0, 3.0), Vec(0.0, 0.5, -1.0));
+    assert(cyl.quickRayIntersection(r5));
+    HitRecord h5 = cyl.rayIntersection(r5).get;
+    assert(HitRecord(
+        Point(1.0, 1.5, 2.0),
+        0.5 * Normal(0.0, 0.0, 1.0),
+        Vec2d(0.25, 0.875),
+        1.0,
+        r5,
+        cyl
+    ).recordIsClose(h5));
+
+    float halfRayX = 1.0 + sqrt(3.0) / 2.0;
+    auto r6 = Ray(Point(halfRayX, 1.0, 3.0), Vec(0.0, 0.5, -1.0));
+    assert(!cyl.quickRayIntersection(r6));
+    Nullable!HitRecord h6 = cyl.rayIntersection(r6);
+    assert(h6.isNull);
 }
 
 ///
 unittest
 {
     import geometry : vecY, vecZ;
-    import hdrimage : Color;
-    import materials : DiffuseBRDF, Material, UniformPigment;
 
-    auto cylPigment = new UniformPigment(Color(1.0, 0.0, 0.0));
-    auto cylMaterial = Material(new DiffuseBRDF(cylPigment));
     // Rotation of a Cylinder
     // Constructor 1
-    auto cRot1 = new Cylinder(
-        translation(Vec(0.0, 1.0, 0.0)) * rotationX(45.0),
-        cylMaterial
-        );
-
-    auto ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
-    assert(cRot1.quickRayIntersection(ray1));
-    HitRecord hit1 = cRot1.rayIntersection(ray1).get(HitRecord());
-    assert(HitRecord(
-        Point(0.0, 1.0, 0.0),
-        Normal(0.0, sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0),
-        Vec2d(0.0, 0.0),
-        2.0,
-        ray1,
-        cRot1
-        ).recordIsClose(hit1));
-
-    auto ray2 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
-    assert(cRot1.quickRayIntersection(ray2));
-    HitRecord hit2 = cRot1.rayIntersection(ray2).get(HitRecord());
-    // import std.stdio;
-    // writeln(hit2);
-    assert(HitRecord(
-        Point(0.0, 0.0, sqrt(2.0) - 1.0),
-        Normal(0.0, -sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.75, 0.957107), // (0.0, 0.25 + 0.5 * (sqrt(2.0) - 1.0))
-        2.0 - sqrt(2.0),
-        ray2,
-        cRot1
-        ).recordIsClose(hit2));
-
-    auto ray3 = Ray(Point(0.0, -1.0, 2.0), Vec(0.0, 1.0, 1.0));
-    assert(!cRot1.quickRayIntersection(ray3));
-    Nullable!HitRecord hit3 = cRot1.rayIntersection(ray3);
-    assert(hit3.isNull);
-
+    auto cylTransf = translation(vecY) * rotationX(45.0);
+    auto cyl1 = new Cylinder(cylTransf);
     // Constructor 2
-    auto cRot2 = new CylinderShell(
+    immutable cos45 = sqrt(2.0) / 2.0;
+    auto cyl2 = new Cylinder(
         1.0,
         Point(0.0, 1.0, 0.0),
-        Point(0.0, 0.0, 1.0),
-        cylMaterial
+        Point(0.0, 1.0 - cos45, cos45)
         );
 
-    assert(cRot2.quickRayIntersection(ray1));
-    HitRecord h1 = cRot2.rayIntersection(ray1).get(HitRecord());
-    assert(HitRecord(
-        Point(0.0, 1 - sqrt(2.0), -1.78814e-07),
-        Normal(-0.0, sqrt(2.0) / 2.0, sqrt(2.0) / 2.0),
-        Vec2d(0.0, sqrt(2.0) / 2.0), // (1.0 - (PI / 2.0), (3.0 - 2 * sqrt(2.0)) / 4.0)
-        2.0 + sqrt(2.0),
-        ray1,
-        cRot2
-        ).recordIsClose(h1));
+    auto ray1 = Ray(Point(0.0, 3.0, 0.01), -vecY);
 
-    assert(!cRot2.quickRayIntersection(ray3));
-    Nullable!HitRecord h2 = cRot2.rayIntersection(ray3);
-    assert(h2.isNull);
+    assert(cyl1.quickRayIntersection(ray1));
+    HitRecord orizzontalHit1 = cyl1.rayIntersection(ray1).get;
+    assert(HitRecord(
+        Point(0.0, 1.01, 0.01),
+        Normal(0.0, cos45, -cos45),
+        Vec2d(0.25, 0.0025 * sqrt(2.0)),
+        1.99,
+        ray1,
+        cyl1
+        ).recordIsClose(orizzontalHit1));
+
+    assert(cyl2.quickRayIntersection(ray1));
+    HitRecord orizzontalHit2 = cyl2.rayIntersection(ray1).get;
+    assert(HitRecord(
+        Point(0.0, 1.01, 0.01),
+        Normal(0.0, cos45, -cos45),
+        Vec2d(0.5, 0.0025 * sqrt(2.0)),
+        1.99,
+        ray1,
+        cyl2
+        ).recordIsClose(orizzontalHit2));
+
+    immutable float zBelow = 2.0 - sqrt(2.0) - 1e-6;
+    auto ray2 = Ray(Point(0.0, -1.0, zBelow), Vec(0.0, 1.0, -1.0));
+
+    assert(!cyl1.quickRayIntersection(ray2));
+    Nullable!HitRecord notHit1 = cyl1.rayIntersection(ray2);
+    assert(notHit1.isNull);
+
+    assert(!cyl2.quickRayIntersection(ray2));
+    Nullable!HitRecord notHit2 = cyl2.rayIntersection(ray2);
+    assert(notHit2.isNull);
+
+    auto ray3 = Ray(Point(0.0, 0.0, 0.0), -vecZ);
+
+    assert(cyl1.quickRayIntersection(ray3));
+    HitRecord downHit1 = cyl1.rayIntersection(ray3).get;
+    assert(HitRecord(
+        Point(0.0, 0.0, 1.0 - sqrt(2.0)),
+        Normal(0.0, cos45, cos45),
+        Vec2d(0.75, 0.25 + 0.5 * (sqrt(2.0) - 1.0)),
+        sqrt(2.0) - 1.0,
+        ray3,
+        cyl1
+        ).recordIsClose(downHit1));
+
+    assert(cyl2.quickRayIntersection(ray3));
+    HitRecord downHit2 = cyl2.rayIntersection(ray3).get;
+    assert(HitRecord(
+        Point(0.0, 0.0, 1.0 - sqrt(2.0)),
+        Normal(0.0, cos45, cos45),
+        Vec2d(0.0, 0.25 + 0.5 * (sqrt(2.0) - 1.0)),
+        sqrt(2.0) - 1.0,
+        ray3,
+        cyl2
+        ).recordIsClose(downHit2));
+    
+    auto ray4 = Ray(Point(0.0, 0.0, 0.0), vecZ);
+
+    assert(cyl1.quickRayIntersection(ray4));
+    HitRecord upHit1 = cyl1.rayIntersection(ray4).get;
+    assert(HitRecord(
+        Point(0.0, 0.0, sqrt(2.0) - 1.0),
+        Normal(0.0, cos45, -cos45),
+        Vec2d(0.75, 1.0 - 0.25 * (sqrt(2.0) - 1.0)),
+        sqrt(2.0) - 1.0,
+        ray4,
+        cyl1
+        ).recordIsClose(upHit1));
+
+    assert(cyl2.quickRayIntersection(ray4));
+    HitRecord upHit2 = cyl2.rayIntersection(ray4).get;
+    assert(HitRecord(
+        Point(0.0, 0.0, sqrt(2.0) - 1.0),
+        Normal(0.0, cos45, -cos45),
+        Vec2d(0.0, 1.0 - 0.25 * (sqrt(2.0) - 1.0)),
+        sqrt(2.0) - 1.0,
+        ray4,
+        cyl2
+        ).recordIsClose(upHit2));
 }
 
 // ************************* World *************************
