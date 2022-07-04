@@ -180,16 +180,16 @@ void main(string[] args)
 				try scene = inputStream.parseScene(parms.variableTable);
 				catch (GrammarError exc)
 				{
-					writeln("Error! ", exc.msg);
+					exc.printError;
 					return;
 				}
 
 				auto image = new HDRImage(parms.width, parms.height);
-				if (scene.cam.isNull) writeln(
+				if (scene.camera.isNull) writeln(
 					"\nWARNING: no camera provided.
 					A default perspective camera will be used\n"
 					);
-				auto camera = scene.cam.get(new PerspectiveCamera());
+				auto camera = scene.camera.get(new PerspectiveCamera());
 				auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
 				// Renderer: flat, on-off, path
