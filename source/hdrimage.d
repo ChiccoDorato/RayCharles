@@ -340,7 +340,7 @@ class HDRImage
 		{
 			for (int j = 0; j < width; ++j)
 			{
-				pixelPos = streamPos + 12 * this.pixelOffset(j, height - 1 - i); //(j, i)
+				pixelPos = streamPos + 12 * this.pixelOffset(j, height - 1 - i);
 				red = readFloat(stream, pixelPos, endiannessValue);
 				green = readFloat(stream, pixelPos + 4, endiannessValue);
 				blue = readFloat(stream, pixelPos + 8, endiannessValue);
@@ -394,7 +394,8 @@ class HDRImage
 		in Endian endianness = Endian.littleEndian
 		) const
 	{
-		immutable ubyte[3] magic = [80, 70, 10], endOfHeader = [49, 46, 48];
+		immutable ubyte[3] magic = [80, 70, 10];
+		immutable ubyte[4] endOfHeader = [49, 46, 48, 10];
 		immutable ubyte space = 32, endLine = 10;
 		auto byteWidth = cast(ubyte[])(to!(char[])(width));
 		auto byteHeight = cast(ubyte[])(to!(char[])(height));
@@ -404,16 +405,16 @@ class HDRImage
 			pfm.put(
 				magic ~
 				byteWidth ~ space ~ byteHeight ~ endLine ~
-				ubyte(45) ~ endOfHeader ~ endLine
+				ubyte(45) ~ endOfHeader
 				);
 		else pfm.put(
 			magic ~
 			byteWidth ~ space ~ byteHeight ~ endLine ~
-			endOfHeader ~ endLine
+			endOfHeader
 			);
 
 		Color c;
-		for (int i = height - 1; i > -1; --i) //++i
+		for (int i = height - 1; i > -1; --i)
 		{
 			for (int j = 0; j < width; ++j)
 			{
