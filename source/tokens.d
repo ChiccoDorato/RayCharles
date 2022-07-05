@@ -107,25 +107,25 @@ struct StopToken {}
 
 // ************************* SymbolToken *************************
 /// Struct of a SymbolToken - Member: symbol (char)
-struct SymbolToken { char symbol; }
+struct SymbolToken { char value; }
 
 // ************************* KeywordToken *************************
 /// Struct of a KeywordToken - Member: a type Keyword
-struct KeywordToken { Keyword keyword; }
+struct KeywordToken { Keyword value; }
 
 // ************************* IdentifierToken *************************
 /** Struct of a IdentifierToken - Member: identifier (string)
 * @param identifier (string)
 **/
-struct IdentifierToken { string identifier; }
+struct IdentifierToken { string value; }
 
 // ************************* StringToken *************************
 /// Struct of a StringToken - Member: literalString (string)
-struct StringToken { string literalString; }
+struct StringToken { string value; }
 
 // ************************* IdentifierToken *************************
 /// Struct of a IdentifierToken - Member: an identifier (string)
-struct LiteralNumberToken { float literalNumber; }
+struct LiteralNumberToken { float value; }
 
 // ************************* TokenType *************************
 /// SumType of all the kind of Tokens one can find: StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken
@@ -172,11 +172,11 @@ struct Token
     {
         return type.match!(
             (StopToken t) => "",
-            (SymbolToken t) => format("%s", t.symbol),
-            (KeywordToken t) => t.keyword,
-            (IdentifierToken t) => t.identifier,
-            (StringToken t) => t.literalString,
-            (LiteralNumberToken t) => format("%s", t.literalNumber)
+            (SymbolToken t) => format("%s", t.value),
+            (KeywordToken t) => t.value,
+            (IdentifierToken t) => t.value,
+            (StringToken t) => t.value,
+            (LiteralNumberToken t) => format("%s", t.value)
         );
     }
 
@@ -185,23 +185,23 @@ struct Token
     {
         static if (is(T == char))
             return type.match!(
-                (SymbolToken t) => t.symbol == tokenValue,
+                (SymbolToken t) => t.value == tokenValue,
                 _ => false
                 );
         else static if (is(T == Keyword))
             return type.match!(
-                (KeywordToken t) => t.keyword == tokenValue,
+                (KeywordToken t) => t.value == tokenValue,
                 _ => false
                 );
         else static if (is(T == string))
             return type.match!(
-                (IdentifierToken t) => t.identifier == tokenValue,
-                (StringToken t) => t.literalString == tokenValue,
+                (IdentifierToken t) => t.value == tokenValue,
+                (StringToken t) => t.value == tokenValue,
                 _ => false)
                 ;
         else static if (is(T == float))
             return type.match!(
-                (LiteralNumberToken t) => t.literalNumber == tokenValue,
+                (LiteralNumberToken t) => t.value == tokenValue,
                 _ => false
                 );
         else return false;
@@ -432,7 +432,7 @@ struct InputStream
         Nullable!Keyword actualKw;
 
         token.type.match!(
-            (KeywordToken t) => actualKw = t.keyword,
+            (KeywordToken t) => actualKw = t.value,
             _ => actualKw
             );
 
@@ -449,16 +449,16 @@ struct InputStream
     pure float expectNumber(in Scene scene)
     {
         Token token = readToken;
-        float value;
+        float num;
 
         token.type.match!(
-            (LiteralNumberToken t) => value = t.literalNumber,
-            (IdentifierToken t) => value = scene.floatVars.get(t.identifier, float.infinity),
-            _ => value
+            (LiteralNumberToken t) => num = t.value,
+            (IdentifierToken t) => num = scene.floatVars.get(t.value, float.infinity),
+            _ => num
         );
 
-        if (value.isFinite) return value;
-        if (value.isInfinity) throw new GrammarError(
+        if (num.isFinite) return num;
+        if (num.isInfinity) throw new GrammarError(
             format("unknown variable %s", token),
             token
             );
