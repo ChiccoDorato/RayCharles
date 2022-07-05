@@ -46,7 +46,7 @@ void main(string[] args)
 				"alg",
 				"algorithm",
 				"algorithm to render an image.
-				Default: path, options: flat, on-off, path"
+				Default: path, options: flat, onoff, path"
 				).defaultValue("path"))
 			.add(new Option(
 				"pfm",
@@ -112,7 +112,7 @@ void main(string[] args)
 					]);
 				catch (InvalidPfm2pngParms exc)
 				{
-					writeln(format("Error! %s", exc.msg));
+					exc.printError;
 					return;
 				}
 
@@ -133,11 +133,7 @@ void main(string[] args)
 						parms.pngOutput
 						));
 				}
-				catch (InvalidPFMFileFormat exc) writeln(format(
-						"Error! %s is not a PFM file: %s",
-						parms.pfmInput,
-						exc.msg
-						));
+				catch (InvalidPFMFileFormat exc) exc.printError(parms.pfmInput);
 			}
 		)
 		.on(
@@ -171,7 +167,7 @@ void main(string[] args)
 					);
 				catch (InvalidRenderParms exc)
 				{
-					writeln("Error! ", exc.msg);
+					exc.printError;
 					return;
 				}
 
@@ -189,7 +185,7 @@ void main(string[] args)
 				auto camera = scene.camera.get(new PerspectiveCamera());
 				auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
-				// Renderer: flat, on-off, path
+				// Renderer: flat, onoff, path
 				Renderer renderer;
 				switch (parms.renderer)
 				{
@@ -199,7 +195,7 @@ void main(string[] args)
 						break;
 
 					case Renderers.onoff:
-						writeln("Using on-off renderer");
+						writeln("Using onoff renderer");
 						renderer = new OnOffRenderer(scene.world);
 						break;
 

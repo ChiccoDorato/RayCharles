@@ -126,6 +126,14 @@ class InvalidPFMFileFormat : Exception
     {
         super(msg, file, line);
     }
+
+	@safe void printError(in string pfmFileName)
+	{
+		writeln(
+			format("%s: ", pfmFileName).bold,
+			"Error: ".bold.red,
+			format("not a pfm file, %s", msg));
+	}
 }
 
 /// Read a line from an array of ubyte, given a starting position
