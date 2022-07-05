@@ -2,7 +2,7 @@ module hdrimage;
 
 import colored;
 import imageformats.png;
-import std.algorithm : endsWith, max, min;
+import std.algorithm : max, min;
 import std.array : appender, split;
 import std.bitmanip;
 import std.conv;
@@ -436,55 +436,19 @@ class HDRImage
 		return pfm.data;
 	}
 
-	@safe bool notProvided(
-		in string fileName, in string extension
-		) const
-	{
-		if (fileName.length == 0)
-		{
-			writeln("Warning: ".bold.green, format(
-				"%s file not written since no name was provided",
-				extension
-				));
-			return true;
-		}
-		return false;
-	}
-
-	@safe string checkExtension(in string fileName, in string extension) const
-	in (fileName.length != 0)
-	{
-		string fileRightName = fileName;
-		if (!fileName.endsWith(extension))
-		{
-			fileRightName = format("%s.%s", fileName, extension);
-			writeln(
-				"Warning: ".bold.green,
-				fileName.bold, " automatically renamed to ", fileRightName.bold
-				);
-		}
-		return fileRightName;
-	}
-
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
 	// Not safe on windows
 	/* @safe */ void writePFMFile(
 		in string fileName, in Endian endianness = Endian.littleEndian
 		) const
 	{
-		if (notProvided(fileName, "pfm")) return;
-	
-		string fileRightName = checkExtension(fileName, "pfm");
-		auto file = File(fileRightName, "wb");
+		auto file = File(fileName, "wb");
 		file.rawWrite(writePFM(endianness));
 	}
 
 	/// Write a PNG file with a given name and with a fixed gamma parameter
 	void writePNG(in string fileName, in float gamma = 1.0) const
 	{
-		if (notProvided(fileName, "png")) return;
-
-		string fileRightName = checkExtension(fileName, "png");
 		auto rgb = appender!(ubyte[]);
 		foreach (Color c; pixels)
 		{
@@ -492,7 +456,7 @@ class HDRImage
 			rgb.put(to!ubyte(round(255.0 * pow(c.g, 1.0 / gamma))));
 			rgb.put(to!ubyte(round(255.0 * pow(c.b, 1.0 / gamma))));
 		}
-		imageformats.png.write_png(fileRightName, width, height, rgb.data, 0);
+		imageformats.png.write_png(fileName, width, height, rgb.data, 0);
 	}
 
 	/// Return the average luminosity of an HDRImage

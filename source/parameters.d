@@ -1,7 +1,7 @@
 module parameters;
 
 import colored;
-import std.algorithm : canFind;
+import std.algorithm : canFind, endsWith;
 import std.array : split;
 import std.conv : ConvException, to;
 import std.exception : enforce;
@@ -10,6 +10,30 @@ import std.format : format;
 import std.math : isFinite, sqrt;
 import std.stdio : writeln;
 import std.traits : EnumMembers;
+
+@safe string checkExtension(in string fileName, in string extension)
+{
+	if (fileName.length == 0)
+	{
+		string ext = format(".%s", extension);
+		writeln("Warning: ".bold.cyan,
+		"empty string automatically renamed to ",
+		ext.bold
+		);
+		return ext;
+	}
+
+	string fileRightName = fileName;
+	if (!fileName.endsWith(extension))
+	{
+		fileRightName = format("%s.%s", fileName, extension);
+		writeln(
+			"Warning: ".bold.cyan,
+			fileName.bold, " automatically renamed to ", fileRightName.bold
+			);
+	}
+	return fileRightName;
+}
 
 class WrongSign : Exception
 {
@@ -91,7 +115,7 @@ struct Pfm2pngParameters
 		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
-		pngOutput = args[1];
+		pngOutput = checkExtension(args[1], "png");
 
 		try
 		{
@@ -170,8 +194,8 @@ struct RenderParameters
 			);
 		renderer = args[3];
 
-		pfmOutput = args[4];
-		pngOutput = args[5];
+		pfmOutput = checkExtension(args[4], "pfm");
+		pngOutput = checkExtension(args[5], "png");
 
 		/// pgc initialization: seed and sequence
 		try

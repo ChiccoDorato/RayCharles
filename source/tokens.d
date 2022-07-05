@@ -921,7 +921,7 @@ struct Scene
     @safe void cameraWarning() const
     {
         writeln(
-            "Warning: ".bold.green,
+            "Warning: ".bold.cyan,
             "no camera provided. A default perspective camera will be used"
             );
     }

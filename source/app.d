@@ -1,3 +1,4 @@
+import colored;
 import commandr;
 import hdrimage : HDRImage;
 import parameters;
@@ -119,19 +120,21 @@ void main(string[] args)
 				try
 				{
 					auto image = new HDRImage(parms.pfmInput);
-					writeln(format(
-						"File %s has been read from disk",
-						parms.pfmInput
-						));
+					writeln(
+						"Executed: ".bold.green,
+						parms.pfmInput.bold,
+						" has been read from disk"
+						);
 
 					image.normalizeImage(parms.factor);
 					image.clampImage;
 
 					image.writePNG(parms.pngOutput, parms.gamma);
-					writeln(format(
-						"File %s has been written to disk",
-						parms.pngOutput
-						));
+					writeln(
+						"Executed: ".bold.green,
+						parms.pngOutput.bold,
+						" has been written to disk"
+						);
 				}
 				catch (InvalidPFMFileFormat exc) exc.printError(parms.pfmInput);
 			}
@@ -222,16 +225,27 @@ void main(string[] args)
 				tracer.fireAllRays((Ray r) => renderer.call(r));
 				auto endRendering = MonoTime.currTime;
 				Duration timeElapsed = endRendering - startRendering;
-				writeln("Rendering completed in ", timeElapsed);
+				writeln(
+					"Executed: ".bold.green,
+					"rendering completed in ",
+					timeElapsed
+					);
 
 				image.writePFMFile(parms.pfmOutput);
-				writeln("HDR image written to ", parms.pfmOutput);
+				writeln(
+					"Executed: ".bold.green,
+					"HDR image written to ",
+					parms.pfmOutput.bold
+					);
 
 				image.normalizeImage(1.0);
 				image.clampImage;
 
 				image.writePNG(parms.pngOutput.dup);
-				writeln("PNG image written to ", parms.pngOutput);
+				writeln(
+					"Executed: ".bold.green,
+					"PNG image written to ",
+					parms.pngOutput.bold);
 			}
 		);
 }
