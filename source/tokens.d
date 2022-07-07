@@ -918,7 +918,7 @@ struct Scene
     float[string] floatVars;
     auto overriddenVars = make!(RedBlackTree!string);
 
-    @safe void cameraWarning() const
+    @safe void printCameraWarning() const
     {
         writeln(
             "Warning: ".bold.cyan,

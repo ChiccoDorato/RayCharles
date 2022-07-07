@@ -11,28 +11,15 @@ import std.math : isFinite, sqrt;
 import std.stdio : writeln;
 import std.traits : EnumMembers;
 
-@safe string checkExtension(in string fileName, in string extension)
+@safe string checkExtension(
+	in string fileName, in string extension, out bool alreadyValid
+	)
 {
-	if (fileName.length == 0)
-	{
-		string ext = format(".%s", extension);
-		writeln("Warning: ".bold.cyan,
-		"empty string automatically renamed to ",
-		ext.bold
-		);
-		return ext;
-	}
-
-	string fileRightName = fileName;
 	if (!fileName.endsWith(extension))
-	{
-		fileRightName = format("%s.%s", fileName, extension);
-		writeln(
-			"Warning: ".bold.cyan,
-			fileName.bold, " automatically renamed to ", fileRightName.bold
-			);
-	}
-	return fileRightName;
+		return format("%s.%s", fileName, extension);
+
+	alreadyValid = true;
+	return fileName;
 }
 
 class WrongSign : Exception
@@ -103,6 +90,7 @@ class InvalidPfm2pngParms : Exception
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
+	bool isOutputPNG;
 	immutable float factor, gamma;
 
 	/// Build the struct from a string of arguments that are provided by the user:
@@ -115,7 +103,7 @@ struct Pfm2pngParameters
 		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
-		pngOutput = checkExtension(args[1], "png");
+		pngOutput = checkExtension(args[1], "png", isOutputPNG);
 
 		try
 		{
@@ -164,6 +152,7 @@ struct RenderParameters
 	immutable int width, height;
 	string renderer;
 	string pfmOutput, pngOutput;
+	bool isOutputPFM, isOutputPNG;
 	immutable int initialState, initialSequence;
 	immutable int numberOfRays, depth;
 	immutable int samplesPerSide;
@@ -194,8 +183,8 @@ struct RenderParameters
 			);
 		renderer = args[3];
 
-		pfmOutput = checkExtension(args[4], "pfm");
-		pngOutput = checkExtension(args[5], "png");
+		pfmOutput = checkExtension(args[4], "pfm", isOutputPFM);
+		pngOutput = checkExtension(args[5], "png", isOutputPNG);
 
 		/// pgc initialization: seed and sequence
 		try

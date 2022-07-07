@@ -130,6 +130,12 @@ void main(string[] args)
 					image.clampImage;
 
 					image.writePNG(parms.pngOutput, parms.gamma);
+					if (!parms.isOutputPNG) writeln(
+						"Warning: ".bold.cyan,
+						rayC.arg("pngOutputFileName").bold,
+						" automatically renamed to ",
+						parms.pngOutput.bold
+						);
 					writeln(
 						"Executed: ".bold.green,
 						parms.pngOutput.bold,
@@ -184,7 +190,7 @@ void main(string[] args)
 				}
 
 				auto image = new HDRImage(parms.width, parms.height);
-				if (scene.camera.isNull) scene.cameraWarning;
+				if (scene.camera.isNull) scene.printCameraWarning;
 				auto camera = scene.camera.get(new PerspectiveCamera());
 				auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
@@ -232,6 +238,12 @@ void main(string[] args)
 					);
 
 				image.writePFMFile(parms.pfmOutput);
+				if (!parms.isOutputPFM) writeln(
+					"Warning: ".bold.cyan,
+					rayC.option("pfmOutput").bold,
+					" automatically renamed to ",
+					parms.pfmOutput.bold
+					);
 				writeln(
 					"Executed: ".bold.green,
 					"HDR image written to ",
@@ -242,6 +254,12 @@ void main(string[] args)
 				image.clampImage;
 
 				image.writePNG(parms.pngOutput.dup);
+				if (!parms.isOutputPNG) writeln(
+					"Warning: ".bold.cyan,
+					rayC.option("pngOutput").bold,
+					" automatically renamed to ",
+					parms.pngOutput.bold
+					);
 				writeln(
 					"Executed: ".bold.green,
 					"PNG image written to ",
