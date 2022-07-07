@@ -11,7 +11,7 @@ import std.math : isFinite, sqrt;
 import std.stdio : writeln;
 import std.traits : EnumMembers;
 
-@safe string checkExtension(
+pure @safe string forceExtension(
 	in string fileName, in string extension, out bool alreadyValid
 	)
 {
@@ -103,7 +103,7 @@ struct Pfm2pngParameters
 		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
-		pngOutput = checkExtension(args[1], "png", isOutputPNG);
+		pngOutput = forceExtension(args[1], "png", isOutputPNG);
 
 		try
 		{
@@ -183,8 +183,8 @@ struct RenderParameters
 			);
 		renderer = args[3];
 
-		pfmOutput = checkExtension(args[4], "pfm", isOutputPFM);
-		pngOutput = checkExtension(args[5], "png", isOutputPNG);
+		pfmOutput = forceExtension(args[4], "pfm", isOutputPFM);
+		pngOutput = forceExtension(args[5], "png", isOutputPNG);
 
 		/// pgc initialization: seed and sequence
 		try
