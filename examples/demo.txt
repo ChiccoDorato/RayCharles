@@ -1,5 +1,5 @@
 # Camera
-camera(perspective, translation([-1.0, 0.0, 1.0]), 1.33333, 1.0)
+camera(perspective, translation([-2.0, 0.0, 1.0]), 1.33333, 1.0)
 
 # Sky
 material skyMaterial(
