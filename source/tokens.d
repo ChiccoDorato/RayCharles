@@ -545,8 +545,13 @@ struct InputStream
 
             case Keyword.image:
                 string fileName = expectString();
-                HDRImage img = new HDRImage(fileName);
-                pigment = new ImagePigment(img);
+                try
+                {
+                    HDRImage img = new HDRImage(fileName);
+                    pigment = new ImagePigment(img);
+                }
+                catch (InvalidPFMFileFormat exc)
+                    throw new GrammarError(exc.msg, location);
                 break;
 
             default:

@@ -7,7 +7,7 @@ import std.array : appender, split;
 import std.bitmanip;
 import std.conv;
 import std.exception : enforce;
-import std.file : read;
+import std.file : FileException, read;
 import std.format : format, FormatSpec, formattedWrite, formatValue;
 import std.math : abs, isNaN, log10, pow, round;
 import std.range : isOutputRange, put;
@@ -352,8 +352,12 @@ class HDRImage
 	/// Build an HDRImage from a file
 	this(in string fileName)
 	{
-		auto stream = cast(immutable ubyte[])(fileName.read);
-		this(stream);
+		try
+		{
+			auto stream = cast(immutable ubyte[])(fileName.read);
+			this(stream);
+		}
+		catch (FileException exc) throw new InvalidPFMFileFormat(exc.msg);
 	}
 
 	@safe void toString(
