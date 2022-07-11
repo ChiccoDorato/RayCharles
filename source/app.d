@@ -1,3 +1,4 @@
+import colored;
 import commandr;
 import hdrimage : HDRImage;
 import parameters;
@@ -46,7 +47,7 @@ void main(string[] args)
 				"alg",
 				"algorithm",
 				"algorithm to render an image.
-				Default: path, options: flat, on-off, path"
+				Default: path, options: flat, onoff, path"
 				).defaultValue("path"))
 			.add(new Option(
 				"pfm",
@@ -112,32 +113,36 @@ void main(string[] args)
 					]);
 				catch (InvalidPfm2pngParms exc)
 				{
-					writeln(format("Error! %s", exc.msg));
+					exc.printError;
 					return;
 				}
 
 				try
 				{
 					auto image = new HDRImage(parms.pfmInput);
-					writeln(format(
-						"File %s has been read from disk",
-						parms.pfmInput
-						));
+					writeln(
+						"Executed: ".bold.green,
+						parms.pfmInput.bold,
+						" has been read from disk"
+						);
 
 					image.normalizeImage(parms.factor);
 					image.clampImage;
 
-					image.writePNG(parms.pngOutput.dup, parms.gamma);
-					writeln(format(
-						"File %s has been written to disk",
-						parms.pngOutput
-						));
+					image.writePNG(parms.pngOutput, parms.gamma);
+					if (!parms.isOutputPNG) writeln(
+						"Warning: ".bold.cyan,
+						rayC.arg("pngOutputFileName").bold,
+						" automatically renamed to ",
+						parms.pngOutput.bold
+						);
+					writeln(
+						"Executed: ".bold.green,
+						parms.pngOutput.bold,
+						" has been written to disk"
+						);
 				}
-				catch (InvalidPFMFileFormat exc) writeln(format(
-						"Error! %s is not a PFM file: %s",
-						parms.pfmInput,
-						exc.msg
-						));
+				catch (InvalidPFMFileFormat exc) exc.printError(parms.pfmInput);
 			}
 		)
 		.on(
@@ -171,7 +176,7 @@ void main(string[] args)
 					);
 				catch (InvalidRenderParms exc)
 				{
-					writeln("Error! ", exc.msg);
+					exc.printError;
 					return;
 				}
 
@@ -180,19 +185,16 @@ void main(string[] args)
 				try scene = inputStream.parseScene(parms.variableTable);
 				catch (GrammarError exc)
 				{
-					writeln("Error! ", exc.msg);
+					exc.printError;
 					return;
 				}
 
 				auto image = new HDRImage(parms.width, parms.height);
-				if (scene.cam.isNull) writeln(
-					"\nWARNING: no camera provided.
-					A default perspective camera will be used\n"
-					);
-				auto camera = scene.cam.get(new PerspectiveCamera());
+				if (scene.camera.isNull) scene.printCameraWarning;
+				auto camera = scene.camera.get(new PerspectiveCamera());
 				auto tracer = ImageTracer(image, camera, parms.samplesPerSide);
 
-				// Renderer: flat, on-off, path
+				// Renderer: flat, onoff, path
 				Renderer renderer;
 				switch (parms.renderer)
 				{
@@ -202,7 +204,7 @@ void main(string[] args)
 						break;
 
 					case Renderers.onoff:
-						writeln("Using on-off renderer");
+						writeln("Using onoff renderer");
 						renderer = new OnOffRenderer(scene.world);
 						break;
 
@@ -229,16 +231,39 @@ void main(string[] args)
 				tracer.fireAllRays((Ray r) => renderer.call(r));
 				auto endRendering = MonoTime.currTime;
 				Duration timeElapsed = endRendering - startRendering;
-				writeln("Rendering completed in ", timeElapsed);
+				writeln(
+					"Executed: ".bold.green,
+					"rendering completed in ",
+					timeElapsed
+					);
 
 				image.writePFMFile(parms.pfmOutput);
-				writeln("HDR image written to ", parms.pfmOutput);
+				if (!parms.isOutputPFM) writeln(
+					"Warning: ".bold.cyan,
+					rayC.option("pfmOutput").bold,
+					" automatically renamed to ",
+					parms.pfmOutput.bold
+					);
+				writeln(
+					"Executed: ".bold.green,
+					"HDR image written to ",
+					parms.pfmOutput.bold
+					);
 
 				image.normalizeImage(1.0);
 				image.clampImage;
 
 				image.writePNG(parms.pngOutput.dup);
-				writeln("PNG image written to ", parms.pngOutput);
+				if (!parms.isOutputPNG) writeln(
+					"Warning: ".bold.cyan,
+					rayC.option("pngOutput").bold,
+					" automatically renamed to ",
+					parms.pngOutput.bold
+					);
+				writeln(
+					"Executed: ".bold.green,
+					"PNG image written to ",
+					parms.pngOutput.bold);
 			}
 		);
 }

@@ -7,7 +7,9 @@ import std.format : FormatSpec, formatValue;
 import std.math : cos, PI, sin;
 import std.range : isOutputRange, put;
 
-/// The Identity 4x4 Matrix
+/**
+* The Identity 4x4 Matrix
+*/
 immutable float[4][4] id4 = [
         [1.0, 0.0, 0.0, 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -16,7 +18,9 @@ immutable float[4][4] id4 = [
         ];
 
 // ************************* Transformation *************************
-/// Struct of a transformation that uses a 4x4 matrix as operator
+/**
+* Struct of a transformation that uses a 4x4 matrix as operator
+*/
 struct Transformation
 {	
 	float[4][4] m = [
@@ -32,7 +36,9 @@ struct Transformation
         [0.0, 0.0, 0.0, 1.0]
         ];
 
-	/// Return the two matrices of a Transformation in a string.
+    /**
+    * Return the two matrices of a Transformation in a string.
+    */
 	@safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
@@ -42,14 +48,19 @@ struct Transformation
         formatValue(w, invM, fmt);
     }
 
-    /// Build a transformation with a 4x4 matrix and its inverse 4x4 matrix
+    /**
+    * Build a transformation with a 4x4 matrix and its inverse 4x4 matrix
+    */
 	pure nothrow @nogc @safe this(in float[4][4] matrix, in float[4][4] invMatrix)
     {
 		m = matrix;
 		invM = invMatrix;
 	}
 
-    /// Return the product between two 4X4 matrices
+
+    /**
+    * @Returns:  product between two 4X4 matrices (float)
+    */
 	pure nothrow @nogc @safe float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
     {
 		float[4][4] prod = 0.0;
@@ -60,7 +71,11 @@ struct Transformation
 		return prod;
 	}
 
-    /// Verify if two matrices are close by calling the fuction areClose on every component 
+    /**
+    * Verify if two matrices are close by calling the fuction areClose on every component
+    * @Returns: true or false (bool)
+    */
+    ///  
     pure nothrow @nogc @safe bool matrixIsClose(
         in float[4][4] m1, in float[4][4] m2, in float epsilon = 1e-5
         ) const
@@ -71,7 +86,10 @@ struct Transformation
         return true;
     }
 
-    /// Verify if two Tranformations are close by calling the fuction matrixIsClose on the matrix and on its inverse
+    /**
+    * Verify if two Tranformations are close by calling the fuction matrixIsClose on the matrix and on its inverse
+    * @Returns: true or false (bool)
+    */
     pure nothrow @nogc @safe bool transfIsClose(
         in Transformation t, in float epsilon = 1e-5
         ) const
@@ -80,19 +98,24 @@ struct Transformation
             matrixIsClose(invM, t.invM, epsilon);
     }
 
-    /// Verify if a Tranformation is consistent: the product between the matrix and its inverse must be the identity
+    /**
+    * Verify if a Tranformation is consistent: the product between the matrix and its inverse must be the identity
+    * @Returns: true or false (bool)
+    */
 	pure nothrow @nogc @safe bool isConsistent(in float epsilon = 1e-5) const
     {
 		return matrixIsClose(matProd(m, invM), id4, epsilon);
 	}
 
-    /// Return the inverse of a Transformation
+    /**
+    * @Returns: the inverse of a Transformation
+    */
 	pure nothrow @nogc @safe Transformation inverse() const
     {
 		return Transformation(invM, m);
 	}
 
-    /// Return the product (*) between two Tranformations
+    /// Return: the product (*) between two Tranformations
 	pure nothrow @nogc @safe Transformation opBinary(string op)(
         in Transformation rhs
         ) const if (op == "*")
@@ -100,7 +123,11 @@ struct Transformation
 		return Transformation(matProd(m, rhs.m), matProd(rhs.invM, invM));
 	}
 
-// overload for *=. NOTE: this makes this = rhs * this and NOT this = this * rot
+    /**
+    * Overload for the *= operator
+    * @Examples: this *= rhs
+    * @Returns: this = rhs * this and NOT this = this * rot
+    */
     pure nothrow @nogc @safe ref Transformation opOpAssign(string op)(
         in Transformation rhs
         ) if (op == "*")
@@ -109,7 +136,7 @@ struct Transformation
         return this;
 	}
 
-    /// Return the product (*) between a matrix and a Point 
+    /// Return: the product (*) between a matrix and a Point 
 	pure nothrow @nogc @safe Point opBinary(string op)(in Point rhs) const
     if (op == "*")
     {
@@ -126,7 +153,7 @@ struct Transformation
 		return lambda == 1.0 ? p : p * (1.0 / lambda);
 	}
 
-    /// Return the product (*) between a matrix and a Vec 
+    /// Return: the product between a matrix and a Vec
 	pure nothrow @nogc @safe Vec opBinary(string op)(in Vec rhs) const
     if (op == "*")
     {
@@ -137,7 +164,7 @@ struct Transformation
             );
 	}
 
-    /// Return the product (*) between a matrix and a Normal 
+    /// Return: the product (*) between a matrix and a Normal
     pure nothrow @nogc @safe Normal opBinary(string op)(in Normal rhs) const
     if (op == "*")
     {
@@ -148,7 +175,8 @@ struct Transformation
             );
 	}
 
-    /// Return a transformed Ray: the product (*) of the origin (Point) and of the direction (Vec) with the matrix is calculated 
+    /// Calculate the product (*) of the origin (Point) and of the direction (Vec) of a Ray with the matrix
+    /// Return: a transformed Ray
     pure nothrow @nogc @safe Ray opBinary(string op)(in Ray rhs) const
     if (op == "*")
     {
@@ -174,11 +202,9 @@ unittest
         [-1.375, 0.875, 0.0, -0.5]
         ];
     auto t1 = Transformation(m1, m2);
-    // isConsistent
     assert(t1.isConsistent);
 
     auto t2 = Transformation(t1.m, t1.invM);
-    // transfIsClose
     assert(t1.transfIsClose(t2));
 
     auto t3 = Transformation(t1.m, t1.invM);
@@ -208,15 +234,12 @@ unittest
     auto t = Transformation(m1, m2);
     assert(t.isConsistent);
 
-    // Vec product
     auto expectedV = Vec(14.0, 38.0, 51.0);
     assert(expectedV.xyzIsClose(t * Vec(1.0, 2.0, 3.0)));
 
-    // Point product
     auto expectedP = Point(18.0, 46.0, 58.0);
     assert(expectedP.xyzIsClose(t * Point(1.0, 2.0, 3.0)));
 
-    // Normal product
     auto expectedN = Normal(-8.75, 7.75, -3.0);
     assert(expectedN.xyzIsClose(t * Normal(3.0, 2.0, 4.0)));
 }
@@ -268,7 +291,6 @@ unittest
         ];
     auto expected = Transformation(m5, m6);
     assert(expected.isConsistent(1e-4));
-    // transfIsClose
     assert(expected.transfIsClose(t1 * t2));
 }
 
@@ -289,17 +311,20 @@ unittest
         ];
     auto t1 = Transformation(m1, m2);
 
-    // inverse
     Transformation t2 = t1.inverse;
     assert(t2.isConsistent);
 
-    // Transformation product (*)
     Transformation prod = t1 * t2;
     assert(prod.isConsistent);
     assert(prod.transfIsClose(Transformation()));
 }
 
-/// Return a translation of a given Vec (x,y,z)
+/**
+* translation is a Tranformation
+* ___
+* @Params: Vec (x, y, z)
+* @Returns: a translation of a given Vec (x,y,z)
+*/
 pure nothrow @nogc @safe Transformation translation(in Vec v)
 {
 	immutable float[4][4] m = [
@@ -320,7 +345,6 @@ pure nothrow @nogc @safe Transformation translation(in Vec v)
 ///
 unittest
 {
-    // translation
     auto tr1 = translation(Vec(1.0, 2.0, 3.0));
     assert(tr1.isConsistent);
 
@@ -334,7 +358,12 @@ unittest
     assert(prod.transfIsClose(expected));
 }
 
-/// Return a Rotation around the X axis - Parameter: cosine and sine of an angle (float)
+/**
+* rotationX is a Transformation
+* ___
+* @Params: cosine and sine of an angle (float)
+* @Returns: rotation around the X axis
+*/
 pure nothrow @nogc @safe Transformation rotationX(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
 {
@@ -353,7 +382,12 @@ in (areClose(c * c + s * s, 1.0))
     return Transformation(m, invM);
 }
 
-/// Return a Rotation around the X axis - Parameter: angle (float)
+/**
+* rotationX is a Transformation
+* ___
+* @Params: angle (float)
+* @Returns: rotation around the X axis
+*/
 pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 {
     immutable float cosine = cos(angleInDegrees * PI / 180.0);
@@ -361,7 +395,12 @@ pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
     return rotationX(cosine, sine);
 }
 
-/// Return a Rotation around the Y axis - Parameter: cosine and sine of an angle (float)
+/**
+* rotationY is a Transformation
+* ___
+* @Params: cosine and sine of an angle (float)
+* @Returns: rotation around the Y axis
+*/
 pure nothrow @nogc @safe Transformation rotationY(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
 {
@@ -380,7 +419,12 @@ in (areClose(c * c + s * s, 1.0))
     return Transformation(m, invM);
 }
 
-/// Return a Rotation around the Y axis - Parameter: angle (float)
+/**
+* rotationY is a Transformation
+* ___
+* @Params: angle (float)
+* @Returns: rotation around the Y axis
+*/
 pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 {
     immutable float cosine = cos(angleInDegrees * PI / 180.0);
@@ -388,7 +432,12 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
     return rotationY(cosine, sine);
 }
 
-/// Return a Rotation around the Z axis - Parameter: cosine and sine of an angle (float)
+/**
+* rotationY is a Transformation
+* ___
+* @Params: cosine and sine of an angle (float)
+* @Returns: rotation around the Z axis
+*/
 pure nothrow @nogc @safe Transformation rotationZ(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
 {
@@ -407,7 +456,12 @@ in (areClose(c * c + s * s, 1.0))
     return Transformation(m, invM);
 }
 
-/// Return a Rotation around the Z axis - Parameter: angle (float)
+/**
+* rotationZ is a Transformation
+* ___
+* @Params: angle (float)
+* @Returns: rotation around the Z axis
+*/
 pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 {
     immutable float cosine = cos(angleInDegrees * PI / 180.0);
@@ -421,17 +475,14 @@ unittest
     import geometry : vecX, vecY, vecZ;
     import std.math : sqrt;
 
-    // rotationX,rotationY, rotationZ
     assert(rotationX(0.1).isConsistent);
     assert(rotationY(0.1).isConsistent);
     assert(rotationZ(0.1).isConsistent);
 
-    // xyzIsClose
     assert((rotationX(90.0) * vecY).xyzIsClose(vecZ));
     assert((rotationY(90.0) * vecZ).xyzIsClose(vecX));
     assert((rotationZ(90.0) * vecX).xyzIsClose(vecY));
 
-    // transfIsClose
     assert(rotationX(sqrt(3.0) / 2.0, 0.5).transfIsClose(rotationX(30.0)));
     assert(
         rotationY(sqrt(2.0) / 2.0, sqrt(2.0) / 2.0)
@@ -440,7 +491,12 @@ unittest
     assert(rotationZ(1.0, 0.0).transfIsClose(rotationZ(360.0)));
 }
 
-/// Return a scale transformation of a given Vec (x,y,z)
+/**
+* scaling is a Transformation
+* ___
+* @Params: Vec (x, y, z)
+* @Returns: a scale Tranformation
+*/
 pure nothrow @nogc @safe Transformation scaling(in Vec v)
 {
 	immutable float[4][4] m = [
@@ -461,14 +517,12 @@ pure nothrow @nogc @safe Transformation scaling(in Vec v)
 ///
 unittest
 {
-    // scaling
     auto tr1 = scaling(Vec(2.0, 5.0, 10.0));
     assert(tr1.isConsistent);
 
     auto tr2 = scaling(Vec(3.0, 2.0, 4.0));
     assert(tr2.isConsistent);
 
-    // product of two scalings
     auto expected = scaling(Vec(6.0, 10.0, 40.0));
     assert(expected.transfIsClose(tr1 * tr2));
 }

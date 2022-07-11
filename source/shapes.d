@@ -94,6 +94,10 @@ class Shape
         sink.formattedWrite!"%s"(transf);
     }
 
+    abstract pure nothrow @nogc @safe Vec2d uv(in Point p) const;
+
+    abstract pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const;
+
     /// Abstract method - Check and record an intersection between a Ray and a Shape
     abstract pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
@@ -116,7 +120,7 @@ class Sphere : Shape
     }
 
     /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
-    pure nothrow @nogc @safe Vec2d sphereUVPoint(in Point p) const
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         immutable float z = fixBoundary(p.z, -1.0, 1.0);
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
@@ -124,7 +128,7 @@ class Sphere : Shape
     }
 
     /// Create a Normal to a Vector in a Point of the Sphere
-    pure nothrow @nogc @safe Normal sphereNormal(in Point p, in Vec v) const
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         immutable n = Normal(p.x, p.y, p.z);
         return p.toVec * v < 0.0 ? n : -n;
@@ -157,8 +161,8 @@ class Sphere : Shape
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(
             transf * hitPoint,
-            transf * sphereNormal(hitPoint, invR.dir),
-            sphereUVPoint(hitPoint),
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
             firstHit,
             r,
             this
@@ -272,6 +276,17 @@ class Plane : Shape
         super(t, m);
     }
 
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
+    {
+        return Vec2d(p.x - floor(p.x), p.y - floor(p.y));
+    }
+
+// Useful for CSG only
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
+    {
+        return Normal(0.0, 0.0, v.z < 0.0 ? 1.0 : -1.0);
+    }
+
     /// Check and record an intersection between a Ray and a Plane
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
@@ -288,7 +303,7 @@ class Plane : Shape
         hit = HitRecord(
             transf * hitPoint,
             transf * Normal(0.0, 0.0, invR.dir.z < 0.0 ? 1.0 : -1.0),
-            Vec2d(hitPoint.x - floor(hitPoint.x), hitPoint.y - floor(hitPoint.y)),
+            uv(hitPoint),
             t,
             r,
             this
@@ -435,7 +450,7 @@ class AABox : Shape
     }
 
     /// Convert a 3D point (x, y, z) on the AABox in a 2D point (u, v) on the screen/Image
-    pure nothrow @nogc @safe Vec2d boxUVPoint(in Point p) const
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         float uBox, vBox;
         if (areClose(p.x, 0.0))
@@ -458,7 +473,7 @@ class AABox : Shape
     }
 
     /// Create a Normal to a Vector in a Point of the AABox
-    pure nothrow @nogc @safe Normal boxNormal(in Point p, in Vec v) const
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         if (areClose(p.x, 0.0) || areClose(p.x, 1.0))
             return Normal(v.x < 0.0 ? 1.0 : -1.0, 0.0, 0.0);
@@ -490,8 +505,8 @@ class AABox : Shape
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(
             transf * hitPoint,
-            transf * boxNormal(hitPoint, invR.dir),
-            boxUVPoint(hitPoint),
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
             firstHit,
             r,
             this
@@ -765,7 +780,7 @@ class CylinderShell : Shape
     }
 
     /// Convert a 3D point (x, y, z) on the CylinderShell in a 2D point (u, v) on the screen/Image
-    pure nothrow @nogc @safe Vec2d cylShellUVPoint(in Point p) const
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         immutable float z = fixBoundary(p.z);
         immutable float u = atan2(p.y, p.x) / (2.0 * PI);
@@ -773,7 +788,7 @@ class CylinderShell : Shape
     }
 
     /// Create a Normal to a Vector in a Point of the CylinderShell surface
-    pure nothrow @nogc @safe Normal cylShellNormal(in Point p, in Vec v) const
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, 0.0);
         return p.x * v.x + p.y * v.y < 0.0 ? n : -n;
@@ -802,8 +817,8 @@ class CylinderShell : Shape
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(
             transf * hitPoint,
-            transf * cylShellNormal(hitPoint, invR.dir),
-            cylShellUVPoint(hitPoint),
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
             firstHit,
             r,
             this
@@ -983,7 +998,7 @@ class Cylinder : CylinderShell
     }
 
     /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
-    pure nothrow @nogc @safe Vec2d cylinderUVPoint(in Point p) const
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         float u = atan2(p.y, p.x) / (2.0 * PI);
         if (u < 0.0) ++u;
@@ -995,10 +1010,10 @@ class Cylinder : CylinderShell
     }
 
     /// Create a Normal to a Vector in a Point of the Cylinder surface
-    pure nothrow @nogc @safe Normal cylinderNormal(in Point p, in Vec v) const
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         if (!areClose(p.z, 0.0) && !areClose(p.z, 1.0))
-            return cylShellNormal(p, v);
+            return super.normal(p, v);
         immutable n = Normal(0.0, 0.0, 1.0);
         return v.z < 0.0 ? n : -n;
     }
@@ -1021,8 +1036,8 @@ class Cylinder : CylinderShell
         immutable Point hitPoint = invR.at(firstHit);
         hit = HitRecord(
             transf * hitPoint,
-            transf * cylinderNormal(hitPoint, invR.dir),
-            cylinderUVPoint(hitPoint),
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
             firstHit,
             r,
             this

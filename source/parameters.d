@@ -1,13 +1,26 @@
 module parameters;
 
-import std.algorithm : canFind;
+import colored;
+import std.algorithm : canFind, endsWith;
 import std.array : split;
 import std.conv : ConvException, to;
 import std.exception : enforce;
 import std.file : FileException, isFile;
 import std.format : format;
 import std.math : isFinite, sqrt;
+import std.stdio : writeln;
 import std.traits : EnumMembers;
+
+pure @safe string forceExtension(
+	in string fileName, in string extension, out bool alreadyValid
+	)
+{
+	if (!fileName.endsWith(extension))
+		return format("%s.%s", fileName, extension);
+
+	alreadyValid = true;
+	return fileName;
+}
 
 class WrongSign : Exception
 {
@@ -33,16 +46,16 @@ if ((is(T == int) || is(T == float)) && isComparison(cmp))
 		T number = to!T(cand);
 		static if (is(T == float)) enforce!WrongSign(
 			number.isFinite,
-			format("Invalid %s: %s is not a finite number",parmName, cand)
+			format("invalid %s, %s is not a finite number",parmName, cand)
 			);
 		enforce!WrongSign(
 			mixin("number" ~ cmp ~ "0"),
-			format("Invalid %s: %s %s 0 does not hold", parmName, cand, cmp)
+			format("invalid %s, %s %s 0 does not hold", parmName, cand, cmp)
 			);
 		return number;
 	}
 	catch (ConvException exc)
-		throw new WrongSign(format("Invalid %s: %s", parmName, exc.msg));
+		throw new WrongSign(format("invalid %s: %s", parmName, exc.msg));
 }
 
 alias toPositive(T) = toSign!(T, ">");
@@ -62,6 +75,11 @@ class InvalidPfm2pngParms : Exception
     {
         super(msg, file, line);
     }
+
+	@safe void printError()
+	{
+		writeln("Error: ".bold.red, msg);
+	}
 }
 
 // ************************* InvalidPfm2pngParms *************************
@@ -72,6 +90,7 @@ class InvalidPfm2pngParms : Exception
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
+	bool isOutputPNG;
 	immutable float factor, gamma;
 
 	/// Build the struct from a string of arguments that are provided by the user:
@@ -84,7 +103,7 @@ struct Pfm2pngParameters
 		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
-		pngOutput = args[1];
+		pngOutput = forceExtension(args[1], "png", isOutputPNG);
 
 		try
 		{
@@ -107,15 +126,20 @@ class InvalidRenderParms : Exception
     {
         super(msg, file, line);
     }
+
+	@safe void printError()
+	{
+		writeln("Error: ".bold.red, msg);
+	}
 }
 
 enum Renderers : string
 {
 	flat = "flat",
-	onoff = "on-off",
+	onoff = "onoff",
 	path = "path"
 }
-alias validRenderers = EnumMembers!Renderers;
+auto validRenderers = [EnumMembers!Renderers];
 
 // ************************* RenderParameters *************************
 /// Struct used to record all the parameters introduced in the command line by the user.
@@ -128,6 +152,7 @@ struct RenderParameters
 	immutable int width, height;
 	string renderer;
 	string pfmOutput, pngOutput;
+	bool isOutputPFM, isOutputPNG;
 	immutable int initialState, initialSequence;
 	immutable int numberOfRays, depth;
 	immutable int samplesPerSide;
@@ -153,13 +178,13 @@ struct RenderParameters
 		catch (WrongSign exc) throw new InvalidRenderParms(exc.msg);
 
 		enforce!InvalidRenderParms(
-			canFind([validRenderers], args[3]),
-			format("Valid options for algorithm: %s", validRenderers)
+			canFind(validRenderers, args[3]),
+			format("valid options for algorithm are %s", validRenderers)
 			);
 		renderer = args[3];
 
-		pfmOutput = args[4];
-		pngOutput = args[5];
+		pfmOutput = forceExtension(args[4], "pfm", isOutputPFM);
+		pngOutput = forceExtension(args[5], "png", isOutputPNG);
 
 		/// pgc initialization: seed and sequence
 		try
@@ -174,7 +199,7 @@ struct RenderParameters
 			enforce!InvalidRenderParms(
 				samplesPerSide * samplesPerSide == sampPerPixel,
 				format(
-					"Invalid samplesPerPixel: %s is not a perfect square",
+					"invalid samplesPerPixel, %s is not a perfect square",
 					args[10]
 					)
 				);
@@ -190,7 +215,7 @@ struct RenderParameters
 				);
 			try variableTable[nameAndValue[0]] = to!float(nameAndValue[1]);
 			catch (ConvException exc) throw new InvalidRenderParms(format(
-					"Invalid variable %s: %s",
+					"invalid variable %s, %s",
 					nameAndValue[0], exc.msg)
 					);
 		}

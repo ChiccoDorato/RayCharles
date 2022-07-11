@@ -1,7 +1,8 @@
 module hdrimage;
 
+import colored;
 import imageformats.png;
-import std.algorithm : endsWith, max, min;
+import std.algorithm : max, min;
 import std.array : appender, split;
 import std.bitmanip;
 import std.conv;
@@ -125,6 +126,14 @@ class InvalidPFMFileFormat : Exception
     {
         super(msg, file, line);
     }
+
+	@safe void printError(in string pfmFileName)
+	{
+		writeln(
+			format("%s: ", pfmFileName).bold,
+			"Error: ".bold.red,
+			format("not a pfm file, %s", msg));
+	}
 }
 
 /// Read a line from an array of ubyte, given a starting position
@@ -331,7 +340,7 @@ class HDRImage
 		{
 			for (int j = 0; j < width; ++j)
 			{
-				pixelPos = streamPos + 12 * this.pixelOffset(j, height - 1 - i); //(j, i)
+				pixelPos = streamPos + 12 * this.pixelOffset(j, height - 1 - i);
 				red = readFloat(stream, pixelPos, endiannessValue);
 				green = readFloat(stream, pixelPos + 4, endiannessValue);
 				blue = readFloat(stream, pixelPos + 8, endiannessValue);
@@ -385,7 +394,8 @@ class HDRImage
 		in Endian endianness = Endian.littleEndian
 		) const
 	{
-		immutable ubyte[3] magic = [80, 70, 10], endOfHeader = [49, 46, 48];
+		immutable ubyte[3] magic = [80, 70, 10];
+		immutable ubyte[4] endOfHeader = [49, 46, 48, 10];
 		immutable ubyte space = 32, endLine = 10;
 		auto byteWidth = cast(ubyte[])(to!(char[])(width));
 		auto byteHeight = cast(ubyte[])(to!(char[])(height));
@@ -395,16 +405,16 @@ class HDRImage
 			pfm.put(
 				magic ~
 				byteWidth ~ space ~ byteHeight ~ endLine ~
-				ubyte(45) ~ endOfHeader ~ endLine
+				ubyte(45) ~ endOfHeader
 				);
 		else pfm.put(
 			magic ~
 			byteWidth ~ space ~ byteHeight ~ endLine ~
-			endOfHeader ~ endLine
+			endOfHeader
 			);
 
 		Color c;
-		for (int i = height - 1; i > -1; --i) //++i
+		for (int i = height - 1; i > -1; --i)
 		{
 			for (int j = 0; j < width; ++j)
 			{
@@ -429,38 +439,16 @@ class HDRImage
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
 	// Not safe on windows
 	/* @safe */ void writePFMFile(
-		string fileName, in Endian endianness = Endian.littleEndian
+		in string fileName, in Endian endianness = Endian.littleEndian
 		) const
 	{
-		if (fileName == [])
-		{
-			writeln("WARNING: file not written since no name was provided");
-			return;
-		}
-
-		if (!fileName.endsWith(".pfm"))
-		{
-			fileName ~= ".pfm";
-			writeln("WARNING: pfm file automatically renamed to ", fileName);
-		}
 		auto file = File(fileName, "wb");
 		file.rawWrite(writePFM(endianness));
 	}
 
 	/// Write a PNG file with a given name and with a fixed gamma parameter
-	void writePNG(char[] fileName, in float gamma = 1.0) const
+	void writePNG(in string fileName, in float gamma = 1.0) const
 	{
-		if (fileName == [])
-		{
-			writeln("WARNING: png file not written since no name was provided");
-			return;
-		}
-
-		if (!fileName.endsWith(".png"))
-		{
-			fileName ~= ".png";
-			writeln("WARNING: file automatically renamed to ", fileName);
-		}
 		auto rgb = appender!(ubyte[]);
 		foreach (Color c; pixels)
 		{

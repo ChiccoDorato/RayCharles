@@ -1,5 +1,6 @@
 # Camera
-camera(perspective, translation([-1.0, 0.0, 1.0]), 1.33333, 1.0)
+float angle(0.0)
+camera(perspective, rotationZ(angle) * translation([-1.0, 0.0, 1.0]), 1.33333, 1.0)
 
 # Sky
 material skyMaterial(

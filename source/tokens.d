@@ -1,16 +1,20 @@
 module tokens;
 
 import cameras;
+import colored;
 import geometry : Vec;
 import hdrimage;
 import materials;
 import shapes;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
+import std.container.rbtree;
 import std.conv : ConvException, to;
 import std.file : read;
-import std.format : format;
+import std.format : format, FormatSpec, formatValue;
 import std.math : isFinite, isInfinity;
+import std.range : isOutputRange, put;
+import std.stdio : writeln;
 import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
 import std.typecons : Nullable, tuple, Tuple;
@@ -26,19 +30,46 @@ struct SourceLocation
     uint col;
 
     /// Convert a SourceLocarion into a string
-    pure nothrow @safe string toString() const
+    @safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
+    if (isOutputRange!(W, char))
     {
-        return fileName ~ "(" ~ to!string(line) ~ ", " ~ to!string(col) ~ ")";
+        formatValue(w, fileName, fmt);
+        put(w, "(");
+        formatValue(w, line, fmt);
+		put(w, ", ");
+        formatValue(w, col, fmt);
+        put(w, ")");
     }
 }
 
 // ************************* GrammarError *************************
 /// Class of a GrammarError derivate of a Exception class - Members: message (string), file (string) and line number (size_t)
 class GrammarError : Exception
-{   
-    pure nothrow @nogc @safe this(string msg, string file = __FILE__, size_t line = __LINE__)
+{
+    SourceLocation source;
+
+    pure nothrow @nogc @safe this(
+        string msg,
+        SourceLocation src = SourceLocation(),
+        string file = __FILE__,
+        size_t line = __LINE__
+        )
     {
         super(msg, file, line);
+        source = src;
+    }
+
+    pure nothrow @nogc @safe this(
+        string msg, Token t, string file = __FILE__, size_t line = __LINE__
+        )
+    {
+        super(msg, file, line);
+        source = t.location;
+    }
+
+    @safe void printError() const
+    {
+        writeln(format("%s: ", source).bold, "Error: ".bold.red, msg);
     }
 }
 
@@ -76,29 +107,36 @@ struct StopToken {}
 
 // ************************* SymbolToken *************************
 /// Struct of a SymbolToken - Member: symbol (char)
-struct SymbolToken { char symbol; }
+struct SymbolToken { char value; }
 
 // ************************* KeywordToken *************************
 /// Struct of a KeywordToken - Member: a type Keyword
-struct KeywordToken { Keyword keyword; }
+struct KeywordToken { Keyword value; }
 
 // ************************* IdentifierToken *************************
 /** Struct of a IdentifierToken - Member: identifier (string)
 * @param identifier (string)
 **/
-struct IdentifierToken { string identifier; }
+struct IdentifierToken { string value; }
 
 // ************************* StringToken *************************
 /// Struct of a StringToken - Member: literalString (string)
-struct StringToken { string literalString; }
+struct StringToken { string value; }
 
 // ************************* IdentifierToken *************************
 /// Struct of a IdentifierToken - Member: an identifier (string)
-struct LiteralNumberToken { float literalNumber; }
+struct LiteralNumberToken { float value; }
 
 // ************************* TokenType *************************
 /// SumType of all the kind of Tokens one can find: StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken
-alias TokenType = SumType!(StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken);
+alias TokenType = SumType!(
+    StopToken,
+    SymbolToken,
+    KeywordToken,
+    IdentifierToken,
+    StringToken,
+    LiteralNumberToken
+    );
 
 // ************************* Token *************************
 /// Struct of a Token - Members: type (TokenType) and location (SourceLocation)
@@ -108,7 +146,9 @@ struct Token
     SourceLocation location;
 
     /// Build a certain type of Token - Parameters: TokenType, SourceLocation 
-    pure nothrow @safe this(T)(in T tokenType, in SourceLocation tokenLocation = SourceLocation())
+    pure nothrow @safe this(T)(
+        in T tokenType, in SourceLocation tokenLocation = SourceLocation()
+        )
     {
         type = cast(TokenType)(tokenType);
         location = tokenLocation;
@@ -120,64 +160,74 @@ struct Token
         type = rhs.type;
         location = rhs.location;
     }
-}
 
-/// Verify if a Token is of the specific type given 
-pure nothrow @safe bool isSpecificType(T)(Token token)
-{
-    return token.type.match!((T t) => true, _ => false);
+    /// Verify if a Token is of the specific type given 
+    pure nothrow @safe bool isOfType(T)()
+    {
+        return type.match!((T t) => true, _ => false);
+    }
+
+    // Try to make it better because of StopToken
+    pure @safe string toString() const
+    {
+        return type.match!(
+            (StopToken t) => "",
+            (SymbolToken t) => format("%s", t.value),
+            (KeywordToken t) => t.value,
+            (IdentifierToken t) => t.value,
+            (StringToken t) => t.value,
+            (LiteralNumberToken t) => format("%s", t.value)
+        );
+    }
+
+    // Verify if two given Token have the same values
+    pure nothrow @safe bool hasValue(T)(in T tokenValue)
+    {
+        static if (is(T == char))
+            return type.match!(
+                (SymbolToken t) => t.value == tokenValue,
+                _ => false
+                );
+        else static if (is(T == Keyword))
+            return type.match!(
+                (KeywordToken t) => t.value == tokenValue,
+                _ => false
+                );
+        else static if (is(T == string))
+            return type.match!(
+                (IdentifierToken t) => t.value == tokenValue,
+                (StringToken t) => t.value == tokenValue,
+                _ => false)
+                ;
+        else static if (is(T == float))
+            return type.match!(
+                (LiteralNumberToken t) => t.value == tokenValue,
+                _ => false
+                );
+        else return false;
+    }
 }
 
 ///
 unittest
 {
-    // isSpecificType: StopToken
+    import std.exception : assertThrown;
+    // isOfType: StopToken
     auto stop = Token(StopToken(), SourceLocation("noFile", 3, 5));
-    assert(isSpecificType!StopToken(stop));
-    assert(!isSpecificType!LiteralNumberToken(stop));
-    // isSpecificType: StringToken
-    auto literalString = Token(StringToken("I am a literal string token"));
-    assert(isSpecificType!StringToken(literalString));
-    assert(!isSpecificType!SymbolToken(literalString));
+    assert(stop.isOfType!StopToken);
+    assert(!stop.isOfType!LiteralNumberToken);
+    // isOfType: StringToken
+    auto literalString = Token(StringToken("Literal string token"));
+    assert(literalString.isOfType!StringToken);
+    assert(!literalString.isOfType!SymbolToken);
 }
 
-// Try to make it better because of StopToken
-pure @safe string stringTokenValue(Token token)
+pure nothrow @nogc @safe bool findChar(in char[] items, in char c)
 {
-    return token.type.match!(
-        (StopToken stop) => "",
-        (SymbolToken sym) => to!string(sym.symbol),
-        (KeywordToken kw) => kw.keyword,
-        (IdentifierToken id) => id.identifier,
-        (StringToken str) => str.literalString,
-        (LiteralNumberToken number) => to!string(number.literalNumber)
-    );
+    for (uint i = 0; i < items.length; ++i)
+        if (c == items[i]) return true;
+    return false;
 }
-
-// Verify if two given Token have the same values
-pure nothrow @safe bool hasTokenValue(T)(Token token, in T tokenValue)
-{
-    static if (is(T == char)) return token.type.match!(
-        (SymbolToken sym) => sym.symbol == tokenValue,
-        _ => false);
-    else static if (is(T == Keyword)) return token.type.match!(
-        (KeywordToken kw) => kw.keyword == tokenValue,
-        _ => false);
-    else static if (is(T == string)) return token.type.match!(
-        (IdentifierToken id) => id.identifier == tokenValue,
-        (StringToken str) => str.literalString == tokenValue,
-        _ => false);
-    else static if (is(T == float)) return token.type.match!(
-        (LiteralNumberToken number) => number.literalNumber == tokenValue,
-        _ => false);
-    else return false;
-}
-
-/// All possible white Spaces
-immutable char[] whiteSpaces = [' ', '\t', '\n', '\r'];
-
-/// All possible Symbols
-immutable char[] symbols = ['(', ')', '<', '>', '[', ']', ',', '*'];
 
 // ************************* InputStream *************************
 /// Struct of an InputStream
@@ -192,6 +242,11 @@ struct InputStream
     SourceLocation location, savedLocation;
     ubyte tabulations;
     Token savedToken;
+
+    /// All possible white Spaces
+    immutable char[] whiteSpaces = [' ', '\t', '\n', '\r'];
+    /// All possible Symbols
+    immutable char[] symbols = ['(', ')', '<', '>', '[', ']', ',', '*'];
 
     /// Build an InputStream - Parameters: s (char[]), fileName (string), tab (ubyte)
     pure nothrow @safe this(in char[] s, in string fileName, in ubyte tab = 4)
@@ -223,7 +278,7 @@ struct InputStream
     }
 
     /// Read and record a char, then update the position calling the function updatePos
-    pure nothrow @safe char readChar()
+    pure nothrow @nogc @safe char readChar()
     {
         char c;
         if (savedChar == char.init)
@@ -253,12 +308,13 @@ struct InputStream
     }
 
     /// Find white spaces due to '\r' or '\n' and comments preceded by '#'
-    pure @safe void skipWhiteSpacesAndComments()
+    pure nothrow @nogc @safe void skipWhiteSpacesAndComments()
     {
         char c = readChar;
-        while (canFind(whiteSpaces, c) || c == '#')
+        while (findChar(whiteSpaces, c) || c == '#')
         {
-            if (c == '#') while (!canFind(['\r', '\n'], readChar)) continue;
+            if (c == '#')
+                while (!findChar(whiteSpaces[2 .. $], readChar)) continue;
             c = readChar;
         }
         unreadChar(c);
@@ -274,17 +330,19 @@ struct InputStream
             if (c == '"') return Token(StringToken(token), tokenLoc);
             token ~= c;
         }
-        throw new GrammarError(format("Unterminated string beginning at %s", tokenLoc.toString));
+        throw new GrammarError("unterminated string", tokenLoc);
     }
 
     /// Analyse if in a certain SourceLocation there is a LiteralNumberToken  - Parameter: firstChar (char), tokenLoc (SourceLocation)
-    pure @safe Token parseFloatToken(in char firstChar, in SourceLocation tokenLoc)
+    pure @safe Token parseFloatToken(
+        in char firstChar, in SourceLocation tokenLoc
+        )
     {
         string token = [firstChar];
         while (index < stream.length)
         {
             immutable char c = readChar;
-            if (!c.isDigit && !canFind(['.', 'e', 'E'], c))
+            if (!c.isDigit && !findChar(['.', 'e', 'E'], c))
             {
                 unreadChar(c);
                 break;
@@ -297,12 +355,16 @@ struct InputStream
             float value = to!float(token);
             return Token(LiteralNumberToken(value), tokenLoc);
         }
-		catch (ConvException exc) throw new GrammarError(format(
-            "Invalid floating point number %s at %s", token, tokenLoc.toString));
+		catch (ConvException exc) throw new GrammarError(
+            format("invalid floating point number %s", token),
+            tokenLoc
+            );
     }
 
     /// Analyse if in a certain SourceLocation there is a KeywordToken or an IdentifierToken - Parameter: firstChar (char), tokenLoc (SourceLocation)
-    pure @safe Token parseKeywordOrIdentifierToken(in char firstChar, in SourceLocation tokenLoc)
+    pure @safe Token parseKeywordOrIdentifierToken(
+        in char firstChar, in SourceLocation tokenLoc
+        )
     {
         string token = [firstChar];
         while(index < stream.length)
@@ -325,7 +387,7 @@ struct InputStream
     pure Token readToken()
     {   
         // StopToken
-        if (!savedToken.isSpecificType!StopToken)
+        if (!savedToken.isOfType!StopToken)
         {
             Token result = savedToken;
             savedToken = Token();
@@ -336,16 +398,18 @@ struct InputStream
 
         immutable char c = readChar;
         if (c == char.init) return Token(StopToken(), location);
-        if (canFind(symbols, c)) return Token(SymbolToken(c), location);
-        else if (c == '"') return parseStringToken(location);
-        else if (c.isDigit || canFind(['+', '-', '.'], c)) return parseFloatToken(c, location);
-        else if (c.isAlpha || c == '_') return parseKeywordOrIdentifierToken(c, location);
-        else throw new GrammarError(format("Invalid character %s at %s", c, location.toString));
+        if (findChar(symbols, c)) return Token(SymbolToken(c), location);
+        if (c == '"') return parseStringToken(location);
+        if (c.isDigit || findChar(['+', '-', '.'], c))
+            return parseFloatToken(c, location);
+        if (c.isAlpha || c == '_')
+            return parseKeywordOrIdentifierToken(c, location);
+        throw new GrammarError(format("invalid character %s", c), location);
     }
 
     /// Unread a Token - Parameter: t (Token)
     pure nothrow @nogc void unreadToken(in Token t)
-    in (savedToken.isSpecificType!StopToken)
+    in (savedToken.isOfType!StopToken)
     {
         savedToken = t;
     }
@@ -354,9 +418,11 @@ struct InputStream
     pure void expectSymbol(in char sym)
     {
         Token token = readToken;
-        if (!canFind(symbols, sym) || !hasTokenValue(token, sym))
-            throw new GrammarError(format("Got token %s instead of symbol %s at %s",
-                token.stringTokenValue, sym, token.location.toString));
+        if (!findChar(symbols, sym) || !token.hasValue(sym))
+            throw new GrammarError(
+                format("got %s instead of symbol %s", token, sym),
+                token
+                );
     }
 
     /// Throw a GrammarError if the Token is not the expected one: a KeywordToken - Parameter: keywords (Keyword[])
@@ -366,50 +432,62 @@ struct InputStream
         Nullable!Keyword actualKw;
 
         token.type.match!(
-            (KeywordToken kwToken) => actualKw = kwToken.keyword,
+            (KeywordToken t) => actualKw = t.value,
             _ => actualKw
             );
 
-        if (!actualKw.isNull && canFind(keywords, actualKw.get)) return actualKw.get;
-        throw new GrammarError(format("Expected one of the following keywords %s instead of %s at %s",
-            keywords, token.stringTokenValue, token.location.toString));
+        if (!actualKw.isNull && canFind(keywords, actualKw.get))
+            return actualKw.get;
+        throw new GrammarError(
+            format(
+                "expected one of the keywords %s instead of %s", keywords, token
+                ),
+            token);
     }
 
     /// Throw a GrammarError if the Token is not the expected one: a LiteralNumberToken - Parameter: scene (Scene)
     pure float expectNumber(in Scene scene)
     {
         Token token = readToken;
-        float value;
+        float num;
 
         token.type.match!(
-            (LiteralNumberToken numberToken) => value = numberToken.literalNumber,
-            (IdentifierToken idToken) => value = scene.floatVars.get(idToken.identifier, float.infinity),
-            _ => value
+            (LiteralNumberToken t) => num = t.value,
+            (IdentifierToken t) => num = scene.floatVars.get(t.value, float.infinity),
+            _ => num
         );
 
-        if (value.isFinite) return value;
-        if (value.isInfinity) throw new GrammarError(format("Unknown variable %s at %s",
-            token.stringTokenValue, token.location.toString));
-        throw new GrammarError(format("Got token %s instead of a number at %s",
-            token.stringTokenValue, token.location.toString));
+        if (num.isFinite) return num;
+        if (num.isInfinity) throw new GrammarError(
+            format("unknown variable %s", token),
+            token
+            );
+        throw new GrammarError(
+            format("got %s instead of a number", token),
+            token
+            );
     }
 
     /// Throw a GrammarError if the Token is not the expected one: a StringToken - Parameter:
     pure string expectString()
     {
         Token token = readToken;
-        if (isSpecificType!StringToken(token)) return token.stringTokenValue;
-        throw new GrammarError(format("Got a %s instead of a string at %s",
-            token.type, token.location.toString));
+        if (token.isOfType!StringToken) return token.toString;
+        throw new GrammarError(
+            format("got %s instead of a string", token),
+            token
+            );
     }
 
     /// Throw a GrammarError if the Token is not the expected one: an IdentifierToken - Parameter:
     pure string expectIdentifier()
     {
         Token token = readToken;
-        if (isSpecificType!IdentifierToken(token)) return token.stringTokenValue;
-        throw new GrammarError(format("Got a %s instead of an identifier at %s",
-            token.type, token.location.toString));
+        if (token.isOfType!IdentifierToken) return token.toString;
+        throw new GrammarError(
+            format("got %s instead of an identifier", token),
+            token
+            );
     }
 
     /// Analyse an InputStream and return a 3D Vec (x,y,z) - Parameter: scene (Scene)
@@ -441,7 +519,11 @@ struct InputStream
     /// Analyse an InputStream and return a Pigment - Parameter: scene (Scene)
     Pigment parsePigment(in Scene scene)
     {
-        immutable Keyword pigKeyword = expectKeyword([Keyword.uniform, Keyword.checkered, Keyword.image]);
+        immutable Keyword pigKeyword = expectKeyword([
+            Keyword.uniform,
+            Keyword.checkered,
+            Keyword.image
+            ]);
         Pigment pigment;
 
         expectSymbol('(');
@@ -457,7 +539,7 @@ struct InputStream
                 expectSymbol(',');
                 immutable col2 = parseColor(scene);
                 expectSymbol(',');
-                immutable numOfSteps = cast(int)(expectNumber(scene));
+                auto numOfSteps = cast(immutable int)(expectNumber(scene));
                 pigment = new CheckeredPigment(col1, col2, numOfSteps);
                 break;
 
@@ -470,7 +552,6 @@ struct InputStream
             default:
                 assert(0, "This line should be unreachable");
         }
-
         expectSymbol(')');
         return pigment;
     }
@@ -478,7 +559,10 @@ struct InputStream
     /// Analyse an InputStream and return a BRDF - Parameter: scene (Scene)
     BRDF parseBRDF(in Scene scene)
     {
-        immutable Keyword brdfKeyword = expectKeyword([Keyword.diffuse, Keyword.specular]);
+        immutable Keyword brdfKeyword = expectKeyword([
+            Keyword.diffuse,
+            Keyword.specular
+            ]);
         expectSymbol('(');
         Pigment pigment = parsePigment(scene);
         expectSymbol(')');
@@ -515,12 +599,14 @@ struct InputStream
 
         while (true)
         {
-            immutable Keyword transfKeyword = expectKeyword([Keyword.identity,
+            immutable Keyword transfKeyword = expectKeyword([
+                Keyword.identity,
                 Keyword.translation,
                 Keyword.rotationX,
                 Keyword.rotationY,
                 Keyword.rotationZ,
-                Keyword.scaling]);
+                Keyword.scaling
+                ]);
 
             switch (transfKeyword)
             {
@@ -562,7 +648,7 @@ struct InputStream
             }
 
             Token nextKeyword = readToken;
-            if (!nextKeyword.hasTokenValue('*'))
+            if (!nextKeyword.hasValue('*'))
             {
                 unreadToken(nextKeyword);
                 break;
@@ -576,11 +662,12 @@ struct InputStream
     pure Sphere parseSphere(Scene scene)
     {
         expectSymbol('(');
-
         string materialName = expectIdentifier;
         if ((materialName in scene.materials) is null)
-            throw new GrammarError(format("Unknown material %s at %s", materialName, location.toString));
-
+            throw new GrammarError(
+                format("unknown material %s", materialName),
+                location
+                );
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(')');
@@ -592,11 +679,12 @@ struct InputStream
     pure Plane parsePlane(Scene scene)
     {
         expectSymbol('(');
-
         string materialName = expectIdentifier;
         if ((materialName in scene.materials) is null)
-            throw new GrammarError(format("Unknown material %s at %s", materialName, location.toString));
-
+            throw new GrammarError(
+                format("unknown material %s", materialName),
+                location
+                );
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(')');
@@ -608,11 +696,12 @@ struct InputStream
     pure AABox parseAABox(Scene scene)
     {
         expectSymbol('(');
-
         string materialName = expectIdentifier;
         if ((materialName in scene.materials) is null)
-            throw new GrammarError(format("Unknown material %s at %s", materialName, location.toString));
-
+            throw new GrammarError(
+                format("unknown material %s", materialName),
+                location
+                );
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(')');
@@ -624,11 +713,12 @@ struct InputStream
     pure CylinderShell parseCylinderShell(Scene scene)
     {
         expectSymbol('(');
-
         string materialName = expectIdentifier;
         if ((materialName in scene.materials) is null)
-            throw new GrammarError(format("Unknown material %s at %s", materialName, location.toString));
-
+            throw new GrammarError(
+                format("unknown material %s", materialName),
+                location
+                );
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(')');
@@ -640,11 +730,12 @@ struct InputStream
     pure Cylinder parseCylinder(Scene scene)
     {
         expectSymbol('(');
-
         string materialName = expectIdentifier;
         if ((materialName in scene.materials) is null)
-            throw new GrammarError(format("Unknown material %s at %s", materialName, location.toString));
-
+            throw new GrammarError(
+                format("unknown material %s", materialName),
+                location
+                );
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(')');
@@ -656,7 +747,10 @@ struct InputStream
     pure Camera parseCamera(in Scene scene)
     {
         expectSymbol('(');
-        immutable Keyword cameraType = expectKeyword([Keyword.orthogonal, Keyword.perspective]);
+        immutable Keyword cameraType = expectKeyword([
+            Keyword.orthogonal,
+            Keyword.perspective
+            ]);
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(',');
@@ -664,6 +758,7 @@ struct InputStream
         expectSymbol(',');
         immutable float distance = expectNumber(scene);
         expectSymbol(')');
+
         switch (cameraType)
         {
             case Keyword.orthogonal:
@@ -688,14 +783,15 @@ struct InputStream
         {
             Token what = readToken;
 
-            if (what.isSpecificType!StopToken) break;
-            if (!what.isSpecificType!KeywordToken)
+            if (what.isOfType!StopToken) break;
+            if (!what.isOfType!KeywordToken)
                 throw new GrammarError(
-                    format("%s Expected a keyword instead of %s",
-                    what.location.toString, what.stringTokenValue));
+                    format("expected a keyword instead of %s", what),
+                    what
+                    );
 
-            string whatKw = what.stringTokenValue;
-            if (whatKw == Keyword.floatKeyword)
+            string whatKeyword = what.toString;
+            if (whatKeyword == Keyword.floatKeyword)
             {
                 string varName = expectIdentifier;
                 SourceLocation varLocation = location;
@@ -704,28 +800,32 @@ struct InputStream
                 immutable float varValue = expectNumber(scene);
                 expectSymbol(')');
 
-                if ((varName in scene.floatVars) !is null && varName !in scene.overriddenVars)
+                auto nameValue = varName in scene.floatVars;
+                auto nameOverridden = varName in scene.overriddenVars;
+                if (nameValue !is null && !nameOverridden)
                     throw new GrammarError(
-                        format("%s Variable %s cannot be redefined", varLocation.toString, varName));
-                if (varName !in scene.overriddenVars) scene.floatVars[varName] = varValue;
+                        format("variable %s cannot be redefined", varName),
+                        varLocation
+                        );
+                if (!nameOverridden) scene.floatVars[varName] = varValue;
             }
-            else if (whatKw == Keyword.sphere)
+            else if (whatKeyword == Keyword.sphere)
                 scene.world.addShape(parseSphere(scene));
-            else if (whatKw == Keyword.plane)
+            else if (whatKeyword == Keyword.plane)
                 scene.world.addShape(parsePlane(scene));
-            else if (whatKw == Keyword.aabox)
+            else if (whatKeyword == Keyword.aabox)
                 scene.world.addShape(parseAABox(scene));
-            else if (whatKw == Keyword.cylinderShell)
+            else if (whatKeyword == Keyword.cylinderShell)
                 scene.world.addShape(parseCylinderShell(scene));
-            else if (whatKw == Keyword.cylinder)
+            else if (whatKeyword == Keyword.cylinder)
                 scene.world.addShape(parseCylinder(scene));
-            else if (whatKw == Keyword.camera)
+            else if (whatKeyword == Keyword.camera)
             {
-                if (!scene.cam.isNull) throw new GrammarError(
-                    format("%s Camera definible only once", what.location.toString));
-                scene.cam = parseCamera(scene);
+                if (!scene.camera.isNull)
+                    throw new GrammarError("camera definible only once", what);
+                scene.camera = parseCamera(scene);
             }
-            else if (whatKw == Keyword.material)
+            else if (whatKeyword == Keyword.material)
             {
                 Tuple!(string, Material) newMaterial = parseMaterial(scene);
                 scene.materials[newMaterial[0]] = newMaterial[1];
@@ -798,28 +898,33 @@ unittest
     ) # Comment at the end of the line";
     auto inputFile = InputStream(str, "");
 
-    assert(inputFile.readToken.hasTokenValue(Keyword.newKeyword));
-    assert(inputFile.readToken.hasTokenValue(Keyword.material));
-    assert(inputFile.readToken.hasTokenValue("skyMaterial"));
-    assert(inputFile.readToken.hasTokenValue('('));
-    assert(inputFile.readToken.hasTokenValue(Keyword.diffuse));
-    assert(inputFile.readToken.hasTokenValue('('));
-    assert(inputFile.readToken.hasTokenValue(Keyword.image));
-    assert(inputFile.readToken.hasTokenValue('('));
-    assert(inputFile.readToken.hasTokenValue("my file.pfm"));
-    assert(inputFile.readToken.hasTokenValue(')'));
+    assert(inputFile.readToken.hasValue(Keyword.newKeyword));
+    assert(inputFile.readToken.hasValue(Keyword.material));
+    assert(inputFile.readToken.hasValue("skyMaterial"));
+    assert(inputFile.readToken.hasValue('('));
+    assert(inputFile.readToken.hasValue(Keyword.diffuse));
+    assert(inputFile.readToken.hasValue('('));
+    assert(inputFile.readToken.hasValue(Keyword.image));
+    assert(inputFile.readToken.hasValue('('));
+    assert(inputFile.readToken.hasValue("my file.pfm"));
+    assert(inputFile.readToken.hasValue(')'));
 }
 
-// RBTree probably not needed for our purposes. Associative arrays probably works better
-// in this case and best choice would be void[0][string]. Not clear how it works, though.
-import std.container.rbtree;
 struct Scene
 {
     Material[string] materials;
     World world;
-    Nullable!Camera cam;
+    Nullable!Camera camera;
     float[string] floatVars;
     auto overriddenVars = make!(RedBlackTree!string);
+
+    @safe void printCameraWarning() const
+    {
+        writeln(
+            "Warning: ".bold.cyan,
+            "no camera provided. A default perspective camera will be used"
+            );
+    }
 }
 
 ///
@@ -872,49 +977,63 @@ unittest
 
     auto skyBRDF = cast(DiffuseBRDF)(skyMaterial.brdf);
     assert(is(typeof(skyBRDF) == DiffuseBRDF));
+
     auto skyPigment = cast(UniformPigment)(skyBRDF.pigment);
     assert(is(typeof(skyPigment) == UniformPigment));
     assert(skyPigment.color.colorIsClose(Color(0.0, 0.0, 0.0)));
+
     auto skyEmitted = cast(UniformPigment)(skyMaterial.emittedRadiance);
     assert(is(typeof(skyEmitted) == UniformPigment));
     assert(skyEmitted.color.colorIsClose(Color(0.7, 0.5, 1.0)));
 
     auto groundBRDF = cast(DiffuseBRDF)(groundMaterial.brdf);
     assert(is(typeof(groundBRDF) == DiffuseBRDF));
+
     auto groundPigment = cast(CheckeredPigment)(groundBRDF.pigment);
     assert(is(typeof(groundPigment) == CheckeredPigment));
     assert(groundPigment.color1.colorIsClose(Color(0.3, 0.5, 0.1)));
     assert(groundPigment.color2.colorIsClose(Color(0.1, 0.2, 0.5)));
     assert(groundPigment.numberOfSteps == 4);
+
     auto groundEmitted = cast(UniformPigment)(groundMaterial.emittedRadiance);
     assert(is(typeof(groundEmitted) == UniformPigment));
     assert(groundEmitted.color.colorIsClose(Color(0.0, 0.0, 0.0)));
 
     auto sphereBRDF = cast(SpecularBRDF)(sphereMaterial.brdf);
     assert(is(typeof(sphereBRDF) == SpecularBRDF));
+
     auto spherePigment = cast(UniformPigment)(sphereBRDF.pigment);
     assert(is(typeof(spherePigment) == UniformPigment));
     assert(spherePigment.color.colorIsClose(Color(0.5, 0.5, 0.5)));
+
     auto sphereEmitted = cast(UniformPigment)(sphereMaterial.emittedRadiance);
     assert(is(typeof(sphereEmitted) == UniformPigment));
     assert(sphereEmitted.color.colorIsClose(Color(0.0, 0.0, 0.0)));
 
     // Verify that the shapes are correct
     assert(scene.world.shapes.length == 3);
+
     auto plane1 = cast(Plane)(scene.world.shapes[0]);
     assert(is(typeof(plane1) == shapes.Plane));
-    assert(plane1.transf.transfIsClose(translation(Vec(0.0, 0.0, 100.0)) * rotationY(150.0)));
+    assert(plane1.transf.transfIsClose(
+        translation(Vec(0.0, 0.0, 100.0)) *
+        rotationY(150.0))
+        );
+
     auto plane2 = cast(Plane)(scene.world.shapes[1]);
     assert(is(typeof(plane2) == shapes.Plane));
     assert(plane2.transf.transfIsClose(Transformation()));
+
     auto sphere = cast(Sphere)(scene.world.shapes[2]);
     assert(is(typeof(sphere) == shapes.Sphere));
     assert(sphere.transf.transfIsClose(translation(Vec(0.0, 0.0, 1.0))));
 
     // Verify that the camera is correct
-    auto sceneCam = cast(PerspectiveCamera)(scene.cam.get());
+    auto sceneCam = cast(PerspectiveCamera)(scene.camera.get());
     assert(is(typeof(sceneCam) == PerspectiveCamera));
-    Transformation cameraTransf = rotationZ(30.0) * translation(Vec(-4.0, 0.0, 1.0));
+
+    Transformation cameraTransf = rotationZ(30.0) *
+                                  translation(Vec(-4.0, 0.0, 1.0));
     assert(sceneCam.transformation.transfIsClose(cameraTransf));
     assert(areClose(sceneCam.aspectRatio, 1.0));
     assert(areClose(sceneCam.d, 2.0));
@@ -939,7 +1058,12 @@ unittest
 unittest
 {
     // Verify that defining two cameras in the same file raises a GrammarError
-    string stream = "camera(perspective, rotationZ(30) * translation([-4, 0, 1]), 1.0, 1.0)
+    string stream = "camera(
+        perspective,
+        rotationZ(30) * translation([-4, 0, 1]),
+        1.0,
+        1.0
+        )
     camera(orthogonal, identity, 1.0, 1.0)";
     auto inpStr = InputStream(stream, "");
 
