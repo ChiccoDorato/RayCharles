@@ -681,6 +681,7 @@ struct InputStream
                 break;
 
             case Keyword.image:
+                SourceLocation fileLocation = location;
                 string fileName = expectString();
                 try
                 {
@@ -688,7 +689,14 @@ struct InputStream
                     pigment = new ImagePigment(img);
                 }
                 catch (InvalidPFMFileFormat exc)
-                    throw new GrammarError(exc.msg, location);
+                {
+                    if (!exc.existingFile)
+                        throw new GrammarError(exc.msg, fileLocation);
+                    throw new GrammarError(
+                        format("%s is not a pfm file, %s", fileName, exc.msg),
+                        fileLocation
+                        );
+                }
                 break;
 
             default:
