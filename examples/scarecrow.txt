@@ -1,0 +1,152 @@
+# Camera
+float angZ(60.0)
+float angY(30.0)
+camera(
+    perspective,
+    rotationZ(angZ) * rotationY(angY) * translation([-1.6, 0.0, 1.8]),
+    1.33333,
+    1.0
+)
+
+# Sky
+material skyMaterial(
+    diffuse(uniform(<0.0 ,0.0, 0.0>)),
+    uniform(<1.0, 1.0, 0.4>)
+)
+sphere(skyMaterial, translation([0.0, 0.0, 0.4]) * scaling([200.0, 200.0, 200.0]))
+
+# Ground
+material groundMaterial(
+    diffuse(image("pfmImages/wheat.pfm")),
+    uniform(<0.0, 0.0, 0.0>)
+)
+plane(groundMaterial, identity)
+
+# Silos
+material postMaterial(
+    diffuse(image("pfmImages/bricks.pfm")),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    postMaterial,
+    translation([3.6, 7.8, 0.0]) * scaling([1.3, 1.3, 3.0])
+)
+
+# Posts
+material postMaterial(
+    diffuse(uniform(<0.4, 0.2, 0.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(postMaterial, scaling([0.02, 0.02, 1.6]))
+cylinder(
+    postMaterial,
+    translation([0.0, 0.7, 1.6]) * rotationX(90.0) * scaling([0.02, 0.02, 1.4])
+)
+
+# Trousers
+material trousersMaterial(
+    diffuse(image("pfmImages/jeans.pfm")),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    trousersMaterial,
+    translation([0.0, -0.12, 0.6]) * scaling([0.08, 0.08, 0.6])
+)
+cylinder(
+    trousersMaterial,
+    translation([0.0, 0.12, 0.6]) * scaling([0.08, 0.08, 0.6])
+)
+cylinder(
+    trousersMaterial,
+    translation([0.0, 0.0, 1.0]) * scaling([0.1, 0.18, 0.2])
+)
+
+# Shirt
+material shirtMaterial(
+    diffuse(uniform(<1.0, 0.5, 0.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    shirtMaterial,
+    translation([0.0, 0.0, 1.14]) * scaling([0.12, 0.2, 0.44])
+)
+cylindershell(
+    shirtMaterial,
+    translation([0.0, -0.07, 1.57]) * rotationX(90.0) * scaling([0.06, 0.08, 0.38])
+)
+cylindershell(
+    shirtMaterial,
+    translation([0.0, 0.07, 1.57]) * rotationX(-90.0) * scaling([0.06, 0.08, 0.38])
+)
+
+# Head
+material skinMaterial(
+    diffuse(uniform(<1.0, 0.8, 0.9>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    skinMaterial,
+    translation([0.0, 0.0, 1.58]) * scaling([0.075, 0.075, 0.13])
+)
+sphere(
+    skinMaterial,
+    translation([0.0, 0.0, 1.78]) * scaling([0.14, 0.14, 0.13])
+)
+
+material noseMaterial(
+    diffuse(uniform(<1.0, 0.7, 0.7>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    noseMaterial,
+    translation([-0.141, 0.0, 1.76]) * rotationY(90.0) * scaling([0.03, 0.03, 0.1])
+)
+
+material eyesMaterial(
+    diffuse(uniform(<1.0, 1.0, 1.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+sphere(
+    eyesMaterial,
+    translation([-0.12, 0.05, 1.80]) * scaling([0.02, 0.02, 0.02])
+)
+sphere(
+    eyesMaterial,
+    translation([-0.12, -0.05, 1.80]) * scaling([0.02, 0.02, 0.02])
+)
+
+material pupilMaterial(
+    diffuse(uniform(<0.0, 0.0, 0.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+sphere(
+    pupilMaterial,
+    translation([-0.134, 0.05, 1.80]) * scaling([0.01, 0.01, 0.01])
+)
+sphere(
+    pupilMaterial,
+    translation([-0.134, -0.05, 1.80]) * scaling([0.01, 0.01, 0.01])
+)
+
+# Hat
+material hatMaterial(
+    diffuse(uniform(<1.0, 0.8, 0.4>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylinder(
+    hatMaterial,
+    translation([0.0, 0.0, 1.88]) * scaling([0.24, 0.24, 0.01])
+)
+sphere(
+    hatMaterial,
+    translation([0.0, 0.0, 1.9]) * scaling([0.1, 0.1, 0.08])
+)
+
+material ribbonMaterial(
+    diffuse(uniform(<0.8, 0.0, 0.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+cylindershell(
+    ribbonMaterial,
+    translation([0.0, 0.0, 1.89]) * scaling([0.1, 0.1, 0.02])
+)
