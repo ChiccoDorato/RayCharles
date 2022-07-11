@@ -33,7 +33,7 @@ class WrongSign : Exception
     }
 }
 
-pure nothrow @safe @nogc isComparison(string cmp)
+pure nothrow @safe @nogc bool isComparison(string cmp)
 {
 	return cmp == ">" || cmp == ">=" || cmp == "<" || cmp == "<=";
 }

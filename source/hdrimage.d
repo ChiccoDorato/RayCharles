@@ -120,11 +120,21 @@ unittest
 /// Class used to throw exceptions in case of compilation errors
 class InvalidPFMFileFormat : Exception
 {
-    pure nothrow @nogc @safe this(
+	bool existingFile = true;
+
+	pure nothrow @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
     {
         super(msg, file, line);
+    }
+
+    pure nothrow @nogc @safe this(
+		string msg, bool exists, string file = __FILE__, size_t line = __LINE__
+		)
+    {
+        super(msg, file, line);
+		existingFile = exists;
     }
 
 	@safe void printError(in string pfmFileName)
@@ -357,7 +367,8 @@ class HDRImage
 			auto stream = cast(immutable ubyte[])(fileName.read);
 			this(stream);
 		}
-		catch (FileException exc) throw new InvalidPFMFileFormat(exc.msg);
+		catch (FileException exc)
+			throw new InvalidPFMFileFormat(exc.msg, false);
 	}
 
 	@safe void toString(
