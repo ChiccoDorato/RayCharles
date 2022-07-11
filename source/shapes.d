@@ -11,7 +11,17 @@ import std.typecons : Nullable;
 import transformations;
 
 // ******************** HitRecord ********************
-/// Struct HitRecord to keep in memory infos about intersection of a ray with an object 
+/**
+* Struct HitRecord to keep in memory infos about 
+* intersection of a Ray with an object 
+* Params: 
+*   worldPoint = (Point)
+*   normal = (Normal)
+*   surfacePoint = (Vec2d),
+*   t = (float)
+*   ray = (Ray)
+*   shape = (Shape)
+*/
 struct HitRecord
 {
     Point worldPoint;
@@ -21,7 +31,13 @@ struct HitRecord
     Ray ray;
     Shape shape;
 
-    /// Check if two HitRecord are close by calling the fuction areClose for every member
+    /**
+    * Check if two HitRecord are close by calling 
+    * the fuction areClose for every member
+    * Params: 
+    *    hit = (HitRecord)
+    * Return: true or false (bool)
+    */
     pure nothrow @nogc @safe bool recordIsClose(in HitRecord hit) const
     {
         return worldPoint.xyzIsClose(hit.worldPoint) &&
@@ -31,6 +47,9 @@ struct HitRecord
             ray.rayIsClose(hit.ray);
     }
 
+    /**
+    * Print an HitRecord as a string
+    */
     @safe void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -40,6 +59,10 @@ struct HitRecord
     }
 }
 
+/**
+* Find monodimentional intersection
+* Return: a tuple [t1, t2] with the "time" of intersection
+*/
 pure nothrow @nogc @safe float[2] oneDimIntersections(
     in float origin, in float direction
     ) 
@@ -63,6 +86,15 @@ pure nothrow @nogc @safe float[2] oneDimIntersections(
     return [t1, t2];
 }
 
+/**
+* Correct the boundary coordinates: 
+* useful in order not to have defects on the borders of the shapes
+* Params: 
+*   coord = (float)
+*   min = (float) = 0.0
+*   max = (float) = 1.0
+*   var = (float) = 1e-4 
+*/
 pure nothrow @nogc @safe float fixBoundary(
     in float coord, in float min = 0.0, in float max = 1.0, in float var = 1e-4
     )
@@ -73,12 +105,20 @@ pure nothrow @nogc @safe float fixBoundary(
 }
 
 // ******************** Shape ********************
-/// Abstract class for a generic Shape
+/**
+* Abstract class for a generic Shape
+*/
 class Shape
 {
     Transformation transf;
     Material material;
 
+    /** 
+     * Build a Shape
+     * Params:
+     *  t = (Transformation)
+     *  m = (Material)
+     */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
@@ -87,6 +127,9 @@ class Shape
         material = m;
     }
 
+    /** 
+     * Convert a Shape into a string
+     */
     @safe void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -94,24 +137,57 @@ class Shape
         sink.formattedWrite!"%s"(transf);
     }
 
+    /**
+    * Abstract method - Convert a 3D point (x, y, z) on the Sphere
+    * in a 2D point (u, v) on the screen/Image
+    * Params: 
+    *   p = Point
+    * Return: Vec2d
+    */
     abstract pure nothrow @nogc @safe Vec2d uv(in Point p) const;
 
+    /**
+    * Create a Normal to a Vector in a Point of the Sphere
+    * Params: 
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
     abstract pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const;
 
-    /// Abstract method - Check and record an intersection between a Ray and a Shape
+    /**
+    * Abstract method - Check and record an intersection 
+    * between a Ray and a Shape
+    * Params: 
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
     abstract pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         );
 
-    /// Abstract method - Look up quickly for intersection between a Ray and a Shape
+    /**
+    * Abstract method - Look up quickly for intersection 
+    * between a Ray and a Shape
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     abstract pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const;
 }
 
 // ******************** Sphere ********************
-/// Class for a 3D Sphere centered in the origin of the axis
+/**
+* Class for a 3D Sphere centered in the origin of the axis (0, 0, 0)
+*/
 class Sphere : Shape
 {
-    /// Build a sphere - Parameters: Tranformation and Material
+    /**
+    * Build a sphere 
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
@@ -119,7 +195,13 @@ class Sphere : Shape
         super(t, m);
     }
 
-    /// Convert a 3D point (x, y, z) on the Sphere in a 2D point (u, v) on the screen/Image
+    /**
+    * Method: Convert a 3D point (x, y, z) on the Sphere 
+    * in a 2D point (u, v) on the screen/Image
+    * Params: 
+    *   p = (Point)
+    * Return: Vec2d
+    */
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         immutable float z = fixBoundary(p.z, -1.0, 1.0);
@@ -127,14 +209,25 @@ class Sphere : Shape
         return Vec2d(u < 0.0 ? u + 1.0 : u, acos(z) / PI);
     }
 
-    /// Create a Normal to a Vector in a Point of the Sphere
+    /**
+    * Create a Normal to a Vector in a Point of the Sphere
+    * Params: 
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         immutable n = Normal(p.x, p.y, p.z);
         return p.toVec * v < 0.0 ? n : -n;
     }
 
-    /// Check and record an intersection between a Ray and a Sphere
+    /**
+    * Check and record an intersection between a Ray and a Sphere
+    * Params: 
+    *   r =  (Ray)
+    * Return: Nullable!HitRecord
+    */
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         )
@@ -170,7 +263,12 @@ class Sphere : Shape
         return hit;
     }
 
-    /// Look up quickly for intersection between a Ray and a Shape
+    /**
+    * Look up quickly for intersection between a Ray and a Shape
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -197,12 +295,11 @@ unittest
 
     auto s = new Sphere();
 
-    // rayIntersection with the Sphere
     assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
 
     auto r1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
     HitRecord h1 = s.rayIntersection(r1).get;
-    // recordIsClose
+
     assert(HitRecord(
         Point(0.0, 0.0, 1.0),
         Normal(0.0, 0.0, 1.0),
@@ -239,7 +336,6 @@ unittest
 
     auto s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
 
-    // Verify if the Sphere is correctly translated
     assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
     assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
 
@@ -265,10 +361,19 @@ unittest
 }
 
 // ************************* Plane *************************
-/// Class for a 3D infinite plane parallel to the x and y axis and passing through the origin
+/**
+* Class for a 3D infinite plane parallel to the x and y axis
+* and passing through the origin (0, 0, 0)
+*/
 class Plane : Shape
 {
-    /// Build a plane - Parameters: Tranformation and Material
+    
+    /**
+    * Build a plane
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
@@ -287,7 +392,12 @@ class Plane : Shape
         return Normal(0.0, 0.0, v.z < 0.0 ? 1.0 : -1.0);
     }
 
-    /// Check and record an intersection between a Ray and a Plane
+    /**
+    * Check and record an intersection between a Ray and a Plane
+    * Params: 
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         )
@@ -311,7 +421,12 @@ class Plane : Shape
         return hit;
     }
 
-    /// Look up quickly for an intersection between a Ray and a Plane
+    /**
+    * Look up quickly for an intersection between a Ray and a Plane
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -341,7 +456,7 @@ unittest
 
     auto r2 = Ray(Point(0.0, 0.0, 1.0), vecZ);
     Nullable!HitRecord h2 = p.rayIntersection(r2);
-    // rayIntersection with the Plane
+
     assert(h2.isNull);
 
     auto r3 = Ray(Point(0.0, 0.0, 1.0), vecX);
@@ -362,7 +477,7 @@ unittest
 
     auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
     HitRecord h1 = p.rayIntersection(r1).get;
-    // Verify if the Plane is correctly rotated
+
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -393,7 +508,7 @@ unittest
 
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
     HitRecord h1 = p.rayIntersection(r1).get;
-    // uvIsClose 
+
     assert(h1.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
 
     auto r2 = Ray(Point(0.25, 0.75, 1.0), -vecZ);
@@ -406,10 +521,17 @@ unittest
 }
 
 // ************************* AABox *************************
-/// Class for a 3D Axis Aligned Box
+/**
+* Class for a 3D Axis Aligned Box
+*/
 class AABox : Shape
 {
-    /// Build an AABox - Parameters: transformation, material
+    /**
+    * Build an AABox
+    * Params:
+    *   t = (Transformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
@@ -417,8 +539,16 @@ class AABox : Shape
         super(t, m);
     }
 
-    /// Build an AABox - Parameters: 
-    /// 2 point (max and min of the box), 3 angles (rotation in disrespect to x,y,z axis), material
+    /**
+    * Build an AABox
+    * Params:
+    *   max = (Point)
+    *   min = (Point)
+    *   xDegreesAngle = (float)
+    *   yDegreesAngle = (float)
+    *   zDegreesAngle = (float)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Point min,
         in Point max,
@@ -440,7 +570,13 @@ class AABox : Shape
         material = m;
     }
 
-    /// Find and record the intersections with the box passing by each dimension x,y,z
+    /**
+    * Find and record the intersections with the box
+    * passing by each dimension x,y,z
+    * Params: 
+    *   r = (Ray)
+    * Return: float[2]
+    */
     pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
     {
         immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
@@ -449,7 +585,13 @@ class AABox : Shape
         return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
     }
 
-    /// Convert a 3D point (x, y, z) on the AABox in a 2D point (u, v) on the screen/Image
+    /**
+    * Method: Convert a 3D point (x, y, z) on the AABox 
+    * in a 2D point (u, v) on the screen/Image
+    * Params: 
+    *   p = (Point)
+    * Return: Vec2d
+    */
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         float uBox, vBox;
@@ -472,7 +614,13 @@ class AABox : Shape
         return Vec2d(fixBoundary(uBox), fixBoundary(vBox));
     }
 
-    /// Create a Normal to a Vector in a Point of the AABox
+    /**
+    * Create a Normal to a Vector in a Point of the AABox
+    * Params: 
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         if (areClose(p.x, 0.0, 1e-4) || areClose(p.x, 1.0, 1e-4))
@@ -486,7 +634,12 @@ class AABox : Shape
         }
     }
 
-    /// Check and record an intersection between a Ray and an AABOX
+    /**
+    * Check and record an intersection between a Ray and an AABOX
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         )
@@ -514,7 +667,12 @@ class AABox : Shape
         return hit;
     }
 
-    /// Look up quickly for an intersection between a Ray and a Plane
+    /**
+    * Look up quickly for an intersection between a Ray and a Plane
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -530,7 +688,6 @@ unittest
     auto p1 = Point(1.0, 2.0, 4.0), p2 = Point(-1.0, 5.0, 5.0);
     auto box = new AABox(p1, p2, 0.0, 330.0, 0.0);
 
-    // checking the constructor
     auto scale = scaling(Vec(-2.0, 3.0, 1.0));
     auto rotY = rotationY(-30.0);
     auto transl = translation(Vec(1.0, 2.0, 4.0));
@@ -542,16 +699,13 @@ unittest
 {
     import geometry : vecX, vecY;
 
-    // Default constructor
     auto box = new AABox();
 
-    // rayIntersection
     auto r1 = Ray(Point(-2.0, 0.5, 0.0), -vecX);
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
 
-    // recordIsClose
     auto r2 = Ray(Point(0.0, 0.3, 0.7), vecY);
     assert(box.quickRayIntersection(r2));
     HitRecord h2 = box.rayIntersection(r2).get;
@@ -585,17 +739,17 @@ unittest
     auto scale = scaling(Vec(2.0, 3.0, -0.8));
     auto rotY = rotationY(-30.0);
     auto transl = translation(Vec(-1.0, 2.0, 4.0));
-    // AABox with tranformation
+
     auto box = new AABox(transl * rotY * scale);
     float z = 4.0 - sqrt(3.0) / 3.0;
 
     auto p1 = Point(-1.0, 2.0, 4.0), p2 = Point(1.0, 5.0, 3.2);
     auto pointsConstructorBox = new AABox(p1, p2, 0.0, -30.0, 0.0);
-    // tranfIsClose
+
     assert(pointsConstructorBox.transf.transfIsClose(box.transf));
 
     auto r1 = Ray(Point(-1.0, 8.0, z), -vecY);
-    // quickRayIntersection
+
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
@@ -680,17 +834,32 @@ unittest
 }
 
 // ************************* CylinderShell *************************
-/// Class for a 3D Cylinder shell (lateral suface) aligned with the z axis
+/**
+* Class for a 3D Cylinder shell (lateral suface) aligned with the z axis
+*/
 class CylinderShell : Shape
 {
-    /// Build a CylinderShell - Parameters: tranformation and material
+    /**
+    * Build a CylinderShell 
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
     {
         super(t, m);
     }
-    /// Build a CylinderShell - Parameters: the radius, the center point of the upper face and lower face and the material
+
+    /**
+    * Build a CylinderShell 
+    * Params: 
+    *   r = (float) radius 
+    *   max = (Point) center of upper face
+    *   min = (Point) center of lower face
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r, in Point min, in Point max, Material m = Material()
         )
@@ -720,7 +889,14 @@ class CylinderShell : Shape
         material = m;
     }
 
-    /// Build a CylinderShell - Parameters: the radius, the lenght, the translation Vector and the material
+    /**
+    * Build a CylinderShell 
+    * Params: 
+    *   r = (float) radius
+    *   h = (float) lenght  
+    *   trasl = (Vec) translation Vector
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r, in float h, in Vec transl = Vec(), Material m = Material()
         )
@@ -731,8 +907,17 @@ class CylinderShell : Shape
         material = m;
     }
 
-    /// Build a CylinderShell - Parameters: the radius, the lenght, the translation Vector,
-    /// 3 angles for a rotation (in disrespect to x,y and z axis) and the material
+    /**
+    * Build a CylinderShell 
+    * Params: 
+    *   r = (float) radius
+    *   h = (float) lenght  
+    *   traslVec = (Vec) translation Vector
+    *   xDegreesAngle = (float)
+    *   yDegreesAngle = (float)
+    *   zDegreesAngle = (float)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r,
         in float h,
@@ -757,14 +942,20 @@ class CylinderShell : Shape
         material = m;
     }
 
-    /// Find and record the intersections with the CylinderShell passing by each dimension x,y,z
+    /**
+    * Find and record the intersections with the CylinderShell
+    * passing by each dimension x,y,z
+    * Params: 
+    *    r = (Ray)
+    * Return: float[2]
+    */
     pure nothrow @nogc @safe float[2] cylShellIntersections(in Ray r) const
     {
         immutable float c = r.origin.x * r.origin.x +
                             r.origin.y * r.origin.y -
                             1.0;
         if (areClose(r.dir.x, 0.0) && areClose(r.dir.y, 0.0))
-// <= because this is useful only for cylinders. Cylindershell will result not hit by a vertical ray
+        // Cylindershell will result not hit by a vertical ray (<= this is useful only for cylinders)
             return (c <= 0.0) ?
                 [-float.infinity, float.infinity] :
                 [float.infinity, -float.infinity];
@@ -779,7 +970,13 @@ class CylinderShell : Shape
         return [t1, t2];
     }
 
-    /// Convert a 3D point (x, y, z) on the CylinderShell in a 2D point (u, v) on the screen/Image
+    /**
+    * Convert a 3D point (x, y, z) on the CylinderShell
+    * in a 2D point (u, v) on the screen/Image
+    * Params:
+    *   p = (Point)
+    * Return: Vec2d
+    */
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         immutable float z = fixBoundary(p.z);
@@ -787,14 +984,25 @@ class CylinderShell : Shape
         return Vec2d(u < 0.0 ? u + 1.0 : u, z);
     }
 
-    /// Create a Normal to a Vector in a Point of the CylinderShell surface
+    /**
+    * Create a Normal to a Vector in a Point of the CylinderShell surface
+    * Params:
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: n (Normal)
+    */
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         immutable Normal n = Normal(p.x, p.y, 0.0);
         return p.x * v.x + p.y * v.y < 0.0 ? n : -n;
     }
 
-    /// Check and record an intersection between a Ray and a CylinderShell
+    /**
+    * Check and record an intersection between a Ray and a CylinderShell
+    * Params:
+    *   r = (Ray) 
+    * Return: Nullable!Hitrecord
+    */
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         )
@@ -826,7 +1034,12 @@ class CylinderShell : Shape
         return hit;
     }
 
-   /// Look up quickly for intersection between a Ray and a CylinderShell
+    /**
+    * Look up quickly for intersection between a Ray and a CylinderShell
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -906,10 +1119,9 @@ unittest
     auto shellTransf = translation(vecY) *
                        rotationX(45.0) *
                        scaling(Vec(1.0, 1.0, sqrt(2.0)));
-    // Rotation of a CylinderShell
-    // Constructor 1
+
     auto shell1 = new CylinderShell(shellTransf);
-    // Constructor 2
+
     auto shell2 = new CylinderShell(
         1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0)
         );
@@ -950,10 +1162,17 @@ unittest
 }
 
 // ************************* Cylinder *************************
-/// Class for a 3D Cylinder aligned with the z axis
+/**
+* Class for a 3D Cylinder aligned with the z axis
+*/
 class Cylinder : CylinderShell
 {
-    /// Build a Cylinder - Parameters: tranformation and material
+    /**
+    * Build a Cylinder 
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in Transformation t = Transformation(), Material m = Material()
         )
@@ -961,14 +1180,29 @@ class Cylinder : CylinderShell
         super(t, m);
     }
 
-    /// Build a Cylinder - Parameters: the radius, the center point of the upper face and lower face and the material
+    /**
+    * Build a Cylinder 
+    * Params: 
+    *   radius r (float)
+    *   max = (Point) center of upper face
+    *   min = (Point) center of lower face
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r, in Point min, in Point max, Material m = Material()
         )
     {
         super(r, min, max, m);
     }
-    /// Build a Cylinder - Parameters: the radius, the lenght, the transformation and the material
+    
+    /**
+    * Build a Cylinder
+    * Params: 
+    *   r = (float) radius
+    *   h = (float) lenght
+    *   t = (Transformation)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r, in float h, in Vec transl = Vec(), Material m = Material()
         )
@@ -976,8 +1210,17 @@ class Cylinder : CylinderShell
         super(r, h, transl, m);
     }
 
-    /// Build a Cylinder - Parameters: the radius, the lenght, the translation Vector,
-    /// 3 angles for a rotation (in disrespect to x,y and z axis) and the material
+    /** 
+    * Build a Cylinder
+    * Params: 
+    *   r = (float) radius
+    *   h = (float) lenght  
+    *   trasl = (Vec) translation Vector
+    *   xDegreesAngle = (float)
+    *   yDegreesAngle = (float)
+    *   zDegreesAngle = (float)
+    *   m = (Material)
+    */
     pure nothrow @nogc @safe this(
         in float r,
         in float h,
@@ -997,7 +1240,13 @@ class Cylinder : CylinderShell
         return [max(tShell[0], tZ[0]), min(tShell[1], tZ[1])];
     }
 
-    /// Convert a 3D point (x, y, z) on the Cylinder in a 2D point (u, v) on the screen/Image
+    /**
+    * Convert a 3D point (x, y, z) on the Cylinder 
+    * in a 2D point (u, v) on the screen/Image
+    * Params:
+    *   p = (Point)
+    * @Ŗeturns: Vec2d
+    */
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         float u = atan2(p.y, p.x) / (2.0 * PI);
@@ -1009,7 +1258,13 @@ class Cylinder : CylinderShell
         return Vec2d(u, 0.25 + 0.5 * p.z);
     }
 
-    /// Create a Normal to a Vector in a Point of the Cylinder surface
+    /**
+    * Create a Normal to a Vector in a Point of the Cylinder surface
+    * Params:
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         if (!areClose(p.z, 0.0) && !areClose(p.z, 1.0))
@@ -1018,7 +1273,12 @@ class Cylinder : CylinderShell
         return v.z < 0.0 ? n : -n;
     }
 
-    /// Check and record an intersection between a Ray and a Cylinder
+    /**
+    * Check and record an intersection between a Ray and a Cylinder
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
     override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
         in Ray r
         )
@@ -1045,7 +1305,12 @@ class Cylinder : CylinderShell
         return hit;
     }
 
-   /// Look up quickly for intersection between a Ray and a Cylinder
+    /**
+    * Look up quickly for intersection between a Ray and a Cylinder
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
@@ -1129,11 +1394,9 @@ unittest
 {
     import geometry : vecY, vecZ;
 
-    // Rotation of a Cylinder
-    // Constructor 1
     auto cylTransf = translation(vecY) * rotationX(45.0);
     auto cyl1 = new Cylinder(cylTransf);
-    // Constructor 2
+
     immutable cos45 = sqrt(2.0) / 2.0;
     auto cyl2 = new Cylinder(
         1.0,
@@ -1226,24 +1489,40 @@ unittest
 }
 
 // ************************* World *************************
-/// Struct for a 3D World where to put all the shapes of the image
+/**
+* Struct for a 3D World where to put all the shapes of the image
+*/
 struct World
 {
     Shape[] shapes;
     
-    /// Build a World from an array of Shapes
+    /**
+    * Build a World from an array of Shapes
+    * Params:
+    *   s = (Shape[])
+    */
     pure nothrow @nogc @safe this(Shape[] s)
     {
         shapes = s;
     }
 
-    /// Add a Shape to the list of the World
+    /**
+    * Add a Shape to the list of the World
+    * Params:
+    *   s = (Shape)
+    */
     pure nothrow @safe void addShape(Shape s)
     {
         shapes ~= s;
     }
 
-    /// Check and record an intersection between a Ray and each Shape of the World by calling their specific rayIntersection
+    /**
+    * Check and record an intersection between a Ray and each Shape of the World 
+    * by calling their specific rayIntersection
+    * Params:
+    *   ray = (Ray)
+    * Return: Nullable!HitRecord
+    */
     pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(in Ray ray)
     {
         Nullable!HitRecord closest;
@@ -1259,7 +1538,14 @@ struct World
         return closest;
     }
 
-    /// Return if a Point of the World is visible or not from the observer put in obsPos
+    /**
+    * Return if a Point of the World is visible or not
+    * from the observer put in obsPos
+    * Params:
+    *   point = (Point)
+    *   obsPos = (Point)
+    * Return: true or false (bool)
+    */
     pure nothrow @nogc @safe bool isPointVisible(
         in Point point,
         in Point obsPos
@@ -1285,7 +1571,6 @@ unittest
     world.addShape(s1);
     world.addShape(s2);
     
-    // rayIntersection
     auto ray1 = Ray(Point(0.0, 0.0, 0.0), vecX);
     Nullable!HitRecord intersection1 = world.rayIntersection(ray1);
     assert(!intersection1.isNull);
@@ -1308,7 +1593,6 @@ unittest
     world.addShape(s1);
     world.addShape(s2);
 
-    // isPointVisible
     assert(!world.isPointVisible(Point(10.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
     assert(!world.isPointVisible(Point(5.0, 0.0, 0.0), Point(0.0, 0.0, 0.0)));
     assert(world.isPointVisible(Point(5.0, 0.0, 0.0), Point(4.0, 0.0, 0.0)));

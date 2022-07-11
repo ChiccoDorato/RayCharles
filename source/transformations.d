@@ -59,9 +59,14 @@ struct Transformation
 
 
     /**
-    * @Returns:  product between two 4X4 matrices (float)
+    * Params: 
+    *   m1 = (float[4][4])
+    *   m2 = (float[4][4])
+    * Returns: product between two 4X4 matrices (float)
     */
-	pure nothrow @nogc @safe float[4][4] matProd(in float[4][4] m1, in float[4][4] m2) const
+	pure nothrow @nogc @safe float[4][4] matProd(
+        in float[4][4] m1, in float[4][4] m2
+        ) const
     {
 		float[4][4] prod = 0.0;
 		for (ubyte i = 0; i < 4; ++i)
@@ -72,8 +77,13 @@ struct Transformation
 	}
 
     /**
-    * Verify if two matrices are close by calling the fuction areClose on every component
-    * @Returns: true or false (bool)
+    * Verify if two matrices are close by calling 
+    * the fuction areClose on every component
+    * Params: 
+    *   m1 = (float[4][4])
+    *   m2 = (float[4][4])
+    *   epsilon = (float) = 1e-5 
+    * Returns: true or false (bool)
     */
     ///  
     pure nothrow @nogc @safe bool matrixIsClose(
@@ -87,8 +97,12 @@ struct Transformation
     }
 
     /**
-    * Verify if two Tranformations are close by calling the fuction matrixIsClose on the matrix and on its inverse
-    * @Returns: true or false (bool)
+    * Verify if two Tranformations are close by calling
+    * the fuction matrixIsClose on the matrix and on its inverse
+    * Params: 
+    *   t = (Tranformation)
+    *   epsilon = (float) = 1e-5
+    * Returns: true or false (bool)
     */
     pure nothrow @nogc @safe bool transfIsClose(
         in Transformation t, in float epsilon = 1e-5
@@ -99,8 +113,11 @@ struct Transformation
     }
 
     /**
-    * Verify if a Tranformation is consistent: the product between the matrix and its inverse must be the identity
-    * @Returns: true or false (bool)
+    * Verify if a Tranformation is consistent: 
+    * the product between the matrix and its inverse must be the identity
+    * Params:
+    *   epsilon = (float) = 1e-5
+    * Returns: true or false (bool)
     */
 	pure nothrow @nogc @safe bool isConsistent(in float epsilon = 1e-5) const
     {
@@ -108,14 +125,16 @@ struct Transformation
 	}
 
     /**
-    * @Returns: the inverse of a Transformation
+    * Returns: the inverse of a Transformation
     */
 	pure nothrow @nogc @safe Transformation inverse() const
     {
 		return Transformation(invM, m);
 	}
 
-    /// Return: the product (*) between two Tranformations
+    /**
+    * Returns: the product between two Tranformations
+    */
 	pure nothrow @nogc @safe Transformation opBinary(string op)(
         in Transformation rhs
         ) const if (op == "*")
@@ -125,8 +144,8 @@ struct Transformation
 
     /**
     * Overload for the *= operator
-    * @Examples: this *= rhs
-    * @Returns: this = rhs * this and NOT this = this * rot
+    * Examples: this *= rhs
+    * Returns: this = rhs * this and NOT this = this * rot
     */
     pure nothrow @nogc @safe ref Transformation opOpAssign(string op)(
         in Transformation rhs
@@ -136,7 +155,11 @@ struct Transformation
         return this;
 	}
 
-    /// Return: the product (*) between a matrix and a Point 
+    /** 
+    * Returns the product between a matrix and a Point
+    * Params: 
+        rhs = (Point)
+    */
 	pure nothrow @nogc @safe Point opBinary(string op)(in Point rhs) const
     if (op == "*")
     {
@@ -153,7 +176,11 @@ struct Transformation
 		return lambda == 1.0 ? p : p * (1.0 / lambda);
 	}
 
-    /// Return: the product between a matrix and a Vec
+    /** 
+    * Returns the product between a matrix and a Vec
+    * Params: 
+        rhs = (Vec)
+    */
 	pure nothrow @nogc @safe Vec opBinary(string op)(in Vec rhs) const
     if (op == "*")
     {
@@ -164,7 +191,11 @@ struct Transformation
             );
 	}
 
-    /// Return: the product (*) between a matrix and a Normal
+    /**
+    * Returns the product between a matrix and a Normal
+    * Params: rhs (Normal)
+    */
+    /// 
     pure nothrow @nogc @safe Normal opBinary(string op)(in Normal rhs) const
     if (op == "*")
     {
@@ -175,8 +206,13 @@ struct Transformation
             );
 	}
 
-    /// Calculate the product (*) of the origin (Point) and of the direction (Vec) of a Ray with the matrix
-    /// Return: a transformed Ray
+    /**
+    * Calculate the product (*) between the matrix with the origin (Point)
+    * and of the direction (Vec) of a Ray
+    * Params: 
+    *   rhs = (Ray)
+    * Returns: a transformed Ray
+    */
     pure nothrow @nogc @safe Ray opBinary(string op)(in Ray rhs) const
     if (op == "*")
     {
@@ -322,8 +358,9 @@ unittest
 /**
 * translation is a Tranformation
 * ___
-* @Params: Vec (x, y, z)
-* @Returns: a translation of a given Vec (x,y,z)
+* Params: 
+*   Vec = (x, y, z)
+* Returns: a translation (Tranformation) of a given Vec (x,y,z)
 */
 pure nothrow @nogc @safe Transformation translation(in Vec v)
 {
@@ -361,8 +398,10 @@ unittest
 /**
 * rotationX is a Transformation
 * ___
-* @Params: cosine and sine of an angle (float)
-* @Returns: rotation around the X axis
+* Params: 
+*   c = (float) cosine of an angle 
+*   s = (float) sine of an angle
+* Returns: rotation around the X axis
 */
 pure nothrow @nogc @safe Transformation rotationX(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
@@ -385,8 +424,9 @@ in (areClose(c * c + s * s, 1.0))
 /**
 * rotationX is a Transformation
 * ___
-* @Params: angle (float)
-* @Returns: rotation around the X axis
+* Params: 
+*   angleInDegrees = (float)
+* Returns: rotation around the X axis
 */
 pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 {
@@ -398,8 +438,10 @@ pure nothrow @nogc @safe Transformation rotationX(in float angleInDegrees)
 /**
 * rotationY is a Transformation
 * ___
-* @Params: cosine and sine of an angle (float)
-* @Returns: rotation around the Y axis
+* Params: 
+*   c = (float) cosine of an angle 
+*   s = (float) sine of an angle
+* Returns: rotation around the Y axis
 */
 pure nothrow @nogc @safe Transformation rotationY(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
@@ -422,8 +464,9 @@ in (areClose(c * c + s * s, 1.0))
 /**
 * rotationY is a Transformation
 * ___
-* @Params: angle (float)
-* @Returns: rotation around the Y axis
+* Params: 
+*   angleInDegrees = (float)
+* Returns: rotation around the Y axis
 */
 pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 {
@@ -435,8 +478,10 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 /**
 * rotationY is a Transformation
 * ___
-* @Params: cosine and sine of an angle (float)
-* @Returns: rotation around the Z axis
+* Params: 
+*   c = (float) cosine of an angle 
+*   s = (float) sine of an angle
+* Returns: rotation around the Z axis
 */
 pure nothrow @nogc @safe Transformation rotationZ(in float c, in float s)
 in (areClose(c * c + s * s, 1.0))
@@ -459,8 +504,9 @@ in (areClose(c * c + s * s, 1.0))
 /**
 * rotationZ is a Transformation
 * ___
-* @Params: angle (float)
-* @Returns: rotation around the Z axis
+* Params: 
+*   angleInDegree = (float)
+* Returns: rotation around the Z axis
 */
 pure nothrow @nogc @safe Transformation rotationZ(in float angleInDegrees)
 {
@@ -494,8 +540,9 @@ unittest
 /**
 * scaling is a Transformation
 * ___
-* @Params: Vec (x, y, z)
-* @Returns: a scale Tranformation
+* Params: 
+*    v = Vec (x, y, z)
+* Returns: a scale Tranformation
 */
 pure nothrow @nogc @safe Transformation scaling(in Vec v)
 {

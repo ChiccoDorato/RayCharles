@@ -22,14 +22,25 @@ import transformations;
 
 
 // ************************* Source Location *************************
-/// Structure of a SourceLocation  - Members: fileName (string) and the number of line and col (uint)
+/**
+* Structure of a SourceLocation
+* Params:
+*   fileName = (string)
+*   line = (uint)
+*   col = (uint)
+*/
 struct SourceLocation
 {
     string fileName;
     uint line;
     uint col;
 
-    /// Convert a SourceLocarion into a string
+    /**
+    * Convert a SourceLocarion into a string
+    * Params: 
+    *   fmt = (SourceLocation)
+    * Returns: string
+    */
     @safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
@@ -43,7 +54,13 @@ struct SourceLocation
 }
 
 // ************************* GrammarError *************************
-/// Class of a GrammarError derivate of a Exception class - Members: message (string), file (string) and line number (size_t)
+/**
+* Class of a GrammarError derivate of a Exception class 
+* Params: 
+*   msg = (string)
+*   file = (string) 
+*   line = (size_t)
+*/
 class GrammarError : Exception
 {
     SourceLocation source;
@@ -74,7 +91,9 @@ class GrammarError : Exception
 }
 
 // ************************* Keyword *************************
-/// Enumeration of the Keywords
+/**
+* Enumeration of the Keywords
+*/
 enum Keyword : string
 {
     newKeyword = "new",
@@ -102,33 +121,57 @@ enum Keyword : string
 }
 
 // ************************* StopToken *************************
-/// Struct of a StopToken: needed to stop the lecture
+/**
+* Struct of a StopToken: needed to stop the lecture
+*/
 struct StopToken {}
 
 // ************************* SymbolToken *************************
-/// Struct of a SymbolToken - Member: symbol (char)
+/**
+* Struct of a SymbolToken 
+* Params: 
+*   value = (char)
+*/
 struct SymbolToken { char value; }
 
 // ************************* KeywordToken *************************
-/// Struct of a KeywordToken - Member: a type Keyword
+/**
+* Struct of a KeywordToken
+* Params: 
+*   value = (Keyword)
+*/
 struct KeywordToken { Keyword value; }
 
 // ************************* IdentifierToken *************************
-/** Struct of a IdentifierToken - Member: identifier (string)
-* @param identifier (string)
+/** 
+* Struct of a IdentifierToken
+* Params: 
+*   value = identifier (string)
 **/
 struct IdentifierToken { string value; }
 
 // ************************* StringToken *************************
-/// Struct of a StringToken - Member: literalString (string)
+/**
+*Struct of a StringToken 
+* Params: 
+*   value = literalString (string)
+*/
 struct StringToken { string value; }
 
 // ************************* IdentifierToken *************************
-/// Struct of a IdentifierToken - Member: an identifier (string)
+/**
+* Struct of a IdentifierToken
+* Params: 
+*   value = (float)
+*/
 struct LiteralNumberToken { float value; }
 
 // ************************* TokenType *************************
-/// SumType of all the kind of Tokens one can find: StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken
+/**
+* SumType of all the kind of Tokens one can find:
+* ___
+* StopToken, SymbolToken, KeywordToken, IdentifierToken, StringToken, LiteralNumberToken
+*/
 alias TokenType = SumType!(
     StopToken,
     SymbolToken,
@@ -138,14 +181,24 @@ alias TokenType = SumType!(
     LiteralNumberToken
     );
 
-// ************************* Token *************************
-/// Struct of a Token - Members: type (TokenType) and location (SourceLocation)
+// ************************* Token ************************* 
+/**
+* Struct of a Token
+* Params: 
+*   type = (TokenType)
+*   location = (SourceLocation)
+*/
 struct Token
 {
     TokenType type;
     SourceLocation location;
 
-    /// Build a certain type of Token - Parameters: TokenType, SourceLocation 
+    /**
+    * Build a certain type of Token
+    * Params: 
+    *   TokenType = (T)
+    *   tokenLocation = (SourceLocation)
+    */
     pure nothrow @safe this(T)(
         in T tokenType, in SourceLocation tokenLocation = SourceLocation()
         )
@@ -154,20 +207,26 @@ struct Token
         location = tokenLocation;
     }
 
-    /// Assignement operator between two Tokens
+    /**
+    * Assignement operator between two Tokens
+    */
     pure nothrow @nogc void opAssign(Token rhs)
     {
         type = rhs.type;
         location = rhs.location;
     }
 
-    /// Verify if a Token is of the specific type given 
+    /**
+    * Verify if a Token is of the specific type given
+    */
     pure nothrow @safe bool isOfType(T)()
     {
         return type.match!((T t) => true, _ => false);
     }
 
-    // Try to make it better because of StopToken
+    /**
+    * Concert to string every kind of token
+    */
     pure @safe string toString() const
     {
         return type.match!(
@@ -180,7 +239,9 @@ struct Token
         );
     }
 
-    // Verify if two given Token have the same values
+    /**
+    * Verify if two given Token have the same values
+    */
     pure nothrow @safe bool hasValue(T)(in T tokenValue)
     {
         static if (is(T == char))
@@ -212,11 +273,11 @@ struct Token
 unittest
 {
     import std.exception : assertThrown;
-    // isOfType: StopToken
+
     auto stop = Token(StopToken(), SourceLocation("noFile", 3, 5));
     assert(stop.isOfType!StopToken);
     assert(!stop.isOfType!LiteralNumberToken);
-    // isOfType: StringToken
+
     auto literalString = Token(StringToken("Literal string token"));
     assert(literalString.isOfType!StringToken);
     assert(!literalString.isOfType!SymbolToken);
@@ -230,10 +291,17 @@ pure nothrow @nogc @safe bool findChar(in char[] items, in char c)
 }
 
 // ************************* InputStream *************************
-/// Struct of an InputStream
-///
-/// Members: stream (immutable char[]), index (uint), savedChar (char),
-/// location and savedLocation (SourceLocation), tabulations (ubyte), savedToken (Token)
+/**
+* Struct of an InputStream
+* Params: 
+*   stream = (immutable char[])
+*   index = (uint)
+*   savedChar = (char)
+*   location = (SourceLocation)
+*   savedLocation = (SourceLocation)
+*   tabulations = (ubyte)
+*   savedToken = (Token)
+*/
 struct InputStream 
 {
     immutable char[] stream;
@@ -248,7 +316,13 @@ struct InputStream
     /// All possible Symbols
     immutable char[] symbols = ['(', ')', '<', '>', '[', ']', ',', '*'];
 
-    /// Build an InputStream - Parameters: s (char[]), fileName (string), tab (ubyte)
+    /**
+    * Build an InputStream 
+    * Params:
+    *   s = (char[])
+    *   fileName = (string)
+    *   tab = (ubyte)
+    */
     pure nothrow @safe this(in char[] s, in string fileName, in ubyte tab = 4)
     in (tab == 4 || tab == 8)
     {
@@ -258,13 +332,20 @@ struct InputStream
         tabulations = tab;
     }
 
-    /// Build an InputStream - Parameters: fileName (string), tab (ubyte)
+    /**
+    * Build an InputStream 
+    * Params:
+    *   fileName = (string)
+    *   tab = (ubyte)
+    */
     this(in string fileName, in ubyte tab = 4)
     {
         this(cast(immutable char[])(fileName.read), fileName, tab);
     }
 
-    /// Return the updated position after a char is read from the Lexer
+    /**
+    * Return the updated position after a char is read from the Lexer
+    */
     pure nothrow @nogc @safe void updatePos(in char c)
     {
         if (c == char.init) return;
@@ -277,7 +358,9 @@ struct InputStream
         else ++location.col;
     }
 
-    /// Read and record a char, then update the position calling the function updatePos
+    /**
+    * Read and record a char, then update the position calling the function updatePos
+    */
     pure nothrow @nogc @safe char readChar()
     {
         char c;
@@ -299,7 +382,9 @@ struct InputStream
         return c;
     }
 
-    /// Unread a char, then update the position "going back" (decrease the index by one)
+    /**
+    * Unread a char, then update the position "going back" (decrease the index by one)
+    */
     pure nothrow @nogc @safe void unreadChar(in char c)
     in (savedChar == char.init)
     {
@@ -307,7 +392,9 @@ struct InputStream
         location = savedLocation;
     }
 
-    /// Find white spaces due to '\r' or '\n' and comments preceded by '#'
+    /**
+    * Find white spaces due to '\r' or '\n' and comments preceded by '#'
+    */
     pure nothrow @nogc @safe void skipWhiteSpacesAndComments()
     {
         char c = readChar;
@@ -320,7 +407,11 @@ struct InputStream
         unreadChar(c);
     }
 
-    /// Analyse if in a certain SourceLocation there is a StringToken - Parameter: tokenLoc (SourceLocation)
+    /**
+    * Analyse if in a certain SourceLocation there is a StringToken 
+    * Params:
+    *   tokenLoc = (SourceLocation)
+    */
     pure @safe Token parseStringToken(in SourceLocation tokenLoc)
     {
         string token;
@@ -332,8 +423,13 @@ struct InputStream
         }
         throw new GrammarError("unterminated string", tokenLoc);
     }
-
-    /// Analyse if in a certain SourceLocation there is a LiteralNumberToken  - Parameter: firstChar (char), tokenLoc (SourceLocation)
+ 
+    /**
+    * Analyse if in a certain SourceLocation there is a LiteralNumberToken 
+    * Params:
+    *   firstChar = (char)
+    *   tokenLoc = (SourceLocation)
+    */
     pure @safe Token parseFloatToken(
         in char firstChar, in SourceLocation tokenLoc
         )
@@ -361,7 +457,13 @@ struct InputStream
             );
     }
 
-    /// Analyse if in a certain SourceLocation there is a KeywordToken or an IdentifierToken - Parameter: firstChar (char), tokenLoc (SourceLocation)
+    ///
+    /**
+    *  Analyse if in a certain SourceLocation there is a KeywordToken or an IdentifierToken 
+    * Params:
+    *   firstChar = (char)
+    *   tokenLoc = (SourceLocation)
+    */
     pure @safe Token parseKeywordOrIdentifierToken(
         in char firstChar, in SourceLocation tokenLoc
         )
@@ -383,7 +485,9 @@ struct InputStream
         return Token(IdentifierToken(token), tokenLoc);
     }
 
-    /// Read and Analyse a Token returning the correct kind
+    /**
+    * Read and Analyse a Token returning the correct kind
+    */
     pure Token readToken()
     {   
         // StopToken
@@ -407,14 +511,22 @@ struct InputStream
         throw new GrammarError(format("invalid character %s", c), location);
     }
 
-    /// Unread a Token - Parameter: t (Token)
+    /**
+    * Unread a Token 
+    * Params: 
+    *   t = (Token)
+    */
     pure nothrow @nogc void unreadToken(in Token t)
     in (savedToken.isOfType!StopToken)
     {
         savedToken = t;
     }
 
-    /// Throw a GrammarError if the Token is not the expected one: a SymbolToken - Parameter: sym (char)
+    /**
+    * Throw a GrammarError if the Token is not the expected one: a SymbolToken 
+    * Params: 
+    *   sym = (char)
+    */
     pure void expectSymbol(in char sym)
     {
         Token token = readToken;
@@ -425,7 +537,11 @@ struct InputStream
                 );
     }
 
-    /// Throw a GrammarError if the Token is not the expected one: a KeywordToken - Parameter: keywords (Keyword[])
+    /**
+    * Throw a GrammarError if the Token is not the expected one: a KeywordToken 
+    * Params: 
+    *   keywords = (Keyword[])
+    */
     pure Keyword expectKeyword(in Keyword[] keywords)
     {
         Token token = readToken;
@@ -445,7 +561,11 @@ struct InputStream
             token);
     }
 
-    /// Throw a GrammarError if the Token is not the expected one: a LiteralNumberToken - Parameter: scene (Scene)
+    /**
+    * Throw a GrammarError if the Token is not the expected one: a LiteralNumberToken
+    * Params:
+    *   scene = (Scene)
+    */
     pure float expectNumber(in Scene scene)
     {
         Token token = readToken;
@@ -468,7 +588,10 @@ struct InputStream
             );
     }
 
-    /// Throw a GrammarError if the Token is not the expected one: a StringToken - Parameter:
+    ///
+    /**
+    * Throw a GrammarError if the Token is not the expected one: a StringToken
+    */
     pure string expectString()
     {
         Token token = readToken;
@@ -479,7 +602,9 @@ struct InputStream
             );
     }
 
-    /// Throw a GrammarError if the Token is not the expected one: an IdentifierToken - Parameter:
+    /**
+    * Throw a GrammarError if the Token is not the expected one: an IdentifierToken 
+    */
     pure string expectIdentifier()
     {
         Token token = readToken;
@@ -490,7 +615,11 @@ struct InputStream
             );
     }
 
-    /// Analyse an InputStream and return a 3D Vec (x,y,z) - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a 3D Vec (x, y, z)
+    * Params:
+    *   scene = (Scene)
+    */
     pure Vec parseVector(in Scene scene)
     {
         expectSymbol('[');
@@ -503,7 +632,11 @@ struct InputStream
         return Vec(x, y, z);
     }
 
-    /// Analyse an InputStream and return a Color (r,g,b) - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Color (r, g, b) 
+    * Params:
+    *   scene = (Scene)
+    */
     pure Color parseColor(in Scene scene)
     {
         expectSymbol('<');
@@ -516,7 +649,11 @@ struct InputStream
         return Color(red, green, blue);
     }
 
-    /// Analyse an InputStream and return a Pigment - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Pigment 
+    * Params:
+    *   scene = (Scene)
+    */
     Pigment parsePigment(in Scene scene)
     {
         immutable Keyword pigKeyword = expectKeyword([
@@ -561,7 +698,11 @@ struct InputStream
         return pigment;
     }
 
-    /// Analyse an InputStream and return a BRDF - Parameter: scene (Scene)
+    /**
+    *  Analyse an InputStream and return a BRDF
+    * Params: 
+    *   scene = (Scene)
+    */
     BRDF parseBRDF(in Scene scene)
     {
         immutable Keyword brdfKeyword = expectKeyword([
@@ -585,7 +726,11 @@ struct InputStream
         }
     }
 
-    /// Analyse an InputStream and return a Material - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Material
+    * Params:
+    *   scene = (Scene) 
+    */
     Tuple!(string, Material) parseMaterial(in Scene scene)
     {
         string materialName = expectIdentifier;
@@ -597,7 +742,11 @@ struct InputStream
         return tuple(materialName, Material(brdf, emittedRadiance));
     }
 
-    /// Analyse an InputStream and return a Transformation - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Transformation
+    * Params:
+    *   scene = (Scene)
+    */
     pure Transformation parseTransformation(in Scene scene)
     {
         Transformation transf;
@@ -663,7 +812,11 @@ struct InputStream
         return transf;
     }
 
-    // Analyse an InputStream and return a Sphere - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Sphere
+    * Params:
+    *   scene = (Scene)
+    */
     pure Sphere parseSphere(Scene scene)
     {
         expectSymbol('(');
@@ -680,7 +833,12 @@ struct InputStream
         return new Sphere(transf, scene.materials[materialName]);
     }
 
-    // Analyse an InputStream and return a Plane - Parameter: scene (Scene)
+
+    /**
+    * Analyse an InputStream and return a Plane
+    * Params:
+    *   scene = (Scene)
+    */
     pure Plane parsePlane(Scene scene)
     {
         expectSymbol('(');
@@ -697,7 +855,11 @@ struct InputStream
         return new Plane(transf, scene.materials[materialName]);
     }
 
-    // Analyse an InputStream and return an AABox - Parameter: scene (Scene)
+    /**
+    *  Analyse an InputStream and return an AABox
+    * Params:
+    *   scene = (Scene)
+    */
     pure AABox parseAABox(Scene scene)
     {
         expectSymbol('(');
@@ -714,7 +876,11 @@ struct InputStream
         return new AABox(transf, scene.materials[materialName]);
     }
 
-    // Analyse an InputStream and return a CylinderShell - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a CylinderShell
+    * Params:
+    *   scene = (Scene)
+    */
     pure CylinderShell parseCylinderShell(Scene scene)
     {
         expectSymbol('(');
@@ -731,7 +897,11 @@ struct InputStream
         return new CylinderShell(transf, scene.materials[materialName]);
     }
 
-    // Analyse an InputStream and return a Cylinder - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Cylinder
+    * Params:
+    *   scene = (Scene)
+    */
     pure Cylinder parseCylinder(Scene scene)
     {
         expectSymbol('(');
@@ -748,7 +918,11 @@ struct InputStream
         return new Cylinder(transf, scene.materials[materialName]);
     }
 
-    // Analyse an InputStream and return a Camera - Parameter: scene (Scene)
+    /**
+    * Analyse an InputStream and return a Camera 
+    * Params:
+    *   scene = (Scene)
+    */
     pure Camera parseCamera(in Scene scene)
     {
         expectSymbol('(');
@@ -777,7 +951,11 @@ struct InputStream
         }
     }
 
-    // Analyse an InputStream, read the scene description and return a Scene - Parameters: a tuple of a string and a float
+    /**
+    * Analyse an InputStream, read the scene description and return a Scene
+    * Params:
+    *   variables = (float[string])
+    */
     Scene parseScene(float[string] variables = null)
     {
         Scene scene;
@@ -915,6 +1093,16 @@ unittest
     assert(inputFile.readToken.hasValue(')'));
 }
 
+// ************************* Scene *************************
+/**
+* Struc of a 3D Scene
+* Params: 
+*   materials = (Material[string])
+*   world = (World)
+*   camera = (Nullable!Camera)
+*   floatVars = (float[string])
+*   overriddenVars = (auto)
+*/
 struct Scene
 {
     Material[string] materials;
@@ -923,6 +1111,9 @@ struct Scene
     float[string] floatVars;
     auto overriddenVars = make!(RedBlackTree!string);
 
+    /**
+    * Print a Warning if the Camera is not provided
+    */
     @safe void printCameraWarning() const
     {
         writeln(
@@ -965,12 +1156,10 @@ unittest
     auto inpStr = InputStream(stream, "");
     Scene scene = inpStr.parseScene();
 
-    // Verify that the float variables are correct
     assert(scene.floatVars.length == 1);
     assert(("clock" in scene.floatVars) !is null);
     assert(scene.floatVars["clock"] == 150.0);
 
-    // Verify that the materials are correct
     assert(scene.materials.length == 3);
     assert(("sphereMaterial" in scene.materials) !is null);
     assert(("skyMaterial" in scene.materials) !is null);
@@ -1015,7 +1204,6 @@ unittest
     assert(is(typeof(sphereEmitted) == UniformPigment));
     assert(sphereEmitted.color.colorIsClose(Color(0.0, 0.0, 0.0)));
 
-    // Verify that the shapes are correct
     assert(scene.world.shapes.length == 3);
 
     auto plane1 = cast(Plane)(scene.world.shapes[0]);
@@ -1033,7 +1221,6 @@ unittest
     assert(is(typeof(sphere) == shapes.Sphere));
     assert(sphere.transf.transfIsClose(translation(Vec(0.0, 0.0, 1.0))));
 
-    // Verify that the camera is correct
     auto sceneCam = cast(PerspectiveCamera)(scene.camera.get());
     assert(is(typeof(sceneCam) == PerspectiveCamera));
 
@@ -1047,7 +1234,6 @@ unittest
 ///
 unittest
 {
-    // Verify that unknown materials raise a GrammarError
     string stream = "plane(thisMaterialDoesNotExist, identity)";
     auto inpStr = InputStream(stream, "");
 
@@ -1062,7 +1248,7 @@ unittest
 ///
 unittest
 {
-    // Verify that defining two cameras in the same file raises a GrammarError
+
     string stream = "camera(
         perspective,
         rotationZ(30) * translation([-4, 0, 1]),

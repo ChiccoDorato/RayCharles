@@ -1,10 +1,19 @@
 module pcg;
+
 // ******************** PCG ********************
-/// Class for a PCG: a simple, fast, space-efficient statistically good algotiyhm for random number generation
+/**
+* Class for a PCG: a simple, fast, space-efficient statistically good algotiyhm
+* for random number generation
+*/
 class PCG
 {
     ulong state, inc;
-    /// Build a PCG from 2 ulong: a seed (initState) and a sequence (initSeq)
+    /**
+    * Build a PCG from a seed and a sequence
+    * Params: 
+    *   initState = (ulong)
+    *   initSeq  = (ulong)
+    */
     pure nothrow @nogc @safe this(
         in ulong initState = 42, in ulong initSeq = 54
         )
@@ -15,13 +24,20 @@ class PCG
         this.random();
     }
 
+    /**
+    * Build a PCG from another PCG
+    * Params: 
+    *   rhs = (PCG)
+    */
     pure nothrow @nogc @safe this(ref return scope inout PCG rhs) inout
     {
         state = rhs.state;
         inc = rhs.inc;
     }
 
-    /// Return a pseudo-random number
+    /**
+    * Returns: a pseudo-random number (uint)
+    */
     pure nothrow @nogc @safe uint random()
     {
         immutable ulong oldState = state;
@@ -33,7 +49,9 @@ class PCG
         return (xorShifted >> rot) | (xorShifted << ((-rot) & 31));
     }
 
-    /// Return a pseudo-random floating point number
+    /**
+    * Returns: a pseudo-random floating point number (float)
+    */
     pure nothrow @nogc @safe float randomFloat()
     {
         return cast(float)(random) / uint.max;
