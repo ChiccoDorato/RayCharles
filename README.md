@@ -53,7 +53,8 @@ and the file animationName.mp4 will be inserted into the animations subdirectory
 
 **Animations.**
 
-![Globe rolling on table](animations/rolling.gif)
+| ![Globe rolling on table](animations/rolling.gif) | ![Giant penguins](animations/igloo.gif) |
+| :---: | :---: |
 
 ## License
 The code is released under the GPL-3.0 [license](LICENSE).
