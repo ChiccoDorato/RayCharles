@@ -4,6 +4,7 @@
 	],
 	"copyright": "Copyright © 2022, Luca Bernardi",
 	"dependencies": {
+		"colored": "~>0.0.27",
 		"commandr": "~>0.2.0",
 		"imageformats": "~>7.0.2"
 	},
