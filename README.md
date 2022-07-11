@@ -41,13 +41,19 @@ $ ./RayCharles.sh inputScene.txt animationName
 and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected in the pngFrames subdirectory. By default the images are rendered with -d=3 and -spp=4 (see render help menu).
 
 ## Examples
-**Demo.**
-![demo bigger size](generatedImages/Big10-4-5.png)
+**Render.**
+
+![scarecrow](generatedImages/scarecrow.png)
 
 **Pfm2png.**
+
 | ![memorial.png factor 0.2](generatedImages/memorial-f02.png) | ![memorial.png factor 0.4](generatedImages/memorial-f04.png) |
 | :---: | :---: |
 | Gamma = 1.0, factor = 0.2 | Gamma = 1.0, factor = 0.4 |
+
+**Animations.**
+
+![Globe rolling on table](animations/rolling.gif)
 
 ## License
 The code is released under the GPL-3.0 [license](LICENSE).
