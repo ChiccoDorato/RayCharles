@@ -453,19 +453,19 @@ class AABox : Shape
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
     {
         float uBox, vBox;
-        if (areClose(p.x, 0.0))
+        if (areClose(p.x, 0.0, 1e-4))
             uBox = (1.0 + p.y) / 3.0, vBox = (2.0 + p.z) / 4.0;
-        else if (areClose(p.x, 1.0))
+        else if (areClose(p.x, 1.0, 1e-4))
             uBox = (1.0 + p.y) / 3.0, vBox = (1.0 - p.z) / 4.0;
-        else if (areClose(p.y, 0.0))
+        else if (areClose(p.y, 0.0, 1e-4))
             uBox = (1.0 - p.x) / 3.0, vBox = (2.0 + p.z) / 4.0;
-        else if (areClose(p.y, 1.0))
+        else if (areClose(p.y, 1.0, 1e-4))
             uBox = (2.0 + p.x) / 3.0, vBox = (2.0 + p.z) / 4.0;
-        else if (areClose(p.z, 0.0))
+        else if (areClose(p.z, 0.0, 1e-4))
             uBox = (1.0 + p.y) / 3.0, vBox = (2.0 - p.x) / 4.0;
         else
         {
-            assert(areClose(p.z, 1.0));
+            assert(areClose(p.z, 1.0, 1e-4));
             uBox = (1.0 + p.y) / 3.0, vBox = (3.0 + p.x) / 4.0;
         }
 
@@ -475,13 +475,13 @@ class AABox : Shape
     /// Create a Normal to a Vector in a Point of the AABox
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
-        if (areClose(p.x, 0.0) || areClose(p.x, 1.0))
+        if (areClose(p.x, 0.0, 1e-4) || areClose(p.x, 1.0, 1e-4))
             return Normal(v.x < 0.0 ? 1.0 : -1.0, 0.0, 0.0);
-        else if (areClose(p.y, 0.0) || areClose(p.y, 1.0))
+        else if (areClose(p.y, 0.0, 1e-4) || areClose(p.y, 1.0, 1e-4))
             return Normal(0.0, v.y < 0.0 ? 1.0 : -1.0, 0.0);
         else
         {
-            assert(areClose(p.z, 0.0) || areClose(p.z, 1.0));
+            assert(areClose(p.z, 0.0, 1e-4) || areClose(p.z, 1.0, 1e-4));
             return Normal(0.0, 0.0, v.z < 0.0 ? 1.0 : -1.0);
         }
     }
