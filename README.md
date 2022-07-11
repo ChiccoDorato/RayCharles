@@ -9,7 +9,9 @@ To run the program on Linux, MacOS or Windows a D compiler is needed. Even thoug
 **Package manger.** Details about DUB installation are provided on [DUB github page](https://github.com/dlang/dub#Installation) - latest version is the best choice. Be aware that upgrades via package management system may install a newer version than the [last release](https://github.com/dlang/dub/releases) and that most of the times it should not alarm.
 
 ## Usage
-This command-line interface implements two functionalities: `render` generates a photorealistic image for a scene given in input as a txt, while `pfm2png` allows to convert a pfm file into a png one. Moreover, a dedicated script allows to render a scene with different angles and create animations.
+This command-line interface implements two functionalities: `render` generates a photorealistic image for a scene given in input as a txt, while `pfm2png` allows to convert a pfm file into a png one.
+
+Moreover, a dedicated script allows to render a scene with different angles and create animations. This function uses the ldc2 compiler: if you feel confident read below to know how to select the compiler and modify properly the script RayCharles.sh.
 
 **Render.** In order to use the ray tracer open the shell, enter the unzipped directory and build and run through
 
@@ -36,7 +38,7 @@ Again, `dub build --compiler ldc2` select another compiler (not particularly use
 $ ./RayCharles.sh inputScene.txt animationName
 ```
 
-and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected in the pngFrames subdirectory.
+and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected in the pngFrames subdirectory. By default the images are rendered with -d=3 and -spp=4 (see render help menu).
 
 ## Examples
 **Demo.**
