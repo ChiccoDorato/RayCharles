@@ -1,0 +1,74 @@
+# Camera
+camera(perspective, translation([-4.0, 0.0, 1.5]), 1.33333, 1.0)
+
+# Sky
+material skyMaterial(
+    diffuse(uniform(<0.0 ,0.0, 0.0>)),
+    uniform(<0.3, 0.3, 0.6>)
+)
+sphere(skyMaterial, translation([0.0, 0.0, 0.4]) * scaling([200.0, 200.0, 200.0]))
+
+# Ground
+material groundMaterial(
+    diffuse(checkered(<0.74, 0.8, 0.93>,
+                      <0.98, 0.9, 1.0>,
+                      10)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+plane(groundMaterial, identity)
+
+# Mirror Igloo
+material mirrorMaterial(
+    specular(checkered(<0.74, 0.8, 0.93>,
+                      <0.98, 0.9, 1.0>,
+                      10)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+sphere(mirrorMaterial, translation([1.0, 1.0, 0.0]) * scaling([2.0, 2.0, 2.0]))
+cylindershell(mirrorMaterial, translation([-1.8, 1.0, 0.0]) * rotationY(90) * scaling([1.0, 1.1, 1.5]))
+
+# Penguin meterials: black body and wings, white belly and eyes and orange beak and feet
+material penguinMaterial(
+    diffuse(uniform(<0.0, 0.0, 0.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+material penguinWhiteMaterial(
+    diffuse(uniform(<1.0, 1.0, 1.0>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+material penguinOrangeMaterial(
+    diffuse(uniform(<1.0, 0.5, 0.05>)),
+    uniform(<0.0, 0.0, 0.0>)
+)
+
+# Penguin1
+sphere(penguinMaterial, translation([-2.5, -1.0, 1.2]) * scaling([0.5, 0.5, 1.0]))
+sphere(penguinMaterial, translation([-2.5, -1.0, 2.2]) * scaling([0.4, 0.4, 0.4]))
+sphere(penguinWhiteMaterial, translation([-2.80, -1.1, 2.4]) * scaling([0.1, 0.1, 0.1]))
+sphere(penguinWhiteMaterial, translation([-2.80, -0.9, 2.4]) * scaling([0.1, 0.1, 0.1]))
+sphere(penguinMaterial, translation([-2.87, -1.1, 2.4]) * scaling([0.05, 0.05, 0.05]))
+sphere(penguinMaterial, translation([-2.87, -0.9, 2.4]) * scaling([0.05, 0.05, 0.05]))
+sphere(penguinWhiteMaterial, translation([-2.8, -1.0, 1.2]) * scaling([0.4, 0.4, 0.7]))
+sphere(penguinMaterial, translation([-3.0, -1.45, 1.20]) * rotationY(45) * scaling([0.3, 0.2, 0.7]))
+sphere(penguinMaterial, translation([-3.0, -0.55, 1.20]) * rotationY(45) * scaling([0.3, 0.2, 0.7]))
+sphere(penguinOrangeMaterial, translation([-2.8, -1.0, 2.2]) * scaling([0.2, 0.1, 0.12]))
+cylindershell(penguinOrangeMaterial, translation([-2.5, -0.9, 0.0]) * scaling([0.07, 0.07, 0.3]))
+cylindershell(penguinOrangeMaterial, translation([-2.5, -1.1, 0.0]) * scaling([0.07, 0.07, 0.3]))
+sphere(penguinOrangeMaterial, translation([-2.5, -0.9, 0.0]) * rotationZ(-45) * scaling([0.3, 0.1, 0.05]))
+sphere(penguinOrangeMaterial, translation([-2.5, -1.1, 0.0]) * rotationZ(45) * scaling([0.3, 0.1, 0.05]))
+
+# Penguin2: (+2.5, +5.0)
+sphere(penguinMaterial, translation([0.0, 4.0, 1.2]) * scaling([0.5, 0.5, 1.0]))
+sphere(penguinMaterial, translation([0.0, 4.0, 2.2]) * scaling([0.4, 0.4, 0.4]))
+sphere(penguinWhiteMaterial, translation([-0.3, 3.9, 2.4]) * scaling([0.1, 0.1, 0.1]))
+sphere(penguinWhiteMaterial, translation([-0.3, 4.1, 2.4]) * scaling([0.1, 0.1, 0.1]))
+sphere(penguinMaterial, translation([-0.37, 3.9, 2.4]) * scaling([0.05, 0.05, 0.05]))
+sphere(penguinMaterial, translation([-0.37, 4.1, 2.4]) * scaling([0.05, 0.05, 0.05]))
+sphere(penguinWhiteMaterial, translation([-0.3, 4.0, 1.2]) * scaling([0.4, 0.4, 0.7]))
+sphere(penguinMaterial, translation([-0.5, 4.45, 1.20]) * rotationY(45) * scaling([0.3, 0.2, 0.7]))
+sphere(penguinMaterial, translation([-0.5, 3.55, 1.20]) * rotationY(45) * scaling([0.3, 0.2, 0.7]))
+sphere(penguinOrangeMaterial, translation([-0.3, 4.0, 2.2]) * scaling([0.2, 0.1, 0.12]))
+cylindershell(penguinOrangeMaterial, translation([0.0, 4.1, 0.0]) * scaling([0.07, 0.07, 0.3]))
+cylindershell(penguinOrangeMaterial, translation([0.0, 3.9, 0.0]) * scaling([0.07, 0.07, 0.3]))
+sphere(penguinOrangeMaterial, translation([0.0, 4.1, 0.0]) * rotationZ(-45) * scaling([0.3, 0.1, 0.05]))
+sphere(penguinOrangeMaterial, translation([0.0, 3.9, 0.0]) * rotationZ(45) * scaling([0.3, 0.1, 0.05]))
