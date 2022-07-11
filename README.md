@@ -9,7 +9,7 @@ To run the program on Linux, MacOS or Windows a D compiler is needed. Even thoug
 **Package manger.** Details about DUB installation are provided on [DUB github page](https://github.com/dlang/dub#Installation) - latest version is the best choice. Be aware that upgrades via package management system may install a newer version than the [last release](https://github.com/dlang/dub/releases) and that most of the times it should not alarm.
 
 ## Usage
-This command-line interface implements two functionalities: `render` generates a photorealistic image for a scene given in input as a txt, while `pfm2png` allows to convert a pfm file into a png one. Moreover, a dedicated script allows animations creation.
+This command-line interface implements two functionalities: `render` generates a photorealistic image for a scene given in input as a txt, while `pfm2png` allows to convert a pfm file into a png one. Moreover, a dedicated script allows to render a scene with different angles and create animations.
 
 **Render.** In order to use the ray tracer open the shell, enter the unzipped directory and build and run through
 
@@ -30,13 +30,13 @@ $ ./RayCharles pfm2png image.pfm image.png
 
 Again, `dub build --compiler ldc2` select another compiler (not particularly useful for this command). For more informations use the `--help` option.
 
-**Animations.** It is also possible to generate animations through the script. Declare a variable named "angle" in the txt file to render and a camera which exploit this variable, then type in the shell
+**Animations.** It is also possible to generate animations: declare a variable named "angle" in the txt file to render and a camera which exploits this variable, then type in the shell
 
 ```bash
 $ ./RayCharles.sh inputScene.txt animationName
 ```
 
-and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected into the pngFrames subdirectory.
+and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected in the pngFrames subdirectory.
 
 ## Examples
 **Demo.**
