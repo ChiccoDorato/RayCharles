@@ -44,6 +44,7 @@ and the file animationName.mp4 will be inserted into the animations subdirectory
 **Render.**
 
 ![scarecrow](generatedImages/scarecrow.png)
+| :---: |
 
 **Pfm2png.**
 
@@ -53,8 +54,11 @@ and the file animationName.mp4 will be inserted into the animations subdirectory
 
 **Animations.**
 
-| ![Globe rolling on table](animations/rolling.gif) | ![Giant penguins](animations/igloo.gif) |
+| ![Globe rolling on table](animations/rolling.gif) | ![Some Nice Trees](animations/wood.gif) |
 | :---: | :---: |
+
+| ![Giant penguins](animations/igloo.gif) |
+| :---: |
 
 ## License
 The code is released under the GPL-3.0 [license](LICENSE).
