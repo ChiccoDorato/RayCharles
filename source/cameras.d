@@ -16,25 +16,41 @@ class Camera
     Transformation transformation;  
 
     /// Abstract method: Shoot a rays in a given 2D Point (u, v) on the surface of the image 
+<<<<<<< HEAD
     abstract pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const;
 }
 
 // ******************** OrthogonalCamera ********************
+=======
+    abstract Ray fireRay(in float u, in float v) const pure nothrow;
+}
+
+///******************** OrthogonalCamera ********************
+>>>>>>> origin/pathtracing
 /// Class representing a 3D observer with line of sight orthogonal to the surface observed
 class OrthogonalCamera : Camera
 {   
     /// Build an orthogonal camera - Default: unitary aspect ratio and Identity transformation applied
+<<<<<<< HEAD
     pure nothrow @nogc @safe this(
         in float aspRat = 1.0, in Transformation transf = Transformation()
         )
     in (aspRat > 0.0)
+=======
+    this(in float aspRat = 1.0, in Transformation transf = Transformation()) pure nothrow
+    in (aspRat > 0)
+>>>>>>> origin/pathtracing
     {
         aspectRatio = aspRat;
         transformation = transf;
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
+<<<<<<< HEAD
     override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
+=======
+    override Ray fireRay(in float u, in float v) const pure nothrow
+>>>>>>> origin/pathtracing
     {
         auto r = Ray(
             Point(-1.0, (1.0 - 2 * u) * aspectRatio, 2.0 * v - 1.0),
@@ -84,11 +100,16 @@ unittest
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
+<<<<<<< HEAD
 // ************************* PerspectiveCamera *************************
+=======
+///******************** PerspectiveCamera ********************
+>>>>>>> origin/pathtracing
 /// Class representing a 3D observer with line of sight perspective
  class PerspectiveCamera : Camera 
 {
     /// Build a perspective camera - Default: unitary aspect ratio and Identity transformation applied
+<<<<<<< HEAD
     pure nothrow @nogc @safe this(
         in float dist = 1.0,
         in float aspRat = 1.0,
@@ -96,6 +117,11 @@ unittest
         )
     in (dist > 0.0)
     in (aspRat > 0.0)
+=======
+    this(in float dist = 1.0, in float aspRat = 1.0, in Transformation transf = Transformation()) pure nothrow
+    in (dist > 0)
+    in (aspRat > 0)
+>>>>>>> origin/pathtracing
     {
         d = dist;
         aspectRatio = aspRat;
@@ -103,7 +129,11 @@ unittest
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
+<<<<<<< HEAD
     override pure nothrow @nogc @safe Ray fireRay(in float u, in float v) const
+=======
+    override Ray fireRay(in float u, in float v) const pure nothrow
+>>>>>>> origin/pathtracing
     {
         auto r = Ray(
             Point(-d, 0.0, 0.0),
@@ -129,7 +159,11 @@ unittest
     assert(r1.origin.xyzIsClose(r3.origin));
     assert(r1.origin.xyzIsClose(r4.origin));
 
+<<<<<<< HEAD
     // Verify if the ray hitting the corners have the right coordinates
+=======
+    // Verify id the ray hitting the corners have the right coordinates
+>>>>>>> origin/pathtracing
     assert(r1.at(1.0).xyzIsClose(Point(0.0, 2.0, -1.0)));
     assert(r2.at(1.0).xyzIsClose(Point(0.0, -2.0, -1.0)));
     assert(r3.at(1.0).xyzIsClose(Point(0.0, 2.0, 1.0)));
@@ -148,11 +182,19 @@ unittest
         translation(-vecY * 2.0) * rotationZ(90.0)
         );
     Ray r = cam.fireRay(0.5, 0.5);
+<<<<<<< HEAD
     // fireRay
     assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
 }
 
 // ************************* ImageTracer *************************
+=======
+    /// fireRay
+    assert(r.at(1.0).xyzIsClose(Point(0.0, -2.0, 0.0)));
+}
+
+///******************** ImageTracer ********************
+>>>>>>> origin/pathtracing
 /// Class for an ImageTracer - create an image and solve the rendering equation
 struct ImageTracer
 {
@@ -161,11 +203,16 @@ struct ImageTracer
     int samplesPerSide;
     PCG pcg = new PCG();
 
+<<<<<<< HEAD
     /// Build an ImageTracer with the anti-aliasing to remove the Moire effect
     // when samplesPerPixel > 0 stratified sampling is applied to every pixel using the random generator
     pure nothrow @safe this(
         HDRImage img, Camera cam, in int samPerSide = 0, PCG randGen = new PCG()
         )
+=======
+    /// Build an ImageTracer given an HDRImage and a Camera
+    this(HDRImage img, Camera cam) pure nothrow
+>>>>>>> origin/pathtracing
     {
         image = img;
         camera = cam;
@@ -174,9 +221,13 @@ struct ImageTracer
     }
 
     /// Shoot a Ray in a given 2D Point (u, v) on the surface of the image
+<<<<<<< HEAD
     pure nothrow @nogc @safe Ray fireRay(
         in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5
         ) const
+=======
+    immutable(Ray) fireRay(in int col, in int row, in float uPixel = 0.5, in float vPixel = 0.5) const pure nothrow
+>>>>>>> origin/pathtracing
     in (col + uPixel >= 0 && col + uPixel <= image.width)
     in (row + vPixel >= 0 && row + vPixel <= image.height)
     {
@@ -186,6 +237,7 @@ struct ImageTracer
             );
     }
 
+<<<<<<< HEAD
     /// Solve the rendering equation for a given pixel
     pure nothrow void coloringPixel(
         in uint col,
@@ -208,6 +260,16 @@ struct ImageTracer
                         );
                     colSum += solveRendering(r);
                 }
+=======
+    /// Shoot a Ray in every 2D Point (u, v) on the surface of the image - Solve the rendering equation for every pixel
+    void fireAllRays(in Color delegate(Ray) solveRendering)
+    {
+        Color color;
+        for (uint row = 0; row < image.height; ++row){
+            for (uint col = 0; col < image.width; ++col){
+                color = solveRendering(fireRay(col, row));
+                image.setPixel(col, row, color);
+>>>>>>> origin/pathtracing
             }
             image.setPixel(
                 col,
@@ -233,6 +295,7 @@ struct ImageTracer
     }
 }
 
+<<<<<<< HEAD
 ///
 unittest
 {
@@ -266,6 +329,41 @@ unittest
             for (uint col = 0; col < tracer.image.width; ++col)
                 assert(tracer.image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
     }
+=======
+/// Test xyzIsClose of the Tracer
+void testOrientation(in ImageTracer tracer)
+{
+    immutable Ray topLeftRay = tracer.fireRay(0, 0, 0.0, 0.0);
+    assert(Point(0.0, 2.0, 1.0).xyzIsClose(topLeftRay.at(1)));
+
+    immutable Ray bottomRightRay = tracer.fireRay(3, 1, 1.0, 1.0);
+    assert(Point(0.0, -2.0, -1.0).xyzIsClose(bottomRightRay.at(1)));
+}
+
+/// Test fireRay of the Tracer
+void testUVSubMapping(in ImageTracer tracer)
+{
+    immutable Ray r1 = tracer.fireRay(0, 0, 2.5, 1.5);
+    immutable Ray r2 = tracer.fireRay(2, 1, 0.5, 0.5);
+    assert(r1.rayIsClose(r2));
+}
+
+/// Test fireAllRays of the Tracer
+void testImageCoverage(ImageTracer tracer)
+{
+    tracer.fireAllRays(Ray => Color(1.0, 2.0, 3.0));
+    for (uint row = 0; row < tracer.image.height; ++row)
+        for (uint col = 0; col < tracer.image.width; ++col)
+            assert(tracer.image.getPixel(col, row) == Color(1.0, 2.0, 3.0));
+}
+
+///
+unittest
+{
+    HDRImage image = new HDRImage(4, 2);
+    Camera camera = new PerspectiveCamera(1.0, 2.0);
+    ImageTracer tracer = ImageTracer(image, camera);
+>>>>>>> origin/pathtracing
 
     // xyzIsClose
     testOrientation(tracer);

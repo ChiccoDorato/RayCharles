@@ -14,20 +14,31 @@ import std.range : isOutputRange, put;
 import std.stdio : File, writeln;
 import std.system : endian;
 
+<<<<<<< HEAD
 /// Verify if the difference between two floating point x and y is smaller than epsilon = 1e-5 (default)
 pure nothrow @nogc @safe bool areClose(
 	in float x, in float y, in float epsilon = 1e-5
 	)
+=======
+/// Verify if the difference between two floating point x and y is smaller than epsilon 
+immutable(bool) areClose(in float x, in float y, in float epsilon = 1e-5) pure nothrow
+>>>>>>> origin/pathtracing
 {
 	return abs(x - y) < epsilon;
 }
 
+<<<<<<< HEAD
 // ************************* Color *************************
 /// Stucture representing a Color - Parameters: 3 floating point members red (r), green (g) and blue (b)
+=======
+///******************** Color ********************
+/// Stucture representing a Color with three floating point members red (r), green (g) and blue (b)
+>>>>>>> origin/pathtracing
 struct Color
 {
 	float r = 0.0, g = 0.0, b = 0.0;
 
+<<<<<<< HEAD
 	/// Return the sum (+), the difference (-) or the product (*) between two Colors
 	pure nothrow @nogc @safe Color opBinary(string op)(in Color rhs) const
 	if (op == "+" || op == "-" || op == "*")
@@ -38,17 +49,32 @@ struct Color
 	/// Return the product between a floating point alpha on the left-hand side and a Color
 	pure nothrow @nogc @safe Color opBinary(string op)(in float alfa) const
 	if (op == "*")
+=======
+	/// Return the sum (+), the difference (-) or the product (*) between two colors
+	Color opBinary(string op)(in Color rhs) const if (op == "+" || op == "-" || op == "*")
+	{
+		mixin("return Color(r" ~ op ~ "rhs.r, g" ~ op ~ "rhs.g, b" ~ op ~ "rhs.b);");
+	}
+
+	/// Return the product between a floating point alpha on the left-hand side and a Color
+	Color opBinary(string op)(in float alfa) const pure nothrow if (op == "*")
+>>>>>>> origin/pathtracing
 	{
 		return mixin("Color(r*alfa, g*alfa, b*alfa)");
 	}
 
 	/// Return the product between a floating point alpha on the right-hand side and a Color
+<<<<<<< HEAD
 	pure nothrow @nogc @safe Color opBinaryRight(string op)(in float alfa) const
 	if (op == "*")
+=======
+	Color opBinaryRight(string op)(in float alfa) const pure nothrow if (op == "*")
+>>>>>>> origin/pathtracing
 	{
 		return mixin("Color(alfa*r, alfa*g, alfa*b)");
 	}
 
+<<<<<<< HEAD
 // overload for +=, -= and *=.
 	pure nothrow @nogc @safe ref Color opOpAssign(string op)(in Color rhs)
 	if (op == "+" || op == "-" || op == "*")
@@ -80,6 +106,16 @@ struct Color
 
 	/// Verify if two Colors are close by calling the fuction areClose for every component 
 	pure nothrow @nogc @safe bool colorIsClose(in Color c) const
+=======
+	/// Return the three components of a Color in a string
+	string colorToString() const pure
+	{
+		return "<r: " ~ to!string(r) ~ ", g: " ~ to!string(g) ~ ", b: " ~ to!string(b) ~ ">";
+	}
+
+	/// Verify if two Colors are close by calling the fuction areClose for every components 
+	immutable(bool) colorIsClose(in Color c) const pure nothrow
+>>>>>>> origin/pathtracing
 	{
 		return areClose(r, c.r) && areClose(g, c.g) && areClose(b, c.b);
 	}
@@ -91,8 +127,34 @@ struct Color
 	}
 }
 
+<<<<<<< HEAD
 /// Fundamental colors: black (0.0, 0.0, 0.0) and white (1.0, 1.0, 1.0)
 immutable black = Color(), white = Color(1.0, 1.0, 1.0);
+=======
+immutable(Color) black = Color(), white = Color(1.0, 1.0, 1.0);
+
+///
+unittest
+{
+	string[2] files = ["reference_le.pfm", "reference_be.pfm"];
+
+	foreach (string fileName; files)
+	{
+		HDRImage img = new HDRImage(fileName);
+
+		assert(img.width == 3);
+		assert(img.height == 2);
+
+		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
+		assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
+		assert(img.getPixel(0,1).colorIsClose(Color(1.0e2, 2.0e2, 3.0e2)));
+		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
+		assert(img.getPixel(2,1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
+	}
+}
+>>>>>>> origin/pathtracing
 
 ///
 unittest
@@ -111,7 +173,11 @@ unittest
 	assert((c1 * 2.0).colorIsClose(Color(2.0, 4.0, 6.0)));
 	assert((3.0 * c1).colorIsClose(Color(3.0, 6.0, 9.0)));
 		
+<<<<<<< HEAD
 	auto c3 = Color(9.0, 5.0, 7.0);
+=======
+	Color c3 = {9.0, 5.0, 7.0};
+>>>>>>> origin/pathtracing
 	// luminosity
 	assert(areClose(2.0, c1.luminosity));
 	assert(areClose(7.0, c3.luminosity));
@@ -120,11 +186,15 @@ unittest
 /// Class used to throw exceptions in case of compilation errors
 class InvalidPFMFileFormat : Exception
 {
+<<<<<<< HEAD
 	bool existingFile = true;
 
 	pure nothrow @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
+=======
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+>>>>>>> origin/pathtracing
     {
         super(msg, file, line);
     }
@@ -147,7 +217,11 @@ class InvalidPFMFileFormat : Exception
 }
 
 /// Read a line from an array of ubyte, given a starting position
+<<<<<<< HEAD
 pure nothrow @safe ubyte[] readLine(in ubyte[] stream, in uint startingPos)
+=======
+immutable(ubyte[]) readLine(in ubyte[] stream, in uint startingPosition) pure nothrow
+>>>>>>> origin/pathtracing
 {
 	auto line = appender!(ubyte[]);
 	for (uint i = startingPos; i < stream.length; ++i)
@@ -155,7 +229,11 @@ pure nothrow @safe ubyte[] readLine(in ubyte[] stream, in uint startingPos)
 		line.put(stream[i]);
 		if (stream[i] == 10) break;
 	}
+<<<<<<< HEAD
 	return line.data;
+=======
+	return line.idup;
+>>>>>>> origin/pathtracing
 }
 
 ///
@@ -170,7 +248,11 @@ unittest
 }
 
 /// Check the width and the height of the image, throw an exception if something is wrong.
+<<<<<<< HEAD
 pure @safe int[2] parseImgSize(in ubyte[] imgSize)
+=======
+immutable(int[2]) parseImgSize(in ubyte[] imgSize) pure
+>>>>>>> origin/pathtracing
 {
 	enforce!InvalidPFMFileFormat(
 		imgSize.length > 0,
@@ -230,7 +312,11 @@ unittest
 }
 
 /// Check if the correct Endianness is used, throw an exception if wrong.
+<<<<<<< HEAD
 pure @safe float parseEndiannessLine(in ubyte[] endiannessLine)
+=======
+immutable(float) parseEndiannessLine(in ubyte[] endiannessLine) pure
+>>>>>>> origin/pathtracing
 {
 	enforce!InvalidPFMFileFormat(
 		endiannessLine.length > 0,
@@ -275,11 +361,18 @@ unittest
 }
 
 /// Read a floating point number from an array of ubyte.
+<<<<<<< HEAD
 pure float readFloat(
 	in ubyte[] stream, in int startingPos, in float endiannessValue
 	)
 in (stream.length - startingPos > 3, "Less than 4 bytes left in the stream")
 in (!areClose(endiannessValue, 0.0, 1e-20), "Endianness must differ from zero")
+=======
+float readFloat(in ubyte[] stream, in int startingPosition, in float endiannessValue) pure
+in (stream.length - startingPosition > 3,
+	format("Less than 4 bytes in %s from index %s", stream, startingPosition))
+in (!areClose(endiannessValue, 0, 1e-20), "Endianness cannot be too close to zero")
+>>>>>>> origin/pathtracing
 {
 	uint nativeValue = *cast(uint*)(stream.ptr + startingPos);
 	if (endian == Endian.littleEndian && endiannessValue > 0.0)
@@ -299,13 +392,22 @@ unittest
 }
 
 /// Return the clamped floating point number
+<<<<<<< HEAD
 pure nothrow @nogc @safe float clamp(float x)
 in (x >= 0.0)
+=======
+float clamp(float x) pure nothrow
+in (x >= 0)
+>>>>>>> origin/pathtracing
 {
 	return x / (1.0 + x);
 }
 
+<<<<<<< HEAD
 // ************************* HDRImage *************************
+=======
+///******************** HDRImage ********************
+>>>>>>> origin/pathtracing
 /// Class of an High Dynamic Range Image
 class HDRImage
 {
@@ -313,7 +415,11 @@ class HDRImage
 	Color[] pixels;
 	
 	/// Build an HDRImage from two integers: width (w) and height (h)
+<<<<<<< HEAD
 	pure nothrow @safe this(in int w, in int h)
+=======
+	this(in int w, in int h) pure
+>>>>>>> origin/pathtracing
 	in (w > 0 && h > 0)
 	{
 		width = w;
@@ -322,14 +428,23 @@ class HDRImage
 	}
 
 	/// Build an HDRImage from an array of ubyte
+<<<<<<< HEAD
 	pure this(in ubyte[] stream)
+=======
+	this(in ubyte[] stream) pure
+>>>>>>> origin/pathtracing
 	{
 		int streamPos = 0;
 
+<<<<<<< HEAD
 		immutable ubyte[] magic = stream.readLine(streamPos);
+=======
+		immutable ubyte[] magic = stream.readLine(streamPosition);
+>>>>>>> origin/pathtracing
 		enforce!InvalidPFMFileFormat(magic == [80, 70, 10], "invalid magic");
 		streamPos += magic.length;
 
+<<<<<<< HEAD
 		immutable ubyte[] imgSize = stream.readLine(streamPos);
 		immutable int[2] size = parseImgSize(imgSize);
 		streamPos += imgSize.length;
@@ -337,6 +452,15 @@ class HDRImage
 		immutable ubyte[] endiannessLine = stream.readLine(streamPos);
 		immutable float endiannessValue = parseEndiannessLine(endiannessLine);
 		streamPos += endiannessLine.length;
+=======
+		immutable ubyte[] imgSize = stream.readLine(streamPosition);
+		immutable int[2] size = parseImgSize(imgSize);
+		streamPosition += imgSize.length;
+
+		immutable ubyte[] endiannessLine = stream.readLine(streamPosition);
+		immutable float endiannessValue = parseEndiannessLine(endiannessLine);
+		streamPosition += endiannessLine.length;
+>>>>>>> origin/pathtracing
 
 		enforce!InvalidPFMFileFormat(
 			12 * size[0] * size[1] == stream.length - streamPos,
@@ -371,6 +495,7 @@ class HDRImage
 			throw new InvalidPFMFileFormat(exc.msg, false);
 	}
 
+<<<<<<< HEAD
 	@safe void toString(
 		scope void delegate(scope const(char)[]) @safe sink
 		) const
@@ -380,31 +505,48 @@ class HDRImage
 
 	/// Check if the two integer coordinates (x and y) are inside the surface of the HDRImage 
 	pure nothrow @nogc @safe bool validCoordinates(in int x, in int y) const
+=======
+	/// Check if the two integer coordinates (x and y) are inside the surface of the HDRImage 
+	immutable(bool) validCoordinates(in int x, in int y) const pure nothrow
+>>>>>>> origin/pathtracing
 	{
 		return x >= 0 && x < width && y >= 0 && y < height;
 	}
 
 	/// Return the position of a Pixel given the two integer coordinates (x and y)
+<<<<<<< HEAD
 	pure nothrow @nogc @safe int pixelOffset(in int x, in int y) const
+=======
+	int pixelOffset(in int x, in int y) const pure nothrow
+>>>>>>> origin/pathtracing
 	{
 		return y * width + x;
 	}
 	
 	/// Return the Color of a Pixel if it is inside the HDRImage
+<<<<<<< HEAD
 	pure nothrow @nogc @safe Color getPixel(in int x, in int y) const
+=======
+	Color getPixel(in int x, in int y) const pure nothrow
+>>>>>>> origin/pathtracing
 	in (validCoordinates(x, y))
 	{
 		return pixels[pixelOffset(x, y)];
 	}
 
 	/// Set the Color given in a specific Pixel defined by two integer coordinates (x and y) 
+<<<<<<< HEAD
 	pure nothrow @nogc @safe void setPixel(in int x, in int y, Color c)
+=======
+	void setPixel(in int x, in int y, Color c) pure nothrow
+>>>>>>> origin/pathtracing
 	in (validCoordinates(x, y))
 	{
 		pixels[pixelOffset(x, y)] = c;
 	}
 	
 	/// Write a PFM file with Endianness "little Endian" from an array of ubyte
+<<<<<<< HEAD
 	pure nothrow @safe ubyte[] writePFM(
 		in Endian endianness = Endian.littleEndian
 		) const
@@ -427,6 +569,16 @@ class HDRImage
 			byteWidth ~ space ~ byteHeight ~ endLine ~
 			endOfHeader
 			);
+=======
+	immutable(ubyte[]) writePFM(in Endian endianness = Endian.littleEndian) const pure nothrow
+	{
+		string endiannessStr;
+		if (endianness == Endian.bigEndian) endiannessStr = "1.0";
+		else endiannessStr = "-1.0";
+
+		Appender!(ubyte[]) pfm = appender!(ubyte[]);
+		pfm.put(cast(ubyte[])("PF\n" ~ to!string(width) ~ " " ~ to!string(height) ~ "\n" ~ endiannessStr ~ "\n"));
+>>>>>>> origin/pathtracing
 
 		Color c;
 		for (int i = height - 1; i > -1; --i)
@@ -448,21 +600,29 @@ class HDRImage
 				}
 			}
 		}
-		return pfm.data;
+		return pfm.data.idup;
 	}
 
 	/// Write a PFM file with a given name, with Endianness "little Endian" from an array of ubyte
+<<<<<<< HEAD
 	// Not safe on windows
 	/* @safe */ void writePFMFile(
 		in string fileName, in Endian endianness = Endian.littleEndian
 		) const
+=======
+	void writePFMFile(string fileName, in Endian endianness = Endian.littleEndian) const
+>>>>>>> origin/pathtracing
 	{
 		auto file = File(fileName, "wb");
 		file.rawWrite(writePFM(endianness));
 	}
 
 	/// Write a PNG file with a given name and with a fixed gamma parameter
+<<<<<<< HEAD
 	void writePNG(in string fileName, in float gamma = 1.0) const
+=======
+	void writePNG(char[] fileName, in float gamma = 1.0) const
+>>>>>>> origin/pathtracing
 	{
 		auto rgb = appender!(ubyte[]);
 		foreach (Color c; pixels)
@@ -475,9 +635,13 @@ class HDRImage
 	}
 
 	/// Return the average luminosity of an HDRImage
+<<<<<<< HEAD
 	pure nothrow @nogc @safe float averageLuminosity(
 		in float delta = 1e-10
 		) const
+=======
+	immutable(float) averageLuminosity(in float delta=1e-10) const pure nothrow
+>>>>>>> origin/pathtracing
 	{
 		float lumSum = 0.0;
         foreach (Color p; pixels[]) lumSum += log10(delta + p.luminosity);
@@ -485,6 +649,7 @@ class HDRImage
 	}
 
 	/// Normalize each pixel of an HDRImage multiplying by the ratio: factor / luminosity
+<<<<<<< HEAD
 	pure nothrow @nogc @safe void normalizeImage(
 		in float factor, float luminosity = float.init
 		)
@@ -496,6 +661,16 @@ class HDRImage
 
 	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
 	pure nothrow @nogc @safe void clampImage()
+=======
+	void normalizeImage(in float factor, float luminosity = NaN(0x3FFFFF)) pure nothrow
+	{
+		if (luminosity.isNaN()) luminosity = averageLuminosity;
+		for (int i = 0; i < pixels.length; ++i) pixels[i] = pixels[i] * (factor / luminosity);
+	}
+
+	/// Correct the colors of an HDRImage calling clamp on every r,b,g component in every pixel
+	void clampImage() pure nothrow
+>>>>>>> origin/pathtracing
 	{
 		for (int i = 0; i < pixels.length; ++i)
 		{
@@ -554,12 +729,21 @@ unittest
 	img.setPixel(1, 0, c2);
 	img.clampImage();
 		
+<<<<<<< HEAD
 	foreach (Color pixel; img.pixels)
 	{
 		// Check RGB boundaries
 		assert(pixel.r >= 0.0 && pixel.r <= 1.0);
 		assert(pixel.g >= 0.0 && pixel.g <= 1.0);
 		assert(pixel.b >= 0.0 && pixel.b <= 1.0);
+=======
+	foreach (pixel; img.pixels)
+	{
+		// Check RGB boundaries
+		assert(pixel.r >= 0 && pixel.r <= 1);
+		assert(pixel.g >= 0 && pixel.g <= 1);
+		assert(pixel.b >= 0 && pixel.b <= 1);
+>>>>>>> origin/pathtracing
 	}
 }
 
@@ -595,8 +779,13 @@ unittest
 	];
 	
 	// writePFM
+<<<<<<< HEAD
 	assert(img.writePFM == leReferenceBytes);
 	assert(img.writePFM(Endian.bigEndian) == beReferenceBytes);
+=======
+	assert(img.writePFM == LEreferenceBytes);
+	assert(img.writePFM(Endian.bigEndian) == BEreferenceBytes);
+>>>>>>> origin/pathtracing
 }
 
 ///
@@ -612,6 +801,7 @@ unittest
 		assert(img.height == 2);
 
 		// getPixel
+<<<<<<< HEAD
 		assert(img.getPixel(0, 0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
 		assert(img.getPixel(1, 0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
         assert(img.getPixel(2, 0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
@@ -619,5 +809,14 @@ unittest
         assert(img.getPixel(0, 0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
         assert(img.getPixel(1, 1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
         assert(img.getPixel(2, 1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
+=======
+		assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+		assert(img.getPixel(1,0).colorIsClose(Color(4.0e1, 5.0e1, 6.0e1)));
+        assert(img.getPixel(2,0).colorIsClose(Color(7.0e1, 8.0e1, 9.0e1)));
+        assert(img.getPixel(0,1).colorIsClose(Color(1.0e2, 2.0e2, 3.0e2)));
+        assert(img.getPixel(0,0).colorIsClose(Color(1.0e1, 2.0e1, 3.0e1)));
+        assert(img.getPixel(1,1).colorIsClose(Color(4.0e2, 5.0e2, 6.0e2)));
+        assert(img.getPixel(2,1).colorIsClose(Color(7.0e2, 8.0e2, 9.0e2)));
+>>>>>>> origin/pathtracing
 	}
 }

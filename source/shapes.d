@@ -159,6 +159,7 @@ class Sphere : Shape
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
+
         hit = HitRecord(
             transf * hitPoint,
             transf * normal(hitPoint, invR.dir),

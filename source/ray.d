@@ -69,7 +69,7 @@ unittest
     auto r = Ray(Point(1.0, 2.0, 3.0), Vec(6.0, 5.0, 4.0));
     auto t = translation(Vec(10.0, 11.0, 12.0)) * rotationX(90.0);
     Ray transformed = t * r;
-
+    // transformations correctly applied
     assert(transformed.origin.xyzIsClose(Point(11.0, 8.0, 14.0)));
     assert(transformed.dir.xyzIsClose(Vec(6.0, -4.0, 5.0)));
 }
