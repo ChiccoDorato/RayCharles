@@ -68,14 +68,10 @@ alias toNonPositive(T) = toSign!(T, "<=");
 /// Used in modality pfm2png only. 
 class InvalidPfm2pngParms : Exception
 {
-<<<<<<< HEAD
 	// Build an Exception of type InvalidPfm2pngParms
     pure @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
-=======
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
->>>>>>> origin/pathtracing
     {
         super(msg, file, line);
     }
@@ -94,10 +90,7 @@ class InvalidPfm2pngParms : Exception
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
-<<<<<<< HEAD
 	bool isOutputPNG;
-=======
->>>>>>> origin/pathtracing
 	immutable float factor, gamma;
 
 	/// Build the struct from a string of arguments that are provided by the user:
@@ -110,31 +103,12 @@ struct Pfm2pngParameters
 		catch (FileException exc) throw new InvalidPfm2pngParms(exc.msg);
 		pfmInput = args[0];
 
-<<<<<<< HEAD
 		pngOutput = forceExtension(args[1], "png", isOutputPNG);
 
 		try
 		{
 			factor = toPositive!float(args[2], "factor");
 			gamma = toPositive!float(args[3], "gamma");
-=======
-		pngOutput = args[1];
-
-		try
-		{
-			factor = to!(immutable(float))(args[2]);
-			enforce!InvalidPfm2pngParms(isFinite(factor) && factor > 0,
-				"Factor must be a positive number");
-		}
-		catch (ConvException exc)
-			throw new InvalidPfm2pngParms(format("Invalid factor [%s]", args[2]));
-
-		try
-		{
-			gamma = to!(immutable(float))(args[3]);
-			enforce!InvalidPfm2pngParms(isFinite(gamma) && gamma > 0,
-				"Gamma must be a positive number");
->>>>>>> origin/pathtracing
 		}
 		catch (WrongSign exc) throw new InvalidPfm2pngParms(exc.msg);
 	}
@@ -145,14 +119,10 @@ struct Pfm2pngParameters
 /// Used in modality render only. 
 class InvalidRenderParms : Exception
 {
-<<<<<<< HEAD
 	/// Build an Exception of type InvalidRenderParms
     pure @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
-=======
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
->>>>>>> origin/pathtracing
     {
         super(msg, file, line);
     }
@@ -165,7 +135,6 @@ class InvalidRenderParms : Exception
 
 enum Renderers : string
 {
-<<<<<<< HEAD
 	flat = "flat",
 	onoff = "onoff",
 	path = "path"
@@ -200,18 +169,6 @@ struct RenderParameters
 		try args[0].isFile;
 		catch (FileException exc) throw new InvalidRenderParms(exc.msg);
 		sceneFileName = args[0];
-=======
-	immutable int width, height;
-	string renderer;
-	immutable float angle;
-	string pfmOutput, pngOutput;
-	int initialState, initialSequence;
-	immutable bool orthogonal;
-
-	this(in string[] args) pure
-	{		
-		assert(args.length == 9);
->>>>>>> origin/pathtracing
 
 		try
 		{
@@ -247,7 +204,6 @@ struct RenderParameters
 					)
 				);
 		}
-<<<<<<< HEAD
 		catch (WrongSign exc) throw new InvalidRenderParms(exc.msg);
 
 		foreach (string newVar; declaredFloat)
@@ -267,46 +223,6 @@ struct RenderParameters
 
 	/// Return the aspect ratio of the image
 	pure nothrow @nogc @safe float aspRat()
-=======
-		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid height [%s]", args[1]));
-
-		enforce!InvalidDemoParms(args[2] == "flat" || args[2] == "on-off" || args[2] == "path",
-			"Option algorithm must be one of the following values: flat, on-off, path");
-		renderer = args[2];
-
-		try
-		{
-			angle = to!(immutable(float))(args[3]);
-			enforce!InvalidDemoParms(isFinite(angle), format("Invalid angle [%s]", args[3]));
-		}
-		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid angle [%s]", args[3]));
-
-		pfmOutput = args[4];
-		pngOutput = args[5];
-
-		try
-		{
-			initialState = to!int(args[6]);
-			enforce!InvalidDemoParms(initialState > 0, format("Invalid initialState [%s]", args[6]));
-		}
-		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid initialState [%s]", args[6]));
-
-		try
-		{
-			initialSequence = to!int(args[7]);
-			enforce!InvalidDemoParms(initialSequence > 0, format("Invalid initialSequence [%s]", args[7]));
-		}
-		catch (ConvException exc)
-			throw new InvalidDemoParms(format("Invalid initialSequence [%s]", args[7]));
-		
-		if (args[8] != "") orthogonal = true;
-	}
-
-	immutable(float) aspRat() pure nothrow
->>>>>>> origin/pathtracing
 	{
 		return cast(float)(width) / height;
 	}

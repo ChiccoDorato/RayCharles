@@ -90,7 +90,11 @@ unittest
 /// Class representing a FlatRenderer
 class FlatRenderer : Renderer
 {
+<<<<<<< HEAD
     /// Build a FlatRenderer - Parameter: World, backgroundColor (Color)
+=======
+    /// Build an OnOffRenderer - Parameter: World, backgroundColor (Color)
+>>>>>>> scenefiles
     ///
     /// Use super(World, backgroundColor)
     pure nothrow @safe this(World w, in Color bgCol = black)

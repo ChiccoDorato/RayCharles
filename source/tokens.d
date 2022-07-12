@@ -771,7 +771,6 @@ struct InputStream
         expectSymbol(',');
         immutable float distance = expectNumber(scene);
         expectSymbol(')');
-
         switch (cameraType)
         {
             case Keyword.orthogonal:
@@ -1001,13 +1000,11 @@ unittest
 
     auto groundBRDF = cast(DiffuseBRDF)(groundMaterial.brdf);
     assert(is(typeof(groundBRDF) == DiffuseBRDF));
-
     auto groundPigment = cast(CheckeredPigment)(groundBRDF.pigment);
     assert(is(typeof(groundPigment) == CheckeredPigment));
     assert(groundPigment.color1.colorIsClose(Color(0.3, 0.5, 0.1)));
     assert(groundPigment.color2.colorIsClose(Color(0.1, 0.2, 0.5)));
     assert(groundPigment.numberOfSteps == 4);
-
     auto groundEmitted = cast(UniformPigment)(groundMaterial.emittedRadiance);
     assert(is(typeof(groundEmitted) == UniformPigment));
     assert(groundEmitted.color.colorIsClose(Color(0.0, 0.0, 0.0)));
