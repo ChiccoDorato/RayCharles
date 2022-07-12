@@ -6,9 +6,14 @@ import std.format : formattedWrite;
 // ******************** Ray ********************
 /** 
  * Struct of a 3D Ray
- * @Params: origin (Point), dir (Vec)
+ * Params: 
+ *  origin = (Point)
+ *  dir = (Vec)
  *___
- * Default Params: tMin, tMax (float), depth (int)
+ * Default Params: 
+ *  tMin = (float) = 1e-5
+ *  tMax = (float) = infinity
+ *  depth = (int) = 0
  */
 struct Ray
 {
@@ -25,7 +30,7 @@ struct Ray
     }
 
     /**
-    * @Return: the position of a Point at a given t
+    * Returns: the position of a Point at a given t = (Point)
     */
     pure nothrow @nogc @safe Point at(in float t) const
     {
@@ -35,8 +40,9 @@ struct Ray
     /**
     * Verify if two Ray are close
     *___
-    * @Params: Ray
-    * @Returns: true or false (bool) 
+    * Params: 
+    *   rhs = (Ray)
+    * Returns: true or false (bool) 
     */
     pure nothrow @nogc @safe bool rayIsClose(in Ray rhs) const
     {

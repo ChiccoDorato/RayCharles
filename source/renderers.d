@@ -10,32 +10,55 @@ import std.math : isNaN;
 import std.typecons : Nullable;
 
 // ************************* Renderer *************************
-/// Class representing a Renderer - Members: World, backgroundColor (Color)
+/**
+* Class representing a Renderer
+* Params: 
+*   world = (World)
+*   backgroundColor = (Color)
+*/
 class Renderer
 {
     World world;
     Color backgroundColor;
 
-    /// Build a Renderer - Parameter: World, Color
+    /**
+    * Build a Renderer
+    * Params: 
+    *   w = (World)
+    *   bgColor = (Color) = black
+    */
     pure nothrow @safe this(World w, in Color bgCol = black)
     {
         world = w;
         backgroundColor = bgCol;
     }
 
-    /// Return a Color form a Ray that hit a shape in the World
+    /**
+    * Return a Color from a Ray that hit a shape in the World
+    * Params:
+    *   r = (Ray)
+    * Returns: Color
+    */
     abstract pure nothrow @nogc @safe Color call(in Ray r);
 }
 
 // ************************* OnOffRenderer *************************
-/// Class representing a OnOffRenderer
+/**
+* Class representing a OnOffRenderer
+*/
 class OnOffRenderer : Renderer
 {
     Color color = white;
 
-    /// Build an OnOffRenderer - Parameter: World, 2 Colors (backgroundColor & color)
-    ///
-    /// Use super(World, backgroundColor)
+    /**
+    * Build an OnOffRenderer 
+    * Params: 
+    *   w = (World)
+    *   bgColor = (Color) = black
+    *   col = (Color) = white
+    * ___
+    * Use super(World, backgroundColor)
+    */
     pure nothrow @safe this(
         World w, in Color bgCol = black, in Color col = white
         )
@@ -44,9 +67,14 @@ class OnOffRenderer : Renderer
         color = col;
     }
 
-    /// Return a Color form a Ray that hit a shape in the World
-    ///
-    /// The Color is the background one if there is no intersection
+    /**
+    * Return a Color from a Ray that hit a shape in the World
+    * Params: 
+    *   r = (Ray)
+    * Returns: Color
+    * ___
+    * The Color is the background one if there is no intersection
+    */
     override pure nothrow @nogc @safe Color call(in Ray r)
     {
         return world.rayIntersection(r).isNull ? backgroundColor : color;
@@ -72,7 +100,7 @@ unittest
 
     auto renderer = new OnOffRenderer(world);
     tracer.fireAllRays((Ray r) => renderer.call(r));
-    // call
+
     assert(image.getPixel(0, 0).colorIsClose(black));
     assert(image.getPixel(1, 0).colorIsClose(black));
     assert(image.getPixel(2, 0).colorIsClose(black));
@@ -87,22 +115,34 @@ unittest
 }
 
 // ************************* FlatRenderer *************************
-/// Class representing a FlatRenderer
+/**
+* Class representing a FlatRenderer
+*/
 class FlatRenderer : Renderer
 {
-    /// Build a FlatRenderer - Parameter: World, backgroundColor (Color)
-    ///
-    /// Use super(World, backgroundColor)
+    /**
+    * Build a FlatRenderer
+    * Params: 
+    *   w = (World)
+    *   backgroundColor = (Color)
+    *___
+    * Use super(World, backgroundColor)
+    */
     pure nothrow @safe this(World w, in Color bgCol = black)
     {
         super(w, bgCol);
     }
 
-    /// Return a Color form a Ray that hit a shape in the World
-    ///
-    /// The Color is the background one if there is no intersection
-    /// 
-    /// The emitted radiance from the material of an object is taken into account
+    /** Return a Color from a Ray that hit a shape in the World:
+    * this Color is due to the material pigment + emitted Radiance
+    * Params: 
+    *   r = (Ray)
+    * Returns: Color
+    * ___
+    * The Color is the background one if there is no intersection.
+    * ___
+    * The emitted radiance from the material of an object is taken into account
+    */
     override pure nothrow @nogc @safe Color call(in Ray r)
     {
         Nullable!HitRecord hit = world.rayIntersection(r);
@@ -136,7 +176,7 @@ unittest
 
     auto renderer = new FlatRenderer(world);
     tracer.fireAllRays((Ray r) => renderer.call(r));
-    // call
+
     assert(image.getPixel(0, 0).colorIsClose(black));
     assert(image.getPixel(1, 0).colorIsClose(black));
     assert(image.getPixel(2, 0).colorIsClose(black));
@@ -151,17 +191,30 @@ unittest
 }
 
 // ************************* PathTracer *************************
-/// Class representing a PathTracer - Professional Renderer with new members:
-/// PCG, number of rays (int), max depth (int), russianRouletteLimit (int) 
+/**
+* Class representing a PathTracer - Professional Renderer with new Params:
+* Params: 
+*   pcg = (PCG)
+*   numberOfRays = (int)
+*   maxDepth = (int), 
+*   russianRouletteLimit = (int)
+*/
 class PathTracer : Renderer
 {
     PCG pcg = new PCG();
     int numberOfRays = 10, maxDepth = 2, russianRouletteLimit = 3;
 
-    /// Build a PathTracer - Parameters: World, backgroundColor (Color), PCG, 
-    /// number of rays (int), max depth (int), russianRouletteLimit (int) 
-    ///
-    /// Use super(World, backgroundColor)
+    /** Build a PathTracer 
+    * Params: 
+    *   w = (World)
+    *   backgroundColor = (Color)
+    *   pcg = (PCG) 
+    *   numberOfRays = (int)
+    *   maxDepth = (int)
+    *   russianRouletteLimit = (int) 
+    * ___
+    * Use super(World, backgroundColor)
+    */
     pure nothrow @safe this(
         World w,
         in Color bgCol = black,
@@ -178,18 +231,26 @@ class PathTracer : Renderer
         russianRouletteLimit = RRLimit;
     }
 
-    /// Return a Color form a Ray that hit a shape in the World
-    ///
-    /// The Color is the background one if there is no intersection
-    /// 
-    /// The emitted radiance from the material of an object is taken into account
-    ///
-    /// Use the Russian Roulette Algorithm if the depth of the Ray is bigger than the limit set
+    /** Return a Color from a Ray that hit a shape in the World
+    * this Color is due to the material pigment + emitted Radiance
+    * Params:
+    *   r = (Ray)
+    * Returns: Color
+    * ___
+    * The Color is the background one if there is no intersection
+    * ___
+    * The emitted radiance from the material of an object is taken into account
+    * ___
+    * Use the Russian Roulette Algorithm 
+    * if the depth of the Ray is bigger than the limit set
+    */
     override pure nothrow @nogc @safe Color call(in Ray ray)
     {
         if (ray.depth > maxDepth) return black;
 
-        // gdc throws error: get does not accept mutable parameters (makes no sense). Ok for dmd and ldc2.
+        // COMPILERS NOTE: 
+        // 1. gdc throws error -> get does not accept mutable parameters;
+        // 2. dmd and ldc2 are OK here.
         HitRecord hitRec = world.rayIntersection(ray).get(HitRecord());
         if (hitRec.t.isNaN) return backgroundColor;
 
@@ -250,12 +311,12 @@ unittest
             );
         
         auto world = World([new Sphere(Transformation(), enclosureMaterial)]);
-        // depth = 100, RRlimit = 101
+
         auto pathTracer = new PathTracer(world, black, pcg, 1, 100, 101);
 
         auto ray = Ray(Point(0.0, 0.0, 0.0), vecX);
         Color color = pathTracer.call(ray);
-        // call
+
         immutable float expected = emittedRadiance / (1.0 - reflectance);
         assert(areClose(expected, color.r));
         assert(areClose(expected, color.g));

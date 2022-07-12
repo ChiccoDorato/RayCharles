@@ -11,6 +11,15 @@ import std.math : isFinite, sqrt;
 import std.stdio : writeln;
 import std.traits : EnumMembers;
 
+/**
+* Check the extension of a file. If it's not the wanted one,
+* the correct extension will be added at the end of the fileName
+* Params: 
+* 	fileName = (string)
+* 	extension = (string)
+* 	alreadyValid = (bool) 
+* Returns: fileName (string)
+*/
 pure @safe string forceExtension(
 	in string fileName, in string extension, out bool alreadyValid
 	)
@@ -22,9 +31,20 @@ pure @safe string forceExtension(
 	return fileName;
 }
 
+// ************************* WrongSign *************************
+/**
+* Class used to recognise and throw Exceptions
+* in case of wrong sign
+*/
 class WrongSign : Exception
 {
-	// Build an Exception of type InvalidPfm2pngParms
+	/**
+	* Build an Exception of type WrongSign
+	* Params:
+	* msg = (string)
+	* file = (string) = __FILE__ 
+	* line = (size_t) = __LINE__
+	*/
     pure @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
@@ -33,11 +53,25 @@ class WrongSign : Exception
     }
 }
 
+/**
+* Assign to a given string a sign of comparison
+* Params: 
+* 	cmp = (string)
+* Returns: one of those strings: ">", ">=", "<", "<="
+*/
 pure nothrow @safe @nogc bool isComparison(string cmp)
 {
 	return cmp == ">" || cmp == ">=" || cmp == "<" || cmp == "<=";
 }
 
+/**
+* Verify if the string given represent a number 
+* which is finite and with the correct sign
+* Params: 
+* 	cmp = (string)
+* 	cand = (string)
+* 	parmName = (string) = "assignment" 
+*/
 pure @safe T toSign(T, string cmp)(string cand, string parmName = "assignment")
 if ((is(T == int) || is(T == float)) && isComparison(cmp))
 {
@@ -46,7 +80,7 @@ if ((is(T == int) || is(T == float)) && isComparison(cmp))
 		T number = to!T(cand);
 		static if (is(T == float)) enforce!WrongSign(
 			number.isFinite,
-			format("invalid %s, %s is not a finite number",parmName, cand)
+			format("invalid %s, %s is not a finite number", parmName, cand)
 			);
 		enforce!WrongSign(
 			mixin("number" ~ cmp ~ "0"),
@@ -58,17 +92,41 @@ if ((is(T == int) || is(T == float)) && isComparison(cmp))
 		throw new WrongSign(format("invalid %s: %s", parmName, exc.msg));
 }
 
+/**
+* Verify if the string given represent a positive number
+*/
 alias toPositive(T) = toSign!(T, ">");
+
+/**
+* Verify if the string given represent a non negative number
+*/
 alias toNonNegative(T) = toSign!(T, ">=");
+
+/**
+* Verify if the string given represent a negative number
+*/
 alias toNegative(T) = toSign!(T, "<");
+
+/**
+* Verify if the string given represent a non negative number
+*/
 alias toNonPositive(T) = toSign!(T, "<=");
 
 // ************************* InvalidPfm2pngParms *************************
-/// Class used to recognise and throw exceptions in case of error in conversion pfm -> png
-/// Used in modality pfm2png only. 
+/**
+* Class used to recognise and throw Exceptions 
+* in case of error in conversion pfm -> png
+*___
+* Used in modality pfm2png only. 
+*/
 class InvalidPfm2pngParms : Exception
 {
-	// Build an Exception of type InvalidPfm2pngParms
+	/** Build an Exception of type InvalidPfm2pngParms
+	* Params: 
+	* 	msg = (string)
+	* 	file = (string) = __FILE__ 
+	* 	line = (size_t) = __LINE__
+	*/
     pure @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
@@ -83,18 +141,28 @@ class InvalidPfm2pngParms : Exception
 }
 
 // ************************* InvalidPfm2pngParms *************************
-/// Struct used to record all the parameters introduced in the command line by the user.
-/// Used in modality pfm2png only. 
-/// 
-/// Usage: dub run -- pfm2png 
+/**
+* Struct used to record all the parameters 
+* introduced in the command line by the user
+*___
+* Used in modality pfm2png only
+* ___ 
+* Usage: dub run -- pfm2png 
+*/
 struct Pfm2pngParameters
 {
 	string pfmInput, pngOutput;
 	bool isOutputPNG;
 	immutable float factor, gamma;
 
-	/// Build the struct from a string of arguments that are provided by the user:
-	/// the pfm file name, the png file name, the factor and the gamma
+	/**
+	* Build Pfm2pngParameters from a string of arguments provided by the user
+	* Params:
+	* 	pfmfileName = (string)
+	* 	pngfileName = (string)
+	* 	factor = (float)
+	* 	gamma = (float)
+	*/
 	@safe this(in string[] args)
 	{	
 		assert(args.length == 4);
@@ -115,11 +183,19 @@ struct Pfm2pngParameters
 }
 
 // ************************* InvalidRenderParms *************************
-/// Class used to recognise and throw exceptions in case of error in parameters for the rendering
-/// Used in modality render only. 
+/**
+* Class used to recognise and throw Exceptions
+* in case of error in parameters for the rendering
+* Used in modality render only. 
+*/
 class InvalidRenderParms : Exception
 {
-	/// Build an Exception of type InvalidRenderParms
+	/** Build an Exception of type InvalidRenderParms
+	* Params: 
+	* 	msg = (string)
+	* 	file = (string) = __FILE__ 
+	* 	line = (size_t) = __LINE__
+	*/
     pure @nogc @safe this(
 		string msg, string file = __FILE__, size_t line = __LINE__
 		)
@@ -133,6 +209,9 @@ class InvalidRenderParms : Exception
 	}
 }
 
+/**
+* Enumeration of the strings used for the Renderers: flat, onoff, path
+*/
 enum Renderers : string
 {
 	flat = "flat",
@@ -142,10 +221,14 @@ enum Renderers : string
 auto validRenderers = [EnumMembers!Renderers];
 
 // ************************* RenderParameters *************************
-/// Struct used to record all the parameters introduced in the command line by the user.
-/// Used in modality render only. 
-/// 
-/// Usage: dub run -- render
+/**
+* Struct used to record all the parameters 
+* introduced in the command line by the user
+* ___
+* Used in modality render only
+*___
+* Usage: dub run -- render
+*/
 struct RenderParameters
 {
 	string sceneFileName;
@@ -158,10 +241,20 @@ struct RenderParameters
 	immutable int samplesPerSide;
 	float[string] variableTable;
 	
-	/// Build the struct from a string of arguments that can be provided by the user:
-	/// the width and height of the image, the kind of renderer, the angle of view,
-	/// the name of the input pfm file and of the output png file, the seed and initiasl sequence for a pcg,
-	/// the kind of camera (perspective/orthogonal), the number of samples per side to fill the pixels
+	/**
+	* Build the struct from two strings of arguments provided by the user:
+	* Params: 
+	* 	width = (int) of the image
+	* 	height = (int) of the image
+	* 	renderer = (string) (flat, on/off, path)
+	* 	angleOfView = (float)
+	* 	pfmfileName = (string) input
+	* 	pngfileName = (string) output
+	* 	seed = (int)
+	* 	initialSequence = (int)
+	* 	camera = (string)  (perspective/orthogonal)
+	* 	numberOfSamplesPerSide = (int) to fill the pixels
+	*/
 	@safe this(in string[] args, in string[] declaredFloat)
 	{		
 		assert(args.length == 11);
@@ -221,7 +314,9 @@ struct RenderParameters
 		}
 	}
 
-	/// Return the aspect ratio of the image
+	/**
+	* Returns the aspect ratio of the image
+	*/
 	pure nothrow @nogc @safe float aspRat()
 	{
 		return cast(float)(width) / height;

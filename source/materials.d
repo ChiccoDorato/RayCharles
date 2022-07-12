@@ -7,17 +7,28 @@ import std.math : abs, acos, cos, floor, PI, sin, sqrt;
 import pcg;
 import ray;
 
-/// Verify if a floating point number given is included in the Real interval [0.0, 1.0]
+/**
+* Verify if a floating point number given is into the interval [0.0, 1.0]
+* Params: 
+*   coordinate = (float)
+*/
 pure nothrow @nogc @safe bool validParm(in float coordinate)
 {
     return coordinate >= 0.0 && coordinate <= 1.0;
 }
 
 // ************************* Pigment *************************
-/// Class representing a Pigment
+/**
+* Class representing a Pigment
+*/
 class Pigment
 {
-    /// Get the Color of a given bidimensional vector: Vec2d (u, v)
+    /**
+    * Get the Color of a given bidimensional vector: Vec2d (u, v)
+    * Params:
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     abstract pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v));
 
@@ -45,18 +56,29 @@ class Pigment
 }
 
 // ************************* UniformPigment *************************
-/// Class representing a Pigment with a Uniform Color
+/**
+* Class representing a Pigment with a Uniform Color
+*/
 class UniformPigment : Pigment
 {
     Color color;
 
-    /// Build a UniformPigment - Parameter: Color
+    /**
+    * Build a UniformPigment
+    * Params: 
+        col = (Color) = black
+    */
     pure nothrow @nogc @safe this(in Color col = black)
     {
         color = col;
     }
 
-    /// Get the Color of a given bidimensional vector: Vec2d (u, v)
+    /**
+    * Get the Color of a given bidimensional vector: Vec2d (u, v)
+    * Params: 
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
@@ -70,7 +92,6 @@ unittest
     auto c = Color(1.0, 2.0, 3.0);
     auto p = new UniformPigment(c);
 
-    // getColor
     assert(p.getColor(Vec2d(0.0, 0.0)).colorIsClose(c));
     assert(p.getColor(Vec2d(1.0, 0.0)).colorIsClose(c));
     assert(p.getColor(Vec2d(0.0, 1.0)).colorIsClose(c));
@@ -78,27 +99,46 @@ unittest
 }
 
 // ************************* CheckeredPigment *************************
-/// Class representing a Checkered Pigment made up of 2 Colors
+/**
+* Class representing a Checkered Pigment made up of 2 Colors
+*/
 class CheckeredPigment : Pigment
 {
     Color color1, color2;
     int numberOfSteps = 10;
 
-    /// Build a CheckeredPigment - Parameters: 2 Colors
+    /**
+    * Build a CheckeredPigment from 2 Colors
+    * Params: 
+    *   c1 = (Color)
+    *   c2 = (Color)
+    */
     pure nothrow @nogc @safe this(in Color c1, in Color c2)
     {
         color1 = c1;
         color2 = c2;
     }
 
-    /// Build a CheckeredPigment - Parameters: 2 Colors, number of steps (int)
+    /**
+    * Build a CheckeredPigment
+    * Params: 
+    *   c1 = (Color)
+    *   c2 = (Color)
+    *   nSteps = (int)
+    */
     pure nothrow @nogc @safe this(in Color c1, in Color c2, in int nSteps)
     in (nSteps >= 0)
     {
         this(c1, c2);
         numberOfSteps = nSteps;
     }
-    /// Get the Color of a given bidimensional vector: Vec2d (u, v)
+
+    /**
+    * Get the Color of a given bidimensional vector: Vec2d (u, v)
+    * Params: 
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
@@ -114,7 +154,6 @@ unittest
     auto c1 = Color(1.0, 2.0, 3.0), c2 = Color(10.0, 20.0, 30.0);
     auto p = new CheckeredPigment(c1, c2, 2);
 
-    // getColor
     assert(p.getColor(Vec2d(0.25, 0.25)).colorIsClose(c1));
     assert(p.getColor(Vec2d(0.75, 0.25)).colorIsClose(c2));
     assert(p.getColor(Vec2d(0.25, 0.75)).colorIsClose(c2));
@@ -122,7 +161,9 @@ unittest
 }
 
 // ************************* ImagePigment *************************
-/// Class representing a Pigment made up of an Image
+/**
+* Class representing a Pigment made up of an Image
+*/
 class ImagePigment : Pigment
 {
     HDRImage image;
@@ -132,7 +173,12 @@ class ImagePigment : Pigment
         image = img;
     }
 
-    /// Get the Color of a given bidimensional vector: Vec2d (u, v)
+    /**
+    * Get the Color of a given bidimensional vector: Vec2d (u, v)
+    * Params:
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
     {
@@ -157,7 +203,7 @@ unittest
     img.setPixel(1, 1, Color(3.0, 2.0, 1.0));
 
     auto p = new ImagePigment(img);
-    // getColor
+
     assert(p.getColor(Vec2d(0.0, 0.0)).colorIsClose(Color(1.0, 2.0, 3.0)));
     assert(p.getColor(Vec2d(1.0, 0.0)).colorIsClose(Color(2.0, 3.0, 1.0)));
     assert(p.getColor(Vec2d(0.0, 1.0)).colorIsClose(Color(2.0, 1.0, 3.0)));
@@ -165,23 +211,44 @@ unittest
 }
 
 // ************************* BRDF *************************
-/// Class of a Bidirectional Reflectance Distribution Function (BRDF)
+/**
+* Class of a Bidirectional Reflectance Distribution Function (BRDF)
+*/
 class BRDF
 {
     Pigment pigment;
 
-    /// Build a BRDF - Parameter: Pigment
+    /**
+    * Build a BRDF
+    * Params:
+    *   p = (Pigment)
+    */
     pure nothrow @nogc @safe this(Pigment p = new UniformPigment(white))
     {
         pigment = p;
     }
 
-    /// Evaluate the Color in a 2D point (u, v) - Parameters: Normal, inDir and ourDir (Vec), Vec2d
+    /**
+    * Evaluate the Color in a 2D point (u, v)
+    * Params: 
+    *   n = (Normal)
+    *   inDir = (Vec) 
+    *   ourDir = (Vec)
+    *   uv = (Vec2d)
+    */
     abstract pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
         ) const;
 
-    /// Return the Ray that is diffuse by an object
+    /**
+    * Return the Ray that is diffuse by an object
+    * Params: 
+    *   pcg = (PCG)
+    *   incomingDir = (Vec)
+    *   interactionPoint = (Point)
+    *   n = (Normal)
+    *   depth = (int)
+    */
     abstract pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
         in Vec incomingDir,
@@ -190,6 +257,9 @@ class BRDF
         in int depth
         ) const;
     
+    /** 
+    * Convert a Pigment into a string 
+    */
     @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -199,14 +269,21 @@ class BRDF
 }
 
 // ************************* DiffuseBRDF *************************
-/// Class of a Diffuse BRDF
+/**
+* Class of a Diffuse BRDF
+*/
 class DiffuseBRDF : BRDF
 {
     float reflectance = 1.0;
 
-    /// Build a DiffuseBRDF - Parameters: Pigment, reflectance (float)
-    ///
-    /// Use super(p) with the pigment given
+    /**
+    * Build a DiffuseBRDF 
+    * Params: 
+    *   p = (Pigment)
+    *   reflectance = (float)
+    *___
+    * Use super(p) with the pigment given
+    */
     pure nothrow @nogc @safe this(
         Pigment p = new UniformPigment(white), in float refl = 1.0
         )
@@ -216,16 +293,27 @@ class DiffuseBRDF : BRDF
         reflectance = refl;
     }
 
-    /// Build a DiffuseBRDF - Parameter: reflectance (float)
-    ///
-    /// Use super(): the pigment is Uniform and white
+    /**
+    * Build a DiffuseBRDF
+    * Params: reflectance = (float)
+    *___
+    * Use super(): the pigment is Uniform and white
+    */
     pure nothrow @nogc @safe this(in float refl)
     in (refl > 0.0)
     {
         reflectance = refl;
     }
 
-    /// Evaluate the Color in a 2D point (u, v) - Parameters: Normal, inDir and ourDir (Vec), Vec2d
+    /**
+    * Evaluate the Color in a 2D point (u, v) 
+    * Params: 
+    *   n = (Normal)
+    *   inDir = (Vec)
+    *   ourDir = (Vec)
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     override pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
         ) const
@@ -233,7 +321,16 @@ class DiffuseBRDF : BRDF
         return pigment.getColor(uv) * (reflectance / PI);
     }
 
-    /// Return the Ray that is diffuse by an object
+    /**
+    * Return the Ray that is diffuse by an object
+    * Params: 
+    *   pcg = (PCG)
+    *   incomingDir = (Vec)
+    *   interactionPoint = (Point),
+    *   n = (Normal)
+    *   depth = (int)
+    * Return: Ray
+    */
     override pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
         in Vec incomingDir,
@@ -256,6 +353,9 @@ class DiffuseBRDF : BRDF
             );
     }
 
+    /**
+    * Convert a DiffuseBRDF to a string
+    */
     override @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -266,14 +366,21 @@ class DiffuseBRDF : BRDF
 }
 
 // ************************* SpecularBRDF *************************
-/// Class of a Specular BRDF for mirror sufaces
+/**
+* Class of a Specular BRDF for mirror sufaces
+*/
 class SpecularBRDF : BRDF
 {
     float thresholdAngleRad = PI / 1800.0;
 
-    /// Build a DiffuseBRDF - Parameters: Pigment, threshold angle [rad] (float)
-    ///
-    /// Use super(p) with the pigment given
+    /**
+    * Build a SpecularBRDF
+    * Params: 
+    *   p = (Pigment) 
+    *   threshold  = (float) angle [rad]
+    * ___
+    * Use super(p) with the pigment given
+    */
     pure nothrow @nogc @safe this(
         Pigment p = new UniformPigment(white), in float threshold = PI / 1800.0
         )
@@ -283,16 +390,28 @@ class SpecularBRDF : BRDF
         thresholdAngleRad = threshold;
     }
 
-    /// Build a DiffuseBRDF - Parameters: threshold angle [rad] (float)
-    ///
-    /// Use super(): the pigment is Uniform and white
+    /**
+    * Build a SpecularBRDF
+    * Params: 
+    *   threshold = (float) angle [rad]
+    * ___
+    * Use super(): the pigment is Uniform and white
+    */
     pure nothrow @nogc @safe this(in float threshold)
     in (threshold > 0.0)
     {
         thresholdAngleRad = threshold;
     }
 
-    /// Evaluate the Color in a 2D point (u, v) - Parameters: Normal, inDir and ourDir (Vec), Vec2d
+    /**
+    * Evaluate the Color in a 2D point (u, v)
+    * Params: 
+    *   n = (Normal)
+    *   inDir = (Vec)
+    *   ourDir = (Vec)
+    *   uv = (Vec2d)
+    * Return: Color
+    */
     override pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
         ) const
@@ -302,7 +421,16 @@ class SpecularBRDF : BRDF
             pigment.getColor(uv) : black;
     }
 
-    /// Return the Ray that is diffuse by an object
+    /**
+    * Return the Ray that is diffuse by an object
+    * Params:
+    *   pcg = (PCG)
+    *   incomingDir = (Vec)
+    *   interactionPoint = (Point),
+    *   n = (Normal)
+    *   depth = (int)
+    * Return: Ray
+    */
     override pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
         in Vec incomingDir,
@@ -322,6 +450,9 @@ class SpecularBRDF : BRDF
             depth);
     }
 
+    /** 
+    * Convert a SpecularBRDF to a string 
+    */
     override @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -332,7 +463,12 @@ class SpecularBRDF : BRDF
 }
 
 // ************************* Material *************************
-/// Stucture representing a Material - Parameters: BRDF, Pigment
+/**
+* Stucture representing a Material
+* Members: 
+*   brdf = (BRDF)
+*   emittedRadiance = (Pigment)
+*/
 struct Material
 {
     BRDF brdf = new DiffuseBRDF();
