@@ -132,17 +132,8 @@ void main(string[] args)
 						" has been read from disk"
 						);
 
-				MonoTime startPixelOps = MonoTime.currTime;
-				image.normalizeImage(parms.factor);
-				image.clampImage;
-				MonoTime endPixelOps = MonoTime.currTime;
-				Duration timeElapsedForPixelOps = endPixelOps - startPixelOps;
-
-				MonoTime startWriting = MonoTime.currTime;
-				image.writePNG(parms.pngOutput.dup, parms.gamma);
-				MonoTime endWriting = MonoTime.currTime;
-				Duration timeElapsedForWriting = endWriting - startWriting;
-				writeln("File " ~ parms.pngOutput ~ " has been written to disk");
+					image.normalizeImage(parms.factor);
+					image.clampImage;
 
 					image.writePNG(parms.pngOutput, parms.gamma);
 					if (!parms.isOutputPNG) writeln(

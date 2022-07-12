@@ -327,7 +327,6 @@ unittest
         ];
     auto expected = Transformation(m5, m6);
     assert(expected.isConsistent(1e-4));
-    // transfIsClose
     assert(expected.transfIsClose(t1 * t2));
 }
 
@@ -348,11 +347,9 @@ unittest
         ];
     auto t1 = Transformation(m1, m2);
 
-    // inverse
     Transformation t2 = t1.inverse;
     assert(t2.isConsistent);
 
-    // Transformation product (*)
     Transformation prod = t1 * t2;
     assert(prod.isConsistent);
     assert(prod.transfIsClose(Transformation()));

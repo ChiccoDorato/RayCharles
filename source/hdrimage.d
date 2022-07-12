@@ -606,7 +606,7 @@ class HDRImage
 				}
 			}
 		}
-		return pfm.data.idup;
+		return pfm.data;
 	}
 
 	/**

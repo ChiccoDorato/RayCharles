@@ -20,7 +20,6 @@ import std.traits : EnumMembers;
 import std.typecons : Nullable, tuple, Tuple;
 import transformations;
 
-
 // ************************* Source Location *************************
 /**
 * Structure of a SourceLocation
@@ -945,6 +944,7 @@ struct InputStream
         expectSymbol(',');
         immutable float distance = expectNumber(scene);
         expectSymbol(')');
+
         switch (cameraType)
         {
             case Keyword.orthogonal:
@@ -1141,13 +1141,11 @@ unittest
     )
 
     # Here is a comment
-
     material groundMaterial(
         diffuse(checkered(<0.3, 0.5, 0.1>,
                             <0.1, 0.2, 0.5>, 4)),
         uniform(<0, 0, 0>)
     )
-
     material sphereMaterial(
         specular(uniform(<0.5, 0.5, 0.5>)),
         uniform(<0, 0, 0>)
@@ -1155,9 +1153,7 @@ unittest
 
     plane (skyMaterial, translation([0, 0, 100]) * rotationY(clock))
     plane (groundMaterial, identity)
-
     sphere(sphereMaterial, translation([0, 0, 1]))
-
     camera(perspective, rotationZ(30) * translation([-4, 0, 1]), 1.0, 2.0)";
 
     auto inpStr = InputStream(stream, "");
@@ -1189,11 +1185,13 @@ unittest
 
     auto groundBRDF = cast(DiffuseBRDF)(groundMaterial.brdf);
     assert(is(typeof(groundBRDF) == DiffuseBRDF));
+
     auto groundPigment = cast(CheckeredPigment)(groundBRDF.pigment);
     assert(is(typeof(groundPigment) == CheckeredPigment));
     assert(groundPigment.color1.colorIsClose(Color(0.3, 0.5, 0.1)));
     assert(groundPigment.color2.colorIsClose(Color(0.1, 0.2, 0.5)));
     assert(groundPigment.numberOfSteps == 4);
+
     auto groundEmitted = cast(UniformPigment)(groundMaterial.emittedRadiance);
     assert(is(typeof(groundEmitted) == UniformPigment));
     assert(groundEmitted.color.colorIsClose(Color(0.0, 0.0, 0.0)));
