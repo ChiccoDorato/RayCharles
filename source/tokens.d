@@ -5,7 +5,6 @@ import colored;
 import geometry : Vec;
 import hdrimage;
 import materials;
-import parameters : toNonNegative;
 import shapes;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
@@ -698,7 +697,12 @@ struct InputStream
                 expectSymbol(',');
                 immutable col2 = parseColor(scene);
                 expectSymbol(',');
+                SourceLocation invalidStepsLocation = location;
                 auto numOfSteps = cast(immutable int)(expectNumber(scene));
+                if (numOfSteps < 1) throw new GrammarError(
+                    "non positive number of steps in checkered pigment",
+                    invalidStepsLocation
+                    );
                 pigment = new CheckeredPigment(col1, col2, numOfSteps);
                 break;
 

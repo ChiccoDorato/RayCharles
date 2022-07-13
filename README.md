@@ -25,7 +25,7 @@ which saves the files output.pfm and output.png in the directory. The generation
 
 You can try this command with the scenes supplied in the examples directory, to learn how to give life to your own ideas [see below](#write-a-scene).
 
-IMPORTANT: to reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- render` (DUB uses `dmd` by default).
+IMPORTANT: to reduce the execution time force the use of a specific compiler through `dub run --compiler ldc2 -- render` (DUB uses `dmd` by default).
 
 **Pfm2png.** The same remains valid for the `pfm2png` command, except it requires two compulsory argument, i.e. the name of the image to convert and the output png file (the extension .png can be omitted). Using the alternative approach of building first and then executing:
 
@@ -72,13 +72,28 @@ Let's start from the numerical types:
 
 Now it is possible to move on and start to describe a scene. Before shapes can enter the scene with their concreteness, one should know the position from which they are observed and how to place them.
 - **Camera:** `camera(typeOfCamera, transformation, aspectRatio, distance)`. Two types of camera are supported, orthogonal and perspective. Transformations are explained right below and can be composed with *, being applied in right-to-left order. The aspect ratio is preferable to be equal to the width of the image over its height, while distance represent the distance of the observer from the screen (note that can be modified by the transformation).
-- **Transformations:** desired transformation ca be obtained combining the following commands.
+- **Transformations:** desired transformation can be obtained combining the following commands.
     1. `identity`, useful if the object (or the observer) need not be moved.
     2. `translation([x, y, z])` translates by a vector whose syntax is the one mentioned above.
     3. `rotationX(angle)` rotates along x-axis by angle, which can be a number or the name of a variable declared as mentioned above. Angle must be expressed in degrees.
     4. `rotationY(angle)`, analogous to the previous along y-axis.
     5. `rotationZ(angle)`, analogous to the previous along z-axis.
-    6. `scaling([x, y, z])` stretches the components along an axis by the corresponding vecotr component. For example, if one wants to double the height of an object keeping unvaried his other sizes, they will apply `scaling([1.0, 1.0, 2.0])`.
+    6. `scaling([x, y, z])` stretches the components along an axis by the corresponding vecotr component. For example, if one wants to double the height of an object keeping unvaried its other sizes, they will apply `scaling([1.0, 1.0, 2.0])`.
+
+At last, the turn of shapes has come. The syntax is simple, but it requires to learn how to define the materials they are made of.
+- **Pigment:** this is the first step to assign a color to a shape. At the moment there are three kind of pigments:
+    1. `uniform(<r, g, b>)`, which is a monochromatic pigment of whatever RGB color;
+    2. `checkered(<r1, g1, b1>, <r2, g2, b2>, steps)`, which is a checkered pattern of two colors. The greater the steps is (a positive integer), the denser the alternation will be;
+    3. `image("file.pfm")`, which covers the surface with a pfm image.
+- **Materials:** `material name(typeOfBRDF(pigment), pigment)`. Materials must have a name and are composed of two parts, the first regarding how the surface responds to external light (BRDF) and the second expressing the intrinsic emitting radiance. At the moment "typeofBRDF" can be either of the following:
+    1. `diffuse`, for those objects which scatter uniformly the hitting rays;
+    2. `specular`, for mirror-like reflecting surfaces.
+- **Shapes:** `typeOfShapes(materialName, transformation)`. Be careful to define material first so that "materialName" can be recognized as an existing material in the scene. Transformation works in the way previously mentioned. Supported shapes are:
+    1. `sphere`, by default the unitary sphere with center in the origin of axis;
+    2. `plane`, by default coinciding with the horizontal x-y plane;
+    3. `aabox`, by default the cube aligned with the axis and defined by the vertices (0, 0, 0) and (1, 1, 1);
+    4. `cylindershell`, by default cylindrical shell with the z-axis as axis of simmetry, unitary radius and height;
+    5. `cylinder`, like the cylinder shell but with top nd bottom base.
 
 ## License
 The code is released under the GPL-3.0 [license](LICENSE).
