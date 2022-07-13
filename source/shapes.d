@@ -113,6 +113,8 @@ class Shape
     Transformation transf;
     Material material;
 
+    Point aabbMin, aabbMax;
+
     /** 
      * Build a Shape
      * Params:
@@ -193,6 +195,8 @@ class Sphere : Shape
         )
     {
         super(t, m);
+        aabbMin = Point(-1.0, -1.0, -1.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -379,6 +383,8 @@ class Plane : Shape
         )
     {
         super(t, m);
+        aabbMin = Point(-float.infinity, -float.infinity, 0.0);
+        aabbMax = Point(float.infinity, float.infinity, 0.0);
     }
 
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
@@ -537,6 +543,8 @@ class AABox : Shape
         )
     {
         super(t, m);
+        aabbMin = Point(0.0, 0.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -568,6 +576,8 @@ class AABox : Shape
 
         transf = transl * rotation * scale;
         material = m;
+        aabbMin = Point(0.0, 0.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -850,6 +860,8 @@ class CylinderShell : Shape
         )
     {
         super(t, m);
+        aabbMin = Point(-1.0, -1.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -887,6 +899,8 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
+        aabbMin = Point(-1.0, -1.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -905,6 +919,8 @@ class CylinderShell : Shape
     {
         transf = translation(transl) * scaling(Vec(r, r, h));
         material = m;
+        aabbMin = Point(-1.0, -1.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
@@ -940,6 +956,8 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
+        aabbMin = Point(-1.0, -1.0, 0.0);
+        aabbMax = Point(1.0, 1.0, 1.0);
     }
 
     /**
