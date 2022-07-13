@@ -9,7 +9,6 @@ To run the program on Linux, MacOS or Windows a D compiler is needed. Even thoug
 **Package manger.** Details about DUB installation are provided on [DUB github page](https://github.com/dlang/dub#Installation) - latest version is the best choice. Be aware that upgrades via package management system may install a newer version than the [last release](https://github.com/dlang/dub/releases) and that most of the times it should not alarm.
 
 ## Usage
-<<<<<<< HEAD
 This command-line interface implements two functionalities: `render` generates a photorealistic image for a scene given in input as a txt, while `pfm2png` allows to convert a pfm file into a png one.
 
 Moreover, a dedicated script allows to render a scene with different angles and create animations. This function uses the ldc2 compiler: if you feel confident read below to know how to select the compiler and modify properly the script RayCharles.sh.
@@ -25,26 +24,12 @@ which saves the files output.pfm and output.png in the directory. The generation
 IMPORTANT: to reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- demo` (DUB uses `dmd` by default).
 
 **Pfm2png.** The same remains valid for the `pfm2png` command, except it requires two compulsory argument, i.e. the name of the image to convert and the output png file (the extension .png can be omitted). Using the alternative approach of building first and then executing:
-=======
-This command-line interface implements two functionalities: `demo` generates a photorealistic image for a prearranged scene, while `pfm2png` allows to convert a pfm file into a png one.
-
-**Demo.** In order to use the ray tracer open the shell, enter the unzipped directory and build and run through
-
-```bash
-$ dub run -- demo
-```
-
-which saves the files output.pfm and output.png in the directory. The generations of new images will override any existing file in the directory with the same name. This could be very unfortunate since the output may be produced in several minutes. To avoid the risk provides names of your choice to RayCharles: this and other features are available for consultation typing `./RayCharles demo --help`. To reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- demo` (DUB uses `dmd` by default).
-
-**Pfm2png.** The same remains valid for the `pfm2png` command, except it requires two compulsory argument, i.e. the name of the image to convert and the output png file (the extension .png cna be omitted). Using the alternative approach of building first and then executing:
->>>>>>> scenefiles
 
 ```bash
 $ dub build
 $ ./RayCharles pfm2png image.pfm image.png
 ```
 
-<<<<<<< HEAD
 Again, `dub build --compiler ldc2` select another compiler (not particularly useful for this command). For more informations use the `--help` option.
 
 **Animations.** It is also possible to generate animations: declare a variable named "angle" in the txt file to render and a camera which exploits this variable, then type in the shell
@@ -52,20 +37,8 @@ Again, `dub build --compiler ldc2` select another compiler (not particularly use
 ```bash
 $ ./RayCharles.sh inputScene.txt animationName
 ```
-=======
+
 Again, `dub build --compiler ldc2` select another compiler. For more informations use the `--help` option.
-
-## Examples
-**Demo.**
-![demo bigger size](generatedImages/Big10-4-5.png)
-
-**Pfm2png.**
-| ![memorial.png factor 0.2](generatedImages/memorial-f02.png) | ![memorial.png factor 0.4](generatedImages/memorial-f04.png) |
-| :---: | :---: |
-| Gamma = 1.0, factor = 0.2 | Gamma = 1.0, factor = 0.4 |
->>>>>>> scenefiles
-
-and the file animationName.mp4 will be inserted into the animations subdirectory. All the frames are collected in the pngFrames subdirectory. By default the images are rendered with -d=3 and -spp=4 (see render help menu).
 
 ## Examples
 **Render.**
