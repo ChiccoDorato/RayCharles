@@ -25,7 +25,7 @@ which saves the files output.pfm and output.png in the directory. The generation
 
 You can try this command with the scenes supplied in the examples directory, to learn how to give life to your own ideas [see below](write-a-scene).
 
-IMPORTANT: to reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- demo` (DUB uses `dmd` by default).
+IMPORTANT: to reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- render` (DUB uses `dmd` by default).
 
 **Pfm2png.** The same remains valid for the `pfm2png` command, except it requires two compulsory argument, i.e. the name of the image to convert and the output png file (the extension .png can be omitted). Using the alternative approach of building first and then executing:
 
