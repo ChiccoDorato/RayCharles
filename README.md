@@ -23,7 +23,7 @@ $ dub run -- render inputScene.txt
 
 which saves the files output.pfm and output.png in the directory. The generation of new images will override any existing file in the directory with the same name. This could be very unfortunate since the output may be produced in several minutes. To avoid the risk you can give names of your choice: this and other features are available for consultation typing `dub run -- render --help`, or simply `./RayCharles render --help` if the building has already been done.
 
-You can try this command with the scenes supplied in the examples directory, to learn how to give life to your own ideas [see below](write-a-scene).
+You can try this command with the scenes supplied in the examples directory, to learn how to give life to your own ideas [see below](#write-a-scene).
 
 IMPORTANT: to reduce the execution time require the use of a specific compiler through `dub run --compiler ldc2 -- render` (DUB uses `dmd` by default).
 
