@@ -5,6 +5,7 @@ import colored;
 import geometry : Vec;
 import hdrimage;
 import materials;
+import parameters : toNonNegative;
 import shapes;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
@@ -639,12 +640,34 @@ struct InputStream
     pure Color parseColor(in Scene scene)
     {
         expectSymbol('<');
+
+        SourceLocation negativeColorLocation = location;
         immutable red = expectNumber(scene);
+        if (red < 0.0) throw new GrammarError(
+            "negative value for red",
+            negativeColorLocation
+            );
+
         expectSymbol(',');
+
+        negativeColorLocation = location;
         immutable green = expectNumber(scene);
+        if (green < 0.0) throw new GrammarError(
+            "negative value for green",
+            negativeColorLocation
+            );
+
         expectSymbol(',');
+
+        negativeColorLocation = location;
         immutable blue = expectNumber(scene);
+        if (blue < 0.0) throw new GrammarError(
+            "negative value for blue",
+            negativeColorLocation
+            );
+
         expectSymbol('>');
+
         return Color(red, green, blue);
     }
 
