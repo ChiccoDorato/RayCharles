@@ -1,6 +1,6 @@
 module shapes;
 
-import std.algorithm : max, min;
+import std.algorithm : max, maxIndex, min, minIndex;
 import geometry : Normal, Point, Vec, Vec2d;
 import hdrimage : areClose;
 import materials : Material;
@@ -104,6 +104,11 @@ pure nothrow @nogc @safe float fixBoundary(
     return coord;
 }
 
+struct AABB
+{
+    Point min, max;
+}
+
 // ******************** Shape ********************
 /**
 * Abstract class for a generic Shape
@@ -112,8 +117,7 @@ class Shape
 {
     Transformation transf;
     Material material;
-
-    Point aabbMin, aabbMax;
+    AABB aabb;
 
     /** 
      * Build a Shape
@@ -176,6 +180,39 @@ class Shape
     * Return: true or false (bool)
     */
     abstract pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const;
+
+    final pure nothrow @nogc @safe AABB transformAABB() const
+    {
+        Point[8] vertices = [
+            transf * aabb.min,
+            transf * Point(aabb.max.x, aabb.min.y, aabb.min.z),
+            transf * Point(aabb.max.x, aabb.max.y, aabb.min.z),
+            transf * Point(aabb.min.x, aabb.max.y, aabb.min.z),
+            transf * Point(aabb.min.x, aabb.min.y, aabb.max.z),
+            transf * Point(aabb.max.x, aabb.min.y, aabb.max.z),
+            transf * aabb.max,
+            transf * Point(aabb.min.x, aabb.max.y, aabb.max.z)
+            ];
+
+        float xMin = vertices[0].x, xMax = xMin;
+        float yMin = vertices[0].y, yMax = yMin;
+        float zMin = vertices[0].z, zMax = zMin;
+        foreach (Point p; vertices)
+        {
+            if (p.x < xMin) xMin = p.x;
+            if (p.x > xMax) xMax = p.x;
+
+            if (p.y < yMin) yMin = p.y;
+            if (p.y > yMax) yMax = p.y;
+
+            if (p.z < zMin) zMin = p.z;
+            if (p.z > zMax) zMax = p.z;
+        }
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
+    }
+
+    abstract pure nothrow @nogc @safe bool isInside(in Point p) const;
 }
 
 // ******************** Sphere ********************
@@ -195,8 +232,7 @@ class Sphere : Shape
         )
     {
         super(t, m);
-        aabbMin = Point(-1.0, -1.0, -1.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(-1.0, -1.0, -1.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -289,6 +325,11 @@ class Sphere : Shape
         immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
         return (t1 > invR.tMin && t1 < invR.tMax) ||
                (t2 > invR.tMin && t2 < invR.tMax);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.x * p.x + p.y * p.y + p.z * p.z < 1.0;
     }
 }
 
@@ -383,8 +424,10 @@ class Plane : Shape
         )
     {
         super(t, m);
-        aabbMin = Point(-float.infinity, -float.infinity, 0.0);
-        aabbMax = Point(float.infinity, float.infinity, 0.0);
+        aabb = AABB(
+            Point(-float.infinity, -float.infinity, 0.0),
+            Point(float.infinity, float.infinity, 0.0)
+            );
     }
 
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
@@ -440,6 +483,11 @@ class Plane : Shape
 
         float t = -invR.origin.z / invR.dir.z;
         return t > invR.tMin && t < invR.tMax;
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.z > 0.0;
     }
 }
 
@@ -543,8 +591,7 @@ class AABox : Shape
         )
     {
         super(t, m);
-        aabbMin = Point(0.0, 0.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(0.0, 0.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -576,8 +623,7 @@ class AABox : Shape
 
         transf = transl * rotation * scale;
         material = m;
-        aabbMin = Point(0.0, 0.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(0.0, 0.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -689,6 +735,13 @@ class AABox : Shape
         immutable float[2] t = boxIntersections(invR);
         if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
         return t[0] > invR.tMin || t[1] < invR.tMax;
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.x > 0.0 && p.x < 1.0 &&
+            p.y > 0.0 && p.y < 1.0 &&
+            p.z > 0.0 && p.z < 1.0;
     }
 }
 
@@ -860,8 +913,7 @@ class CylinderShell : Shape
         )
     {
         super(t, m);
-        aabbMin = Point(-1.0, -1.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -899,8 +951,7 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
-        aabbMin = Point(-1.0, -1.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -919,8 +970,7 @@ class CylinderShell : Shape
     {
         transf = translation(transl) * scaling(Vec(r, r, h));
         material = m;
-        aabbMin = Point(-1.0, -1.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -956,8 +1006,7 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
-        aabbMin = Point(-1.0, -1.0, 0.0);
-        aabbMax = Point(1.0, 1.0, 1.0);
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -1069,6 +1118,11 @@ class CylinderShell : Shape
 
         return (tShell[0] >= tZ[0] && tShell[0] > invR.tMin)
             || (tShell[1] <= tZ[1] && tShell[1] < invR.tMax);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return false;
     }
 }
 
@@ -1335,6 +1389,12 @@ class Cylinder : CylinderShell
         immutable float[2] t = cylinderIntersections(invR);
         if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
         return (t[0] > invR.tMin) || (t[1] < invR.tMax);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        immutable radius = p.x * p.x + p.y * p.y;
+        return p.z > 0.0 && p.z < 1.0 && radius > 0.0 && radius < 1.0;
     }
 }
 
