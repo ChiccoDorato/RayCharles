@@ -39,7 +39,7 @@ class Renderer
     *   r = (Ray)
     * Returns: Color
     */
-    abstract pure nothrow @nogc @safe Color call(in Ray r);
+    abstract pure nothrow @safe Color call(in Ray r);
 }
 
 // ************************* OnOffRenderer *************************
@@ -75,7 +75,7 @@ class OnOffRenderer : Renderer
     * ___
     * The Color is the background one if there is no intersection
     */
-    override pure nothrow @nogc @safe Color call(in Ray r)
+    override pure nothrow @safe Color call(in Ray r)
     {
         return world.rayIntersection(r).isNull ? backgroundColor : color;
     }
@@ -143,7 +143,7 @@ class FlatRenderer : Renderer
     * ___
     * The emitted radiance from the material of an object is taken into account
     */
-    override pure nothrow @nogc @safe Color call(in Ray r)
+    override pure nothrow @safe Color call(in Ray r)
     {
         Nullable!HitRecord hit = world.rayIntersection(r);
         if (hit.isNull) return backgroundColor;
@@ -244,7 +244,7 @@ class PathTracer : Renderer
     * Use the Russian Roulette Algorithm 
     * if the depth of the Ray is bigger than the limit set
     */
-    override pure nothrow @nogc @safe Color call(in Ray ray)
+    override pure nothrow @safe Color call(in Ray ray)
     {
         if (ray.depth > maxDepth) return black;
 
