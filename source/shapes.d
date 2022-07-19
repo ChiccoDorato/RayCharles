@@ -108,6 +108,11 @@ pure nothrow @nogc @safe float fixBoundary(
 struct AABB
 {
     Point min, max;
+
+    pure nothrow @nogc @safe bool isClose(in AABB aabb) const
+    {
+        return min.xyzIsClose(aabb.min) && max.xyzIsClose(aabb.max);
+    }
 }
 
 // ******************** Shape ********************
@@ -350,7 +355,7 @@ unittest
 
     auto s = new Sphere();
 
-    assert(s.transformAABB == s.aabb);
+    assert(s.transformAABB.isClose(s.aabb));
 
     auto notHitRay = Ray(Point(0.0, 10.0, 2.0), -vecZ);
     assert(!s.quickRayIntersection(notHitRay));
@@ -400,7 +405,7 @@ unittest
 
     auto minPoint = s.aabb.min + Vec(10.0, 0.0, 0.0);
     auto maxPoint = s.aabb.max + Vec(10.0, 0.0, 0.0);
-    assert(s.transformAABB == AABB(minPoint, maxPoint));
+    assert(s.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto notHitRay1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
     assert(!s.quickRayIntersection(notHitRay1));
@@ -463,7 +468,6 @@ class Plane : Shape
         return Vec2d(p.x - floor(p.x), p.y - floor(p.y));
     }
 
-// Useful for CSG only
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         return Normal(0.0, 0.0, v.z < 0.0 ? 1.0 : -1.0);
@@ -533,7 +537,10 @@ unittest
 
     auto p = new Plane();
 
+    //assert(p.transformAABB.isClose(p.aabb));
+
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r1));
     HitRecord h1 = p.rayIntersection(r1).get;
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
@@ -544,15 +551,17 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(0.0, 0.0, 1.0), vecZ);
+    assert(!p.quickRayIntersection(r2));
     Nullable!HitRecord h2 = p.rayIntersection(r2);
-
     assert(h2.isNull);
 
     auto r3 = Ray(Point(0.0, 0.0, 1.0), vecX);
+    assert(!p.quickRayIntersection(r3));
     Nullable!HitRecord h3 = p.rayIntersection(r3);
     assert(h3.isNull);
 
     auto r4 = Ray(Point(0.0, 0.0, 1.0), vecY);
+    assert(!p.quickRayIntersection(r4));
     Nullable!HitRecord h4 = p.rayIntersection(r4);
     assert(h4.isNull);
 }
@@ -564,9 +573,11 @@ unittest
 
     auto p = new Plane(rotationY(90.0));
 
-    auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
-    HitRecord h1 = p.rayIntersection(r1).get;
+    //assert(p.transformAABB.isClose(p.aabb));
 
+    auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
+    assert(p.quickRayIntersection(r1));
+    HitRecord h1 = p.rayIntersection(r1).get;
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -576,14 +587,17 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(0.0, 0.0, 1.0), vecZ);
+    assert(!p.quickRayIntersection(r2));
     Nullable!HitRecord h2 = p.rayIntersection(r2);
     assert(h2.isNull);
 
     auto r3 = Ray(Point(0.0, 0.0, 1.0), vecX);
+    assert(!p.quickRayIntersection(r3));
     Nullable!HitRecord h3 = p.rayIntersection(r3);
     assert(h3.isNull);
 
     auto r4 = Ray(Point(0.0, 0.0, 1.0), vecY);
+    assert(!p.quickRayIntersection(r4));
     Nullable!HitRecord h4 = p.rayIntersection(r4);
     assert(h4.isNull);
 }
@@ -596,15 +610,17 @@ unittest
     auto p = new Plane();
 
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r1));
     HitRecord h1 = p.rayIntersection(r1).get;
-
     assert(h1.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
 
     auto r2 = Ray(Point(0.25, 0.75, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r2));
     HitRecord h2 = p.rayIntersection(r2).get;
     assert(h2.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 
     auto r3 = Ray(Point(4.25, 7.75, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r3));
     HitRecord h3 = p.rayIntersection(r3).get;
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
@@ -792,6 +808,10 @@ unittest
     auto p1 = Point(1.0, 2.0, 4.0), p2 = Point(-1.0, 5.0, 5.0);
     auto box = new AABox(p1, p2, 0.0, 330.0, 0.0);
 
+    auto minPoint = Point(0.5 - sqrt(3.0), 2.0, 3.0);
+    auto maxPoint = Point(1.0, 5.0, 4.0 + sqrt(3.0) / 2.0);
+    assert(box.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     auto scale = scaling(Vec(-2.0, 3.0, 1.0));
     auto rotY = rotationY(-30.0);
     auto transl = translation(Vec(1.0, 2.0, 4.0));
@@ -804,6 +824,8 @@ unittest
     import geometry : vecX, vecY;
 
     auto box = new AABox();
+
+    assert(box.transformAABB.isClose(box.aabb));
 
     auto r1 = Ray(Point(-2.0, 0.5, 0.0), -vecX);
     assert(!box.quickRayIntersection(r1));
@@ -845,15 +867,20 @@ unittest
     auto transl = translation(Vec(-1.0, 2.0, 4.0));
 
     auto box = new AABox(transl * rotY * scale);
-    float z = 4.0 - sqrt(3.0) / 3.0;
+
+    auto minPoint = Point(-1.0, 2.0, 4.0 - 0.4 * sqrt(3.0));
+    auto maxPoint = Point(-0.6 + sqrt(3.0), 5.0, 5.0);
+    assert(box.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto p1 = Point(-1.0, 2.0, 4.0), p2 = Point(1.0, 5.0, 3.2);
     auto pointsConstructorBox = new AABox(p1, p2, 0.0, -30.0, 0.0);
 
     assert(pointsConstructorBox.transf.transfIsClose(box.transf));
+    assert(pointsConstructorBox.transformAABB.isClose(box.transformAABB));
+
+    float z = 4.0 - sqrt(3.0) / 3.0;
 
     auto r1 = Ray(Point(-1.0, 8.0, z), -vecY);
-
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
