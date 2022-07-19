@@ -62,7 +62,7 @@ struct HitRecord
 
 /**
 * Find monodimentional intersection
-* Return: a tuple [t1, t2] with the "time" of intersection
+* Return: an array [t1, t2] with the "time" of intersection
 */
 pure nothrow @nogc @safe float[2] oneDimIntersections(
     in float origin, in float direction
@@ -162,62 +162,29 @@ class Shape
     */
     abstract pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const;
 
-    abstract pure nothrow @safe float[] allIntersections(in Ray r) const;
-
     /**
-    * Check and record an intersection 
-    * between a Ray and a Shape
+    * Check and record all the intersections between a Ray and a Shape
     * Params: 
     *   r = (Ray)
     * Return: Nullable!HitRecord
     */
-    final pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray r)
-    {
-        Nullable!HitRecord hit;
-        immutable Ray invR = transf.inverse * r;
-
-        immutable float[] intersections = allIntersections(invR);
-        float firstHit;
-        foreach (float t; intersections)
-        {
-            if (t > invR.tMin && t < invR.tMax)
-            {
-                firstHit = t;
-                break;
-            }
-        }
-
-        if (!firstHit.isNaN)
-        {
-            immutable Point hitPoint = invR.at(firstHit);
-            hit = HitRecord(
-                transf * hitPoint,
-                transf * normal(hitPoint, invR.dir),
-                uv(hitPoint),
-                firstHit,
-                r,
-                this
-                );
-        }
-        return hit;
-    }
+    abstract pure nothrow @safe float[] allIntersections(in Ray r) const;
 
     /**
-    * Look up quickly for intersection 
-    * between a Ray and a Shape
+    * Check and record an intersection between a Ray and a Shape
+    * Params: 
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    abstract pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray r);
+
+    /**
+    * Look up quickly for intersection between a Ray and a Shape
     * Params:
     *   r = (Ray)
     * Return: true or false (bool)
     */
-    final pure nothrow @safe bool quickRayIntersection(in Ray r) const
-    {
-        immutable Ray invR = transf.inverse * r;
-        immutable float[] intersections = allIntersections(invR);
-
-        foreach (float t; intersections)
-            if (t > invR.tMin && t < invR.tMax) return true;
-        return false;
-    }
+    abstract pure nothrow @safe bool quickRayIntersection(in Ray r) const;
 
     final pure nothrow @nogc @safe AABB transformAABB() const
     {
@@ -300,7 +267,7 @@ class Sphere : Shape
         return p.toVec * v < 0.0 ? n : -n;
     }
 
-    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    pure nothrow @nogc @safe float[2] sphereIntersections(in Ray r) const
     {
         immutable Vec originVec = r.origin.toVec;
 
@@ -309,11 +276,65 @@ class Sphere : Shape
         immutable float c = originVec.squaredNorm - 1.0;
         immutable float reducedDelta = halfB * halfB - a * c;
 
-        if (reducedDelta < 0.0) return [];
+        if (reducedDelta < 0.0) return [float.init, float.init];
+        return [(-halfB - sqrt(reducedDelta)) / a,
+                (-halfB + sqrt(reducedDelta)) / a];
+    }
 
-        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-        return [t1, t2];
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = sphereIntersections(transf.inverse * r);
+        if (t[0].isNaN) return [];
+        return t.dup;
+    }
+
+    /**
+    * Check and record an intersection between a Ray and a Sphere
+    * Params: 
+    *   r =  (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = sphereIntersections(invR);
+
+        Nullable!HitRecord hit;
+        if (t[0].isNaN) return hit;
+
+        float firstHit;
+        if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
+        else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
+        else return hit;
+
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
+            firstHit,
+            r,
+            this
+            );
+        return hit;
+    }
+
+    /**
+    * Look up quickly for intersection between a Ray and a Shape
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = sphereIntersections(invR);
+
+        if (t[0].isNaN) return false;
+        return (t[0] > invR.tMin && t[0] < invR.tMax) ||
+               (t[1] > invR.tMin && t[1] < invR.tMax);
     }
 
     override pure nothrow @nogc @safe bool isInside(in Point p) const
@@ -432,8 +453,53 @@ class Plane : Shape
 
     override pure nothrow @safe float[] allIntersections(in Ray r) const
     {
-        if (areClose(r.dir.z, 0.0)) return [];
-        return [-r.origin.z / r.dir.z];
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0.0)) return [];
+        return [-invR.origin.z / invR.dir.z];
+    }
+
+    /**
+    * Check and record an intersection between a Ray and a Plane
+    * Params: 
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        Nullable!HitRecord hit;
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0.0)) return hit;
+
+        immutable float t = -invR.origin.z / invR.dir.z;
+        if (t <= invR.tMin || t >= invR.tMax) return hit;
+
+        immutable Point hitPoint = invR.at(t);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * Normal(0.0, 0.0, invR.dir.z < 0.0 ? 1.0 : -1.0),
+            uv(hitPoint),
+            t,
+            r,
+            this
+            );
+        return hit;
+    }
+
+    /**
+    * Look up quickly for an intersection between a Ray and a Plane
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0.0)) return false;
+
+        float t = -invR.origin.z / invR.dir.z;
+        return t > invR.tMin && t < invR.tMax;
     }
 
     override pure nothrow @nogc @safe bool isInside(in Point p) const
@@ -628,20 +694,70 @@ class AABox : Shape
 
     /**
     * Find and record the intersections with the box
-    * passing by each dimension x, y, z
+    * passing by each dimension x,y,z
     * Params: 
     *   r = (Ray)
     * Return: float[2]
     */
-    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
     {
         immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
         immutable float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
         immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
+    }
 
-        immutable float t1 = max(tX[0], tY[0], tZ[0]);
-        immutable float t2 = min(tX[1], tY[1], tZ[1]);
-        return t1 > t2 ? [] : [t1, t2];
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = boxIntersections(transf.inverse * r);
+        return t[0] > t[1] ? [] : t.dup;
+    }
+
+    /**
+    * Check and record an intersection between a Ray and an AABOX
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        Nullable!HitRecord hit;
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = boxIntersections(invR);
+
+        float firstHit;
+        if (t[0] > t[1]) return hit;
+        if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
+        else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
+        else return hit;
+
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
+            firstHit,
+            r,
+            this
+            );
+        return hit;
+    }
+
+    /**
+    * Look up quickly for an intersection between a Ray and a Plane
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = boxIntersections(invR);
+
+        if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
+        return t[0] > invR.tMin || t[1] < invR.tMax;
     }
 
     override pure nothrow @nogc @safe bool isInside(in Point p) const
@@ -958,26 +1074,27 @@ class CylinderShell : Shape
                             r.origin.y * r.origin.y -
                             1.0;
         if (areClose(r.dir.x, 0.0) && areClose(r.dir.y, 0.0))
-        // Cylindershell will result not hit by a vertical ray (<= this is useful only for cylinders)
+        // Cylindershell will not be hit by a vertical ray:
+        // this differentiation is useful only for Cylinder.
             return c <= 0.0 ? [-float.infinity, float.infinity] :
                               [float.infinity, -float.infinity];
 
         immutable float halfB = r.origin.x * r.dir.x + r.origin.y * r.dir.y;
         immutable float a = r.dir.x * r.dir.x + r.dir.y * r.dir.y;
         immutable float reducedDelta = halfB * halfB - a * c;
-        if (reducedDelta < 0.0) return [float.infinity, -float.infinity];
 
-        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-        return [t1, t2];
+        if (reducedDelta < 0.0) return [float.infinity, -float.infinity];
+        return [(-halfB - sqrt(reducedDelta)) / a,
+                (-halfB + sqrt(reducedDelta)) / a];
     }
 
     override pure nothrow @safe float[] allIntersections(in Ray r) const
     {
-        immutable float[2] tShell = shellIntersections(r);
-        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
-        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return [];
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] tShell = shellIntersections(invR);
+        immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
 
+        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return [];
         if (tShell[0] < tZ[0])
         {
             if (tShell[1] > tZ[1]) return [];
@@ -985,6 +1102,63 @@ class CylinderShell : Shape
         }
         if (tShell[1] > tZ[1]) return [tShell[0]];
         return tShell.dup;
+    }
+
+    /**
+    * Check and record an intersection between a Ray and a CylinderShell
+    * Params:
+    *   r = (Ray) 
+    * Return: Nullable!Hitrecord
+    */
+    override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        Nullable!HitRecord hit;
+        immutable Ray invR = transf.inverse * r;
+
+        immutable float[2] tShell = shellIntersections(invR);
+        if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return hit;
+
+        immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
+        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return hit;
+
+        float firstHit;
+        if (tShell[0] >= tZ[0] && tShell[0] > invR.tMin) firstHit = tShell[0];
+        else if (tShell[1] <= tZ[1] && tShell[1] < invR.tMax)
+            firstHit = tShell[1];
+        else return hit;
+
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
+            firstHit,
+            r,
+            this
+            );
+        return hit;
+    }
+
+    /**
+    * Look up quickly for intersection between a Ray and a CylinderShell
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+
+        immutable float[2] tShell = shellIntersections(invR);
+        if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return false;
+
+        immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
+        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return false;
+
+        return (tShell[0] >= tZ[0] && tShell[0] > invR.tMin)
+            || (tShell[1] <= tZ[1] && tShell[1] < invR.tMax);
     }
 
     override pure nothrow @nogc @safe bool isInside(in Point p) const
@@ -1205,14 +1379,64 @@ class Cylinder : CylinderShell
         return v.z < 0.0 ? n : -n;
     }
 
-    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    pure nothrow @nogc @safe float[2] cylinderIntersections(in Ray r) const
     {
         immutable float[2] tShell = shellIntersections(r);
         immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        return [max(tShell[0], tZ[0]), min(tShell[1], tZ[1])];
+    }
 
-        immutable float t1 = max(tShell[0], tZ[0]);
-        immutable float t2 = min(tShell[1], tZ[1]);
-        return t1 > t2 ? [] : [t1, t2];
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = cylinderIntersections(transf.inverse * r);
+        return t[0] > t[1] ? [] : t.dup;
+    }
+
+    /**
+    * Check and record an intersection between a Ray and a Cylinder
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        Nullable!HitRecord hit;
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = cylinderIntersections(invR);
+
+        float firstHit;
+        if (t[0] > t[1]) return hit;
+        if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
+        else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
+        else return hit;
+
+        immutable Point hitPoint = invR.at(firstHit);
+        hit = HitRecord(
+            transf * hitPoint,
+            transf * normal(hitPoint, invR.dir),
+            uv(hitPoint),
+            firstHit,
+            r,
+            this
+            );
+        return hit;
+    }
+
+    /**
+    * Look up quickly for intersection between a Ray and a Cylinder
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] t = cylinderIntersections(invR);
+
+        if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
+        return (t[0] > invR.tMin) || (t[1] < invR.tMax);
     }
 
     override pure nothrow @nogc @safe bool isInside(in Point p) const
