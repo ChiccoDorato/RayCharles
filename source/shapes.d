@@ -147,6 +147,32 @@ struct AABB
     }
 }
 
+unittest
+{
+    auto pMin1 = Point(1.0, 0.0, 0.0), pMax1 = Point(3.0, 2.0, 1.0);
+    auto box1 = AABB(pMin1, pMax1);
+
+    auto pMin2 = Point(4.0, 1.0, -1.0), pMax2 = Point(6.0, 1.5, 5.0);
+    auto box2 = AABB(pMin2, pMax2);
+
+    assert(AABB(pMin1, pMax1).isClose(box1));
+    assert(!AABB(pMin1, pMax2).isClose(box1));
+    assert(!AABB(pMin2, pMax1).isClose(box1));
+    assert(!box1.isClose(box2));
+
+    auto merge12 = AABB(Point(1.0, 0.0, -1.0), Point(6.0, 2.0, 5.0));
+    assert(box1.unionWith(box2).isClose(merge12));
+    assert(box1.intersectWith(box2).minVertex.x.isNaN);
+
+    auto pMin3 = Point(-1.0, 1.0, 0.2), pMax3 = Point(4.0, 5.0, 0.8);
+    auto box3 = AABB(pMin3, pMax3);
+
+    auto merge13 = AABB(Point(-1.0, 0.0, 0.0), Point(4.0, 5.0, 1.0));
+    assert(box1.unionWith(box3).isClose(merge13));
+    auto intersection13 = AABB(Point(1.0, 1.0, 0.2), Point(3.0, 2.0, 0.8));
+    assert(box1.intersectWith(box3).isClose(intersection13));
+}
+
 // ******************** Shape ********************
 /**
 * Abstract class for a generic Shape
