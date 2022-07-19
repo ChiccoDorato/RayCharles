@@ -107,11 +107,43 @@ pure nothrow @nogc @safe float fixBoundary(
 
 struct AABB
 {
-    Point min, max;
+    Point minVertex, maxVertex;
 
     pure nothrow @nogc @safe bool isClose(in AABB aabb) const
     {
-        return min.xyzIsClose(aabb.min) && max.xyzIsClose(aabb.max);
+        return minVertex.xyzIsClose(aabb.minVertex) &&
+               maxVertex.xyzIsClose(aabb.maxVertex);
+    }
+
+    pure nothrow @nogc @safe AABB unionWith(in AABB aabb) const
+    {
+        immutable float xMin = min(minVertex.x, aabb.minVertex.x);
+        immutable float xMax = max(maxVertex.x, aabb.maxVertex.x);
+
+        immutable float yMin = min(minVertex.y, aabb.minVertex.y);
+        immutable float yMax = max(maxVertex.y, aabb.maxVertex.y);
+
+        immutable float zMin = min(minVertex.z, aabb.minVertex.z);
+        immutable float zMax = max(maxVertex.z, aabb.maxVertex.z);
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
+    }
+
+    pure nothrow @nogc @safe AABB intersectWith(in AABB aabb) const
+    {
+        immutable float xMin = max(minVertex.x, aabb.minVertex.x);
+        immutable float xMax = min(maxVertex.x, aabb.maxVertex.x);
+        if (xMin > xMax) return AABB();
+
+        immutable float yMin = max(minVertex.y, aabb.minVertex.y);
+        immutable float yMax = min(maxVertex.y, aabb.maxVertex.y);
+        if (yMin > yMax) return AABB();
+
+        immutable float zMin = max(minVertex.z, aabb.minVertex.z);
+        immutable float zMax = min(maxVertex.z, aabb.maxVertex.z);
+        if (zMin > zMax) return AABB();
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
     }
 }
 
@@ -194,14 +226,14 @@ class Shape
     final pure nothrow @nogc @safe AABB transformAABB() const
     {
         Point[8] vertices = [
-            transf * aabb.min,
-            transf * Point(aabb.max.x, aabb.min.y, aabb.min.z),
-            transf * Point(aabb.max.x, aabb.max.y, aabb.min.z),
-            transf * Point(aabb.min.x, aabb.max.y, aabb.min.z),
-            transf * Point(aabb.min.x, aabb.min.y, aabb.max.z),
-            transf * Point(aabb.max.x, aabb.min.y, aabb.max.z),
-            transf * aabb.max,
-            transf * Point(aabb.min.x, aabb.max.y, aabb.max.z)
+            transf * aabb.minVertex,
+            transf * Point(aabb.maxVertex.x, aabb.minVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.maxVertex.x, aabb.maxVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.minVertex.x, aabb.maxVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.minVertex.x, aabb.minVertex.y, aabb.maxVertex.z),
+            transf * Point(aabb.maxVertex.x, aabb.minVertex.y, aabb.maxVertex.z),
+            transf * aabb.maxVertex,
+            transf * Point(aabb.minVertex.x, aabb.maxVertex.y, aabb.maxVertex.z)
             ];
 
         float xMin = vertices[0].x, xMax = xMin;
@@ -403,8 +435,8 @@ unittest
     auto translVec = Vec(10.0, 0.0, 0.0);
     auto s = new Sphere(translation(translVec));
 
-    auto minPoint = s.aabb.min + Vec(10.0, 0.0, 0.0);
-    auto maxPoint = s.aabb.max + Vec(10.0, 0.0, 0.0);
+    auto minPoint = s.aabb.minVertex + Vec(10.0, 0.0, 0.0);
+    auto maxPoint = s.aabb.maxVertex + Vec(10.0, 0.0, 0.0);
     assert(s.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto notHitRay1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
