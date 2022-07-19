@@ -1510,6 +1510,10 @@ unittest
         translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
 
+    auto minPoint = Point(0.0, 0.0, 0.0);
+    auto maxPoint = Point(2.0, 2.0, 2.0);
+    assert(cyl.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
     assert(cyl.quickRayIntersection(r1));
     HitRecord h1 = cyl.rayIntersection(r1).get;
@@ -1578,12 +1582,18 @@ unittest
     auto cylTransf = translation(vecY) * rotationX(45.0);
     auto cyl1 = new Cylinder(cylTransf);
 
+    auto minPoint = Point(-1.0, 1.0 - sqrt(2.0), -sqrt(2.0) / 2.0);
+    auto maxPoint = Point(1.0, 1.0 + sqrt(2.0) / 2.0, sqrt(2.0));
+    assert(cyl1.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     immutable cos45 = sqrt(2.0) / 2.0;
     auto cyl2 = new Cylinder(
         1.0,
         Point(0.0, 1.0, 0.0),
         Point(0.0, 1.0 - cos45, cos45)
         );
+
+    assert(cyl2.transformAABB.isClose(cyl1.transformAABB));
 
     auto ray1 = Ray(Point(0.0, 3.0, 0.01), -vecY);
 
