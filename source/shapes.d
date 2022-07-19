@@ -1221,6 +1221,10 @@ unittest
         translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
 
+    auto minPoint = Point(0.0, 0.0, 0.0);
+    auto maxPoint = Point(2.0, 2.0, 2.0);
+    assert(shell.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
     assert(shell.quickRayIntersection(r1));
     HitRecord h1 = shell.rayIntersection(r1).get;
@@ -1280,9 +1284,15 @@ unittest
 
     auto shell1 = new CylinderShell(shellTransf);
 
+    auto minPoint = Point(-1.0, -sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0);
+    auto maxPoint = Point(1.0, 1.0 + sqrt(2.0) / 2.0, 1.0 + sqrt(2.0) / 2.0);
+    assert(shell1.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     auto shell2 = new CylinderShell(
         1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0)
         );
+
+    assert(shell2.transformAABB.isClose(shell1.transformAABB));
 
     auto ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
 
