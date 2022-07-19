@@ -1737,6 +1737,102 @@ unittest
         ).recordIsClose(upHit2));
 }
 
+class Union : Shape
+{
+    Shape s1, s2;
+    bool hitShape1 = true;
+
+    /**
+    * Build the object resulting from the union of two shapes
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
+    pure nothrow @nogc @safe this(
+        Shape firstShape,
+        Shape secondShape,
+        in Transformation t = Transformation(),
+        Material m = Material()
+        )
+    {
+        s1 = firstShape;
+        s2 = secondShape;
+        super(t, m);
+        aabb = firstShape.transformAABB.unionWith(secondShape.transformAABB);
+    }
+
+    /**
+    * Convert a 3D point (x, y, z) on the composed object 
+    * in a 2D point (u, v) on the screen/Image
+    * Params:
+    *   p = (Point)
+    * Ŗeturns: Vec2d
+    */
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
+    {
+        return hitShape1 ? s1.uv(p) : s2.uv(p);
+    }
+
+    /**
+    * Create a Normal to a Vector in a Point of the composed object surface
+    * Params:
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
+    {
+        return hitShape1 ? s1.normal(p, v) : s2.normal(p, v);
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        return s1.allIntersections(invR) ~ s2.allIntersections(invR);
+    }
+
+    /**
+    * Check and record an intersection between a Ray and the union of two shapes
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        immutable Ray invR = transf.inverse * r;
+        Nullable!HitRecord hit1 = s1.rayIntersection(invR);
+        Nullable!HitRecord hit2 = s2.rayIntersection(invR);
+
+        if (hit1.isNull)
+        {
+            if (hit2.isNull) return hit1;
+            return hit2;
+        }
+        if (hit2.isNull) return hit1;
+
+        if (hit1.get.t < hit2.get.t) return hit1;
+        return hit2;
+    }
+
+    /**
+    * Look up quickly for intersection between a Ray and the union of two shapes
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @safe bool quickRayIntersection(in Ray r) const
+    {
+        return s1.quickRayIntersection(r) || s2.quickRayIntersection(r);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return s1.isInside(p) || s2.isInside(p);
+    }
+}
+
 // ************************* World *************************
 /**
 * Struct for a 3D World where to put all the shapes of the image
