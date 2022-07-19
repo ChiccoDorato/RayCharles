@@ -350,11 +350,15 @@ unittest
 
     auto s = new Sphere();
 
-    assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
+    assert(s.transformAABB == s.aabb);
+
+    auto notHitRay = Ray(Point(0.0, 10.0, 2.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay));
+    assert(s.rayIntersection(notHitRay).isNull);
 
     auto r1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
+    assert(s.quickRayIntersection(r1));
     HitRecord h1 = s.rayIntersection(r1).get;
-
     assert(HitRecord(
         Point(0.0, 0.0, 1.0),
         Normal(0.0, 0.0, 1.0),
@@ -364,6 +368,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(3.0, 0.0, 0.0), -vecX);
+    assert(s.quickRayIntersection(r2));
     HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
@@ -374,6 +379,7 @@ unittest
         ).recordIsClose(h2));
 
     auto r3 = Ray(Point(0.0, 0.0, 0.0), vecX);
+    assert(s.quickRayIntersection(r3));
     HitRecord h3 = s.rayIntersection(r3).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
@@ -389,12 +395,23 @@ unittest
 {
     import geometry : vecX, vecZ;
 
-    auto s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
+    auto translVec = Vec(10.0, 0.0, 0.0);
+    auto s = new Sphere(translation(translVec));
 
-    assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
-    assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
+    auto minPoint = s.aabb.min + Vec(10.0, 0.0, 0.0);
+    auto maxPoint = s.aabb.max + Vec(10.0, 0.0, 0.0);
+    assert(s.transformAABB == AABB(minPoint, maxPoint));
+
+    auto notHitRay1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay1));
+    assert(s.rayIntersection(notHitRay1).isNull);
+
+    auto notHitRay2 = Ray(Point(-10.0, 0.0, 0.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay2));
+    assert(s.rayIntersection(notHitRay2).isNull);
 
     auto r1 = Ray(Point(10.0, 0.0, 2.0), -vecZ);
+    assert(s.quickRayIntersection(r1));
     HitRecord h1 = s.rayIntersection(r1).get;
     assert(HitRecord(
         Point(10.0, 0.0, 1.0),
@@ -405,6 +422,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(13.0, 0.0, 0.0), -vecX);
+    assert(s.quickRayIntersection(r2));
     HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(11.0, 0.0, 0.0),
