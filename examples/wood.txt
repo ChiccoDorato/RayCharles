@@ -1,10 +1,9 @@
 # Camera
 float angle(0.0)
 camera(perspective, rotationZ(angle) * translation([-4.0, 0.0, 1.5]), 1.33333, 1.0)
-
 # Sky
 material skyMaterial(
-    diffuse(uniform(<0.0 ,0.0, 0.0>)),
+    diffuse(uniform(<0.0, 0.0, 0.0>)),
     uniform(<1.0, 0.9, 0.5>)
 )
 sphere(skyMaterial, translation([0.0, 0.0, 0.4]) * scaling([200.0, 200.0, 200.0]))
