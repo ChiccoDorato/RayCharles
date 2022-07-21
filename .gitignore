@@ -15,5 +15,5 @@ raycharles-test-*
 *.o
 *.obj
 *.lst
-memorial.pfm
+*.pfm
 *.png

@@ -269,7 +269,8 @@ void main(string[] args)
 				writeln(
 					"Executed: ".bold.green,
 					"PNG image written to ",
-					parms.pngOutput.bold);
+					parms.pngOutput.bold
+					);
 			}
 		);
 }

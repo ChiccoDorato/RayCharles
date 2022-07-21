@@ -1,10 +1,8 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"color": "0.0.9",
 		"colored": "0.0.27",
 		"commandr": "0.2.0",
-		"imageformats": "7.0.2",
-		"unit-threaded": "2.0.5"
+		"imageformats": "7.0.2"
 	}
 }

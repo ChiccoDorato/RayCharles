@@ -14,10 +14,10 @@ import std.traits : EnumMembers;
 /**
 * Check the extension of a file. If it's not the wanted one,
 * the correct extension will be added at the end of the fileName
-* Params: 
+* Params:
 * 	fileName = (string)
 * 	extension = (string)
-* 	alreadyValid = (bool) 
+* 	alreadyValid = (bool)
 * Returns: fileName (string)
 */
 pure @safe string forceExtension(
@@ -42,7 +42,7 @@ class WrongSign : Exception
 	* Build an Exception of type WrongSign
 	* Params:
 	* msg = (string)
-	* file = (string) = __FILE__ 
+	* file = (string) = __FILE__
 	* line = (size_t) = __LINE__
 	*/
     pure @nogc @safe this(
@@ -55,7 +55,7 @@ class WrongSign : Exception
 
 /**
 * Assign to a given string a sign of comparison
-* Params: 
+* Params:
 * 	cmp = (string)
 * Returns: one of those strings: ">", ">=", "<", "<="
 */
@@ -65,12 +65,12 @@ pure nothrow @safe @nogc bool isComparison(string cmp)
 }
 
 /**
-* Verify if the string given represent a number 
+* Verify if the string given represent a number
 * which is finite and with the correct sign
-* Params: 
+* Params:
 * 	cmp = (string)
 * 	cand = (string)
-* 	parmName = (string) = "assignment" 
+* 	parmName = (string) = "assignment"
 */
 pure @safe T toSign(T, string cmp)(string cand, string parmName = "assignment")
 if ((is(T == int) || is(T == float)) && isComparison(cmp))
@@ -108,23 +108,23 @@ alias toNonNegative(T) = toSign!(T, ">=");
 alias toNegative(T) = toSign!(T, "<");
 
 /**
-* Verify if the string given represent a non negative number
+* Verify if the string given represent a non positive number
 */
 alias toNonPositive(T) = toSign!(T, "<=");
 
 // ************************* InvalidPfm2pngParms *************************
 /**
-* Class used to recognise and throw Exceptions 
+* Class used to recognise and throw Exceptions
 * in case of error in conversion pfm -> png
 *___
-* Used in modality pfm2png only. 
+* Used in modality pfm2png only.
 */
 class InvalidPfm2pngParms : Exception
 {
 	/** Build an Exception of type InvalidPfm2pngParms
-	* Params: 
+	* Params:
 	* 	msg = (string)
-	* 	file = (string) = __FILE__ 
+	* 	file = (string) = __FILE__
 	* 	line = (size_t) = __LINE__
 	*/
     pure @nogc @safe this(
@@ -142,12 +142,12 @@ class InvalidPfm2pngParms : Exception
 
 // ************************* InvalidPfm2pngParms *************************
 /**
-* Struct used to record all the parameters 
+* Struct used to record all the parameters
 * introduced in the command line by the user
 *___
 * Used in modality pfm2png only
-* ___ 
-* Usage: dub run -- pfm2png 
+* ___
+* Usage: dub run -- pfm2png
 */
 struct Pfm2pngParameters
 {
@@ -186,14 +186,14 @@ struct Pfm2pngParameters
 /**
 * Class used to recognise and throw Exceptions
 * in case of error in parameters for the rendering
-* Used in modality render only. 
+* Used in modality render only.
 */
 class InvalidRenderParms : Exception
 {
 	/** Build an Exception of type InvalidRenderParms
-	* Params: 
+	* Params:
 	* 	msg = (string)
-	* 	file = (string) = __FILE__ 
+	* 	file = (string) = __FILE__
 	* 	line = (size_t) = __LINE__
 	*/
     pure @nogc @safe this(
@@ -222,7 +222,7 @@ auto validRenderers = [EnumMembers!Renderers];
 
 // ************************* RenderParameters *************************
 /**
-* Struct used to record all the parameters 
+* Struct used to record all the parameters
 * introduced in the command line by the user
 * ___
 * Used in modality render only
@@ -243,7 +243,7 @@ struct RenderParameters
 	
 	/**
 	* Build the struct from two strings of arguments provided by the user:
-	* Params: 
+	* Params:
 	* 	width = (int) of the image
 	* 	height = (int) of the image
 	* 	renderer = (string) (flat, on/off, path)

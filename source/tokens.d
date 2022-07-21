@@ -5,6 +5,7 @@ import colored;
 import geometry : Vec;
 import hdrimage;
 import materials;
+import parameters : isComparison;
 import shapes;
 import std.algorithm : canFind;
 import std.ascii : isAlpha, isAlphaNum, isDigit;
@@ -19,7 +20,6 @@ import std.sumtype : match, SumType;
 import std.traits : EnumMembers;
 import std.typecons : Nullable, tuple, Tuple;
 import transformations;
-
 
 // ************************* Source Location *************************
 /**
@@ -469,7 +469,7 @@ struct InputStream
         )
     {
         string token = [firstChar];
-        while(index < stream.length)
+        while (index < stream.length)
         {
             immutable char c = readChar;
             if (!c.isAlphaNum && c != '_')
@@ -588,6 +588,49 @@ struct InputStream
             );
     }
 
+    /**
+    * Verify if the expected token representing a floating point number
+    * is finite and with the expected sign, which is specified by cmp.
+    * Throw a GrammarError if the expected number does not have the required sign.
+    * Params:
+    * 	cmp = (string)
+    * 	scene = (Scene)
+    * 	name = (string)
+    */
+    pure T validateSign(T, string cmp)(in Scene scene, in string name)
+    if ((is(T == int) || is(T == float)) && isComparison(cmp))
+    {
+        SourceLocation invalidFloatLocation = location;
+        immutable number = cast(immutable T)(expectNumber(scene));
+
+        if(!mixin("number" ~ cmp ~ "0")) throw new GrammarError(
+            format("invalid %s, %s %s 0 does not hold", name, number, cmp),
+            invalidFloatLocation
+            );
+
+        return number;
+    }
+
+    /**
+    * Verify if the expected number represent a positive number
+    */
+    alias isPositive(T) = validateSign!(T, ">");
+
+    /**
+    * Verify if the expected number represent a non negative number
+    */
+    alias isNonNegative(T) = validateSign!(T, ">=");
+
+    /**
+    * Verify if the expected number represent a negative number
+    */
+    alias isNegative(T) = validateSign!(T, "<");
+
+    /**
+    * Verify if the expected number represent a non positive number
+    */
+    alias isNonPositive(T) = validateSign!(T, "<=");
+
     ///
     /**
     * Throw a GrammarError if the Token is not the expected one: a StringToken
@@ -640,11 +683,11 @@ struct InputStream
     pure Color parseColor(in Scene scene)
     {
         expectSymbol('<');
-        immutable red = expectNumber(scene);
+        immutable red = isNonNegative!float(scene, "red");
         expectSymbol(',');
-        immutable green = expectNumber(scene);
+        immutable green = isNonNegative!float(scene, "green");
         expectSymbol(',');
-        immutable blue = expectNumber(scene);
+        immutable blue = isNonNegative!float(scene, "blue");
         expectSymbol('>');
         return Color(red, green, blue);
     }
@@ -676,7 +719,7 @@ struct InputStream
                 expectSymbol(',');
                 immutable col2 = parseColor(scene);
                 expectSymbol(',');
-                auto numOfSteps = cast(immutable int)(expectNumber(scene));
+                immutable numOfSteps = isPositive!int(scene, "number of steps");
                 pigment = new CheckeredPigment(col1, col2, numOfSteps);
                 break;
 
@@ -941,7 +984,7 @@ struct InputStream
         expectSymbol(',');
         Transformation transf = parseTransformation(scene);
         expectSymbol(',');
-        immutable float aspectRatio = expectNumber(scene);
+        immutable aspectRatio = isPositive!float(scene, "aspect ratio");
         expectSymbol(',');
         immutable float distance = expectNumber(scene);
         expectSymbol(')');
@@ -1142,13 +1185,11 @@ unittest
     )
 
     # Here is a comment
-
     material groundMaterial(
         diffuse(checkered(<0.3, 0.5, 0.1>,
                             <0.1, 0.2, 0.5>, 4)),
         uniform(<0, 0, 0>)
     )
-
     material sphereMaterial(
         specular(uniform(<0.5, 0.5, 0.5>)),
         uniform(<0, 0, 0>)
@@ -1156,9 +1197,7 @@ unittest
 
     plane (skyMaterial, translation([0, 0, 100]) * rotationY(clock))
     plane (groundMaterial, identity)
-
     sphere(sphereMaterial, translation([0, 0, 1]))
-
     camera(perspective, rotationZ(30) * translation([-4, 0, 1]), 1.0, 2.0)";
 
     auto inpStr = InputStream(stream, "");
