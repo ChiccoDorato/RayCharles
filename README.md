@@ -57,8 +57,13 @@ and the file animationName.mp4 will be inserted into the animations subdirectory
 
 **Animations.**
 
-| ![Globe rolling on table](animations/rolling.gif) | ![Igloo with giant penguins](animations/igloo.gif) |
-| :---: | :---: |
+| ![Globe rolling on table](animations/rolling.gif) | 
+| :---: |
+| Globe rolling on table|
+
+| ![James Webb Space Telescope view](animations/jwst.gif) | ![A nice wood](animations/wood.gif) | ![Igloo with giant penguins](animations/igloo.gif) |
+| :---: | :---: | :---: |
+| James Webb Space Telescope view | A nice three-tree wood | Igloo with giant penguins|
 
 ## Write a scene
 Surely not professional, but - hey! - cool images! We don't doubt you have better ideas and a far way superior imagination to create memorable scenes. The question is: how?
