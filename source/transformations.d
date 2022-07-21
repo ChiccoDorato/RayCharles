@@ -159,6 +159,7 @@ struct Transformation
     * Returns the product between a matrix and a Point
     * Params: 
         rhs = (Point)
+    * Returns: Point
     */
 	pure nothrow @nogc @safe Point opBinary(string op)(in Point rhs) const
     if (op == "*")
@@ -180,6 +181,7 @@ struct Transformation
     * Returns the product between a matrix and a Vec
     * Params: 
         rhs = (Vec)
+    * Returns: Vec
     */
 	pure nothrow @nogc @safe Vec opBinary(string op)(in Vec rhs) const
     if (op == "*")
@@ -193,7 +195,9 @@ struct Transformation
 
     /**
     * Returns the product between a matrix and a Normal
-    * Params: rhs (Normal)
+    * Params: 
+    *    rhs (Normal)
+    * Returns: Normal
     */
     /// 
     pure nothrow @nogc @safe Normal opBinary(string op)(in Normal rhs) const
@@ -476,7 +480,7 @@ pure nothrow @nogc @safe Transformation rotationY(in float angleInDegrees)
 }
 
 /**
-* rotationY is a Transformation
+* rotationZ is a Transformation
 * ___
 * Params: 
 *   c = (float) cosine of an angle 
