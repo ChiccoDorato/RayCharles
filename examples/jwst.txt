@@ -1,0 +1,11 @@
+# Camera
+float angle(0.0)
+camera(perspective, translation([angle, 50.0, 10.0]), 1.33333, 1.0)
+
+# Sky: James Webb Telescope's one
+material skyMaterial(
+    diffuse(uniform(<0.0, 0.0, 0.0>)),
+    image("pfmImages/space.pfm")   
+)
+
+aabox(skyMaterial, translation([100.0, 0.0, 0.0])* scaling([100.0, 100.0, 50.0]))
