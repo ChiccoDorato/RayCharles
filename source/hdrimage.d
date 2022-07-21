@@ -498,6 +498,9 @@ class HDRImage
 			throw new InvalidPFMFileFormat(exc.msg, false);
 	}
 
+	/**
+	* Convert an HDRImage into a string
+	*/
 	@safe void toString(
 		scope void delegate(scope const(char)[]) @safe sink
 		) const

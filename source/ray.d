@@ -22,6 +22,9 @@ struct Ray
     float tMin = 1e-5, tMax = float.infinity; 
     int depth = 0;
 
+    /**
+    * Convert a Ray into a string
+    */
     @safe void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const

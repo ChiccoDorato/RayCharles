@@ -27,11 +27,14 @@ class Pigment
     * Get the Color of a given bidimensional vector: Vec2d (u, v)
     * Params:
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     abstract pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v));
 
+    /**
+    * Convert a Pigment into a string
+    */
     @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const
@@ -77,7 +80,7 @@ class UniformPigment : Pigment
     * Get the Color of a given bidimensional vector: Vec2d (u, v)
     * Params: 
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
@@ -137,7 +140,7 @@ class CheckeredPigment : Pigment
     * Get the Color of a given bidimensional vector: Vec2d (u, v)
     * Params: 
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
@@ -177,7 +180,7 @@ class ImagePigment : Pigment
     * Get the Color of a given bidimensional vector: Vec2d (u, v)
     * Params:
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     override pure nothrow @nogc @safe Color getColor(in Vec2d uv) const
     in (validParm(uv.u) && validParm(uv.v))
@@ -235,6 +238,7 @@ class BRDF
     *   inDir = (Vec) 
     *   ourDir = (Vec)
     *   uv = (Vec2d)
+    * Returns: Color
     */
     abstract pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
@@ -248,6 +252,7 @@ class BRDF
     *   interactionPoint = (Point)
     *   n = (Normal)
     *   depth = (int)
+    * Returns: Ray
     */
     abstract pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
@@ -280,7 +285,7 @@ class DiffuseBRDF : BRDF
     * Build a DiffuseBRDF 
     * Params: 
     *   p = (Pigment)
-    *   reflectance = (float)
+    *   reflectance = (float) = 1.0
     *___
     * Use super(p) with the pigment given
     */
@@ -312,7 +317,7 @@ class DiffuseBRDF : BRDF
     *   inDir = (Vec)
     *   ourDir = (Vec)
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     override pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
@@ -329,7 +334,7 @@ class DiffuseBRDF : BRDF
     *   interactionPoint = (Point),
     *   n = (Normal)
     *   depth = (int)
-    * Return: Ray
+    * Returns: Ray
     */
     override pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
@@ -408,9 +413,9 @@ class SpecularBRDF : BRDF
     * Params: 
     *   n = (Normal)
     *   inDir = (Vec)
-    *   ourDir = (Vec)
+    *   outDir = (Vec)
     *   uv = (Vec2d)
-    * Return: Color
+    * Returns: Color
     */
     override pure nothrow @nogc @safe Color eval(
         in Normal n, in Vec inDir, in Vec outDir, in Vec2d uv
@@ -429,7 +434,7 @@ class SpecularBRDF : BRDF
     *   interactionPoint = (Point),
     *   n = (Normal)
     *   depth = (int)
-    * Return: Ray
+    * Returns: Ray
     */
     override pure nothrow @nogc @safe Ray scatterRay(
         PCG pcg,
@@ -474,6 +479,9 @@ struct Material
     BRDF brdf = new DiffuseBRDF();
     Pigment emittedRadiance = new UniformPigment();
 
+    /**
+    * Convert a Material into a string
+    */
     @trusted void toString(
         scope void delegate(scope const(char)[]) @safe sink
         ) const

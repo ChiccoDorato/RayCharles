@@ -7,6 +7,7 @@ import std.stdio : writeln;
 void main(string[] args)
 { 
 	auto rayC = new Program("RayCharles", "1.0")
+
 	// ********************* pfm2png ********************
 	/**
 	* Arguments and Options of the pfm2png mode of the programm 
@@ -30,6 +31,7 @@ void main(string[] args)
 				"gamma",
 				"gamma correction value. Default: 1.0"
 				).defaultValue("1.0")))
+				
 	// ********************* render ********************
 	/**
 	* Arguments and Options of the render mode of the programm 

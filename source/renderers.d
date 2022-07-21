@@ -68,7 +68,8 @@ class OnOffRenderer : Renderer
     }
 
     /**
-    * Return a Color from a Ray that hit a shape in the World
+    * Return a Color from a Ray that hit a shape in the World.
+    * The Color is white if the Ray hit something, black otherwise.
     * Params: 
     *   r = (Ray)
     * Returns: Color
@@ -134,7 +135,8 @@ class FlatRenderer : Renderer
     }
 
     /** Return a Color from a Ray that hit a shape in the World:
-    * this Color is due to the material pigment + emitted Radiance
+    * The Color is due to the material pigment + emitted Radiance
+    * if the Ray hit something, black otherwise.
     * Params: 
     *   r = (Ray)
     * Returns: Color

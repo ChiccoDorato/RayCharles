@@ -225,7 +225,7 @@ struct Token
     }
 
     /**
-    * Concert to string every kind of token
+    * Convert to string every kind of token
     */
     pure @safe string toString() const
     {
@@ -411,6 +411,7 @@ struct InputStream
     * Analyse if in a certain SourceLocation there is a StringToken 
     * Params:
     *   tokenLoc = (SourceLocation)
+    * Returns: StringToken
     */
     pure @safe Token parseStringToken(in SourceLocation tokenLoc)
     {
@@ -429,6 +430,7 @@ struct InputStream
     * Params:
     *   firstChar = (char)
     *   tokenLoc = (SourceLocation)
+    * Returns: LiteralNumberToken
     */
     pure @safe Token parseFloatToken(
         in char firstChar, in SourceLocation tokenLoc
@@ -463,6 +465,7 @@ struct InputStream
     * Params:
     *   firstChar = (char)
     *   tokenLoc = (SourceLocation)
+    * Returns: KeywordToken or IdentifierToken
     */
     pure @safe Token parseKeywordOrIdentifierToken(
         in char firstChar, in SourceLocation tokenLoc
@@ -523,7 +526,8 @@ struct InputStream
     }
 
     /**
-    * Throw a GrammarError if the Token is not the expected one: a SymbolToken 
+    * Throw a GrammarError if the Token is not the expected one:
+    * a SymbolToken 
     * Params: 
     *   sym = (char)
     */
@@ -538,9 +542,11 @@ struct InputStream
     }
 
     /**
-    * Throw a GrammarError if the Token is not the expected one: a KeywordToken 
+    * Throw a GrammarError if the Token is not the expected one:
+    * a KeywordToken
     * Params: 
     *   keywords = (Keyword[])
+    * Returns: Keyword
     */
     pure Keyword expectKeyword(in Keyword[] keywords)
     {
@@ -562,9 +568,11 @@ struct InputStream
     }
 
     /**
-    * Throw a GrammarError if the Token is not the expected one: a LiteralNumberToken
+    * Throw a GrammarError if the Token is not the expected one: 
+    * a LiteralNumberToken
     * Params:
     *   scene = (Scene)
+    * Returns: float
     */
     pure float expectNumber(in Scene scene)
     {
@@ -631,7 +639,6 @@ struct InputStream
     */
     alias isNonPositive(T) = validateSign!(T, "<=");
 
-    ///
     /**
     * Throw a GrammarError if the Token is not the expected one: a StringToken
     */
@@ -662,6 +669,7 @@ struct InputStream
     * Analyse an InputStream and return a 3D Vec (x, y, z)
     * Params:
     *   scene = (Scene)
+    * Returns: Vec
     */
     pure Vec parseVector(in Scene scene)
     {
@@ -679,6 +687,7 @@ struct InputStream
     * Analyse an InputStream and return a Color (r, g, b) 
     * Params:
     *   scene = (Scene)
+    * Returns: Color
     */
     pure Color parseColor(in Scene scene)
     {
@@ -696,6 +705,7 @@ struct InputStream
     * Analyse an InputStream and return a Pigment 
     * Params:
     *   scene = (Scene)
+    * Returns: Pigment
     */
     Pigment parsePigment(in Scene scene)
     {
@@ -753,6 +763,7 @@ struct InputStream
     *  Analyse an InputStream and return a BRDF
     * Params: 
     *   scene = (Scene)
+    * Returns: BRDF
     */
     BRDF parseBRDF(in Scene scene)
     {
@@ -780,7 +791,8 @@ struct InputStream
     /**
     * Analyse an InputStream and return a Material
     * Params:
-    *   scene = (Scene) 
+    *   scene = (Scene)
+    * Returns: Tuple(materialName, Material)
     */
     Tuple!(string, Material) parseMaterial(in Scene scene)
     {
@@ -797,6 +809,7 @@ struct InputStream
     * Analyse an InputStream and return a Transformation
     * Params:
     *   scene = (Scene)
+    * Returns: Transformation
     */
     pure Transformation parseTransformation(in Scene scene)
     {
@@ -867,6 +880,7 @@ struct InputStream
     * Analyse an InputStream and return a Sphere
     * Params:
     *   scene = (Scene)
+    * Returns: Sphere
     */
     pure Sphere parseSphere(Scene scene)
     {

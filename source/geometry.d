@@ -197,7 +197,11 @@ struct Vec
 {
     float x, y, z;
 
+    /**
+    * Convert a Vec into a string
+    */
     mixin toString;
+    
     mixin xyzIsClose;
 
     /*mixin sumDiff!(Vec, Vec);*/
@@ -578,6 +582,9 @@ struct Vec2d
         return areClose(u, v2d.u) && areClose(v, v2d.v);
     }
 
+    /**
+    * Convert a Vec2d into a string
+    */
     @safe void toString(W)(ref W w, in ref FormatSpec!char fmt) const
     if (isOutputRange!(W, char))
     {
