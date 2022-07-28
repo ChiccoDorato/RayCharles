@@ -6,7 +6,7 @@ import std.format : FormatSpec, formatValue;
 import std.math : sqrt;
 import std.meta : AliasSeq;
 import std.range : isOutputRange, put;
-import std.traits : Fields, hasMember;
+import std.traits : FieldNameTuple, Fields;
 
 /**
 * Verify if the type given has three float components (x, y, z)
@@ -14,10 +14,8 @@ import std.traits : Fields, hasMember;
 */
 pure nothrow @nogc @safe bool isXYZ(T)()
 {
-    return is(
-        Fields!T == AliasSeq!(float, float, float)) &&
-        hasMember!(T, "x") && hasMember!(T, "y") && hasMember!(T, "z"
-        ) ?
+    return is(Fields!T == AliasSeq!(float, float, float)) &&
+           FieldNameTuple!T == AliasSeq!("x", "y", "z") ?
         true : false;
 }
 

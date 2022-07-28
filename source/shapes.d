@@ -1,12 +1,12 @@
 module shapes;
 
-import std.algorithm : max, min;
+import std.algorithm : max, maxIndex, min, minIndex;
 import geometry : Normal, Point, Vec, Vec2d;
 import hdrimage : areClose;
 import materials : Material;
 import ray;
 import std.format : formattedWrite;
-import std.math : acos, atan2, floor, PI, sqrt;
+import std.math : acos, atan2, floor, isNaN, PI, sqrt;
 import std.typecons : Nullable;
 import transformations;
 
@@ -54,14 +54,15 @@ struct HitRecord
         scope void delegate(scope const(char)[]) @safe sink
         ) const
     {
-        sink.formattedWrite!"P) %s\nN) %s\nUV) %s\nt) %s"
-            (worldPoint, normal, surfacePoint, t);
+        sink.formattedWrite!"P) %s\nN) %s\nUV) %s\nt) %s"(
+            worldPoint, normal, surfacePoint, t
+            );
     }
 }
 
 /**
 * Find monodimentional intersection
-* Return: a tuple [t1, t2] with the "time" of intersection
+* Return: an array [t1, t2] with the "time" of intersection
 */
 pure nothrow @nogc @safe float[2] oneDimIntersections(
     in float origin, in float direction
@@ -104,6 +105,74 @@ pure nothrow @nogc @safe float fixBoundary(
     return coord;
 }
 
+struct AABB
+{
+    Point minVertex, maxVertex;
+
+    pure nothrow @nogc @safe bool isClose(in AABB aabb) const
+    {
+        return minVertex.xyzIsClose(aabb.minVertex) &&
+               maxVertex.xyzIsClose(aabb.maxVertex);
+    }
+
+    pure nothrow @nogc @safe AABB unionWith(in AABB aabb) const
+    {
+        immutable float xMin = min(minVertex.x, aabb.minVertex.x);
+        immutable float xMax = max(maxVertex.x, aabb.maxVertex.x);
+
+        immutable float yMin = min(minVertex.y, aabb.minVertex.y);
+        immutable float yMax = max(maxVertex.y, aabb.maxVertex.y);
+
+        immutable float zMin = min(minVertex.z, aabb.minVertex.z);
+        immutable float zMax = max(maxVertex.z, aabb.maxVertex.z);
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
+    }
+
+    pure nothrow @nogc @safe AABB intersectWith(in AABB aabb) const
+    {
+        immutable float xMin = max(minVertex.x, aabb.minVertex.x);
+        immutable float xMax = min(maxVertex.x, aabb.maxVertex.x);
+        if (xMin > xMax) return AABB();
+
+        immutable float yMin = max(minVertex.y, aabb.minVertex.y);
+        immutable float yMax = min(maxVertex.y, aabb.maxVertex.y);
+        if (yMin > yMax) return AABB();
+
+        immutable float zMin = max(minVertex.z, aabb.minVertex.z);
+        immutable float zMax = min(maxVertex.z, aabb.maxVertex.z);
+        if (zMin > zMax) return AABB();
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
+    }
+}
+
+unittest
+{
+    auto pMin1 = Point(1.0, 0.0, 0.0), pMax1 = Point(3.0, 2.0, 1.0);
+    auto box1 = AABB(pMin1, pMax1);
+
+    auto pMin2 = Point(4.0, 1.0, -1.0), pMax2 = Point(6.0, 1.5, 5.0);
+    auto box2 = AABB(pMin2, pMax2);
+
+    assert(AABB(pMin1, pMax1).isClose(box1));
+    assert(!AABB(pMin1, pMax2).isClose(box1));
+    assert(!AABB(pMin2, pMax1).isClose(box1));
+    assert(!box1.isClose(box2));
+
+    auto merge12 = AABB(Point(1.0, 0.0, -1.0), Point(6.0, 2.0, 5.0));
+    assert(box1.unionWith(box2).isClose(merge12));
+    assert(box1.intersectWith(box2).minVertex.x.isNaN);
+
+    auto pMin3 = Point(-1.0, 1.0, 0.2), pMax3 = Point(4.0, 5.0, 0.8);
+    auto box3 = AABB(pMin3, pMax3);
+
+    auto merge13 = AABB(Point(-1.0, 0.0, 0.0), Point(4.0, 5.0, 1.0));
+    assert(box1.unionWith(box3).isClose(merge13));
+    auto intersection13 = AABB(Point(1.0, 1.0, 0.2), Point(3.0, 2.0, 0.8));
+    assert(box1.intersectWith(box3).isClose(intersection13));
+}
+
 // ******************** Shape ********************
 /**
 * Abstract class for a generic Shape
@@ -112,6 +181,7 @@ class Shape
 {
     Transformation transf;
     Material material;
+    AABB aabb;
 
     /** 
      * Build a Shape
@@ -156,24 +226,61 @@ class Shape
     abstract pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const;
 
     /**
-    * Abstract method - Check and record an intersection 
-    * between a Ray and a Shape
+    * Check and record all the intersections between a Ray and a Shape
     * Params: 
     *   r = (Ray)
     * Return: Nullable!HitRecord
     */
-    abstract pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(
-        in Ray r
-        );
+    abstract pure nothrow @safe float[] allIntersections(in Ray r) const;
 
     /**
-    * Abstract method - Look up quickly for intersection 
-    * between a Ray and a Shape
+    * Check and record an intersection between a Ray and a Shape
+    * Params: 
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    abstract pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray r);
+
+    /**
+    * Look up quickly for intersection between a Ray and a Shape
     * Params:
     *   r = (Ray)
     * Return: true or false (bool)
     */
-    abstract pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const;
+    abstract pure nothrow @safe bool quickRayIntersection(in Ray r) const;
+
+    final pure nothrow @nogc @safe AABB transformAABB() const
+    {
+        Point[8] vertices = [
+            transf * aabb.minVertex,
+            transf * Point(aabb.maxVertex.x, aabb.minVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.maxVertex.x, aabb.maxVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.minVertex.x, aabb.maxVertex.y, aabb.minVertex.z),
+            transf * Point(aabb.minVertex.x, aabb.minVertex.y, aabb.maxVertex.z),
+            transf * Point(aabb.maxVertex.x, aabb.minVertex.y, aabb.maxVertex.z),
+            transf * aabb.maxVertex,
+            transf * Point(aabb.minVertex.x, aabb.maxVertex.y, aabb.maxVertex.z)
+            ];
+
+        float xMin = vertices[0].x, xMax = xMin;
+        float yMin = vertices[0].y, yMax = yMin;
+        float zMin = vertices[0].z, zMax = zMin;
+        foreach (Point p; vertices)
+        {
+            if (p.x < xMin) xMin = p.x;
+            if (p.x > xMax) xMax = p.x;
+
+            if (p.y < yMin) yMin = p.y;
+            if (p.y > yMax) yMax = p.y;
+
+            if (p.z < zMin) zMin = p.z;
+            if (p.z > zMax) zMax = p.z;
+        }
+
+        return AABB(Point(xMin, yMin, zMin), Point(xMax, yMax, zMax));
+    }
+
+    abstract pure nothrow @nogc @safe bool isInside(in Point p) const;
 }
 
 // ******************** Sphere ********************
@@ -193,6 +300,7 @@ class Sphere : Shape
         )
     {
         super(t, m);
+        aabb = AABB(Point(-1.0, -1.0, -1.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -222,6 +330,27 @@ class Sphere : Shape
         return p.toVec * v < 0.0 ? n : -n;
     }
 
+    pure nothrow @nogc @safe float[2] sphereIntersections(in Ray r) const
+    {
+        immutable Vec originVec = r.origin.toVec;
+
+        immutable float halfB = originVec * r.dir;
+        immutable float a = r.dir.squaredNorm;
+        immutable float c = originVec.squaredNorm - 1.0;
+        immutable float reducedDelta = halfB * halfB - a * c;
+
+        if (reducedDelta < 0.0) return [float.init, float.init];
+        return [(-halfB - sqrt(reducedDelta)) / a,
+                (-halfB + sqrt(reducedDelta)) / a];
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = sphereIntersections(transf.inverse * r);
+        if (t[0].isNaN) return [];
+        return t.dup;
+    }
+
     /**
     * Check and record an intersection between a Ray and a Sphere
     * Params: 
@@ -233,22 +362,14 @@ class Sphere : Shape
         )
     {
         immutable Ray invR = transf.inverse * r;
-        immutable Vec originVec = invR.origin.toVec;
-
-        immutable float halfB = originVec * invR.dir;
-        immutable float a = invR.dir.squaredNorm;
-        immutable float c = originVec.squaredNorm - 1.0;
-        immutable float reducedDelta = halfB * halfB - a * c;
+        immutable float[2] t = sphereIntersections(invR);
 
         Nullable!HitRecord hit;
-        if (reducedDelta < 0.0) return hit;
-
-        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
+        if (t[0].isNaN) return hit;
 
         float firstHit;
-        if (t1 > invR.tMin && t1 < invR.tMax) firstHit = t1;
-        else if (t2 > invR.tMin && t2 < invR.tMax) firstHit = t2;
+        if (t[0] > invR.tMin && t[0] < invR.tMax) firstHit = t[0];
+        else if (t[1] > invR.tMin && t[1] < invR.tMax) firstHit = t[1];
         else return hit;
 
         immutable Point hitPoint = invR.at(firstHit);
@@ -272,19 +393,16 @@ class Sphere : Shape
     override pure nothrow @nogc @safe bool quickRayIntersection(in Ray r) const
     {
         immutable Ray invR = transf.inverse * r;
-        immutable Vec originVec = invR.origin.toVec;
+        immutable float[2] t = sphereIntersections(invR);
 
-        immutable float halfB = originVec * invR.dir;
-        immutable float a = invR.dir.squaredNorm;
-        immutable float c = originVec.squaredNorm - 1.0;
-        immutable float reducedDelta = halfB * halfB - a * c;
+        if (t[0].isNaN) return false;
+        return (t[0] > invR.tMin && t[0] < invR.tMax) ||
+               (t[1] > invR.tMin && t[1] < invR.tMax);
+    }
 
-        if (reducedDelta < 0.0) return false;
-
-        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-        return (t1 > invR.tMin && t1 < invR.tMax) ||
-               (t2 > invR.tMin && t2 < invR.tMax);
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.x * p.x + p.y * p.y + p.z * p.z < 1.0;
     }
 }
 
@@ -295,11 +413,15 @@ unittest
 
     auto s = new Sphere();
 
-    assert(s.rayIntersection(Ray(Point(0.0, 10.0, 2.0), -vecZ)).isNull);
+    assert(s.transformAABB.isClose(s.aabb));
+
+    auto notHitRay = Ray(Point(0.0, 10.0, 2.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay));
+    assert(s.rayIntersection(notHitRay).isNull);
 
     auto r1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
+    assert(s.quickRayIntersection(r1));
     HitRecord h1 = s.rayIntersection(r1).get;
-
     assert(HitRecord(
         Point(0.0, 0.0, 1.0),
         Normal(0.0, 0.0, 1.0),
@@ -309,6 +431,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(3.0, 0.0, 0.0), -vecX);
+    assert(s.quickRayIntersection(r2));
     HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
@@ -319,6 +442,7 @@ unittest
         ).recordIsClose(h2));
 
     auto r3 = Ray(Point(0.0, 0.0, 0.0), vecX);
+    assert(s.quickRayIntersection(r3));
     HitRecord h3 = s.rayIntersection(r3).get;
     assert(HitRecord(
         Point(1.0, 0.0, 0.0),
@@ -334,12 +458,23 @@ unittest
 {
     import geometry : vecX, vecZ;
 
-    auto s = new Sphere(translation(Vec(10.0, 0.0, 0.0)));
+    auto translVec = Vec(10.0, 0.0, 0.0);
+    auto s = new Sphere(translation(translVec));
 
-    assert(s.rayIntersection(Ray(Point(0.0, 0.0, 2.0), -vecZ)).isNull);
-    assert(s.rayIntersection(Ray(Point(-10.0, 0.0, 0.0), -vecZ)).isNull);
+    auto minPoint = s.aabb.minVertex + Vec(10.0, 0.0, 0.0);
+    auto maxPoint = s.aabb.maxVertex + Vec(10.0, 0.0, 0.0);
+    assert(s.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
+    auto notHitRay1 = Ray(Point(0.0, 0.0, 2.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay1));
+    assert(s.rayIntersection(notHitRay1).isNull);
+
+    auto notHitRay2 = Ray(Point(-10.0, 0.0, 0.0), -vecZ);
+    assert(!s.quickRayIntersection(notHitRay2));
+    assert(s.rayIntersection(notHitRay2).isNull);
 
     auto r1 = Ray(Point(10.0, 0.0, 2.0), -vecZ);
+    assert(s.quickRayIntersection(r1));
     HitRecord h1 = s.rayIntersection(r1).get;
     assert(HitRecord(
         Point(10.0, 0.0, 1.0),
@@ -350,6 +485,7 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(13.0, 0.0, 0.0), -vecX);
+    assert(s.quickRayIntersection(r2));
     HitRecord h2 = s.rayIntersection(r2).get;
     assert(HitRecord(
         Point(11.0, 0.0, 0.0),
@@ -379,6 +515,10 @@ class Plane : Shape
         )
     {
         super(t, m);
+        aabb = AABB(
+            Point(-float.infinity, -float.infinity, 0.0),
+            Point(float.infinity, float.infinity, 0.0)
+            );
     }
 
     override pure nothrow @nogc @safe Vec2d uv(in Point p) const
@@ -386,10 +526,16 @@ class Plane : Shape
         return Vec2d(p.x - floor(p.x), p.y - floor(p.y));
     }
 
-// Useful for CSG only
     override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
     {
         return Normal(0.0, 0.0, v.z < 0.0 ? 1.0 : -1.0);
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        if (areClose(invR.dir.z, 0.0)) return [];
+        return [-invR.origin.z / invR.dir.z];
     }
 
     /**
@@ -435,6 +581,11 @@ class Plane : Shape
         float t = -invR.origin.z / invR.dir.z;
         return t > invR.tMin && t < invR.tMax;
     }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.z > 0.0;
+    }
 }
 
 ///
@@ -444,7 +595,10 @@ unittest
 
     auto p = new Plane();
 
+    //assert(p.transformAABB.isClose(p.aabb));
+
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r1));
     HitRecord h1 = p.rayIntersection(r1).get;
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
@@ -455,15 +609,17 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(0.0, 0.0, 1.0), vecZ);
+    assert(!p.quickRayIntersection(r2));
     Nullable!HitRecord h2 = p.rayIntersection(r2);
-
     assert(h2.isNull);
 
     auto r3 = Ray(Point(0.0, 0.0, 1.0), vecX);
+    assert(!p.quickRayIntersection(r3));
     Nullable!HitRecord h3 = p.rayIntersection(r3);
     assert(h3.isNull);
 
     auto r4 = Ray(Point(0.0, 0.0, 1.0), vecY);
+    assert(!p.quickRayIntersection(r4));
     Nullable!HitRecord h4 = p.rayIntersection(r4);
     assert(h4.isNull);
 }
@@ -475,9 +631,11 @@ unittest
 
     auto p = new Plane(rotationY(90.0));
 
-    auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
-    HitRecord h1 = p.rayIntersection(r1).get;
+    //assert(p.transformAABB.isClose(p.aabb));
 
+    auto r1 = Ray(Point(1.0, 0.0, 0.0), -vecX);
+    assert(p.quickRayIntersection(r1));
+    HitRecord h1 = p.rayIntersection(r1).get;
     assert(HitRecord(
         Point(0.0, 0.0, 0.0),
         Normal(1.0, 0.0, 0.0),
@@ -487,14 +645,17 @@ unittest
         ).recordIsClose(h1));
 
     auto r2 = Ray(Point(0.0, 0.0, 1.0), vecZ);
+    assert(!p.quickRayIntersection(r2));
     Nullable!HitRecord h2 = p.rayIntersection(r2);
     assert(h2.isNull);
 
     auto r3 = Ray(Point(0.0, 0.0, 1.0), vecX);
+    assert(!p.quickRayIntersection(r3));
     Nullable!HitRecord h3 = p.rayIntersection(r3);
     assert(h3.isNull);
 
     auto r4 = Ray(Point(0.0, 0.0, 1.0), vecY);
+    assert(!p.quickRayIntersection(r4));
     Nullable!HitRecord h4 = p.rayIntersection(r4);
     assert(h4.isNull);
 }
@@ -507,15 +668,17 @@ unittest
     auto p = new Plane();
 
     auto r1 = Ray(Point(0.0, 0.0, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r1));
     HitRecord h1 = p.rayIntersection(r1).get;
-
     assert(h1.surfacePoint.uvIsClose(Vec2d(0.0, 0.0)));
 
     auto r2 = Ray(Point(0.25, 0.75, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r2));
     HitRecord h2 = p.rayIntersection(r2).get;
     assert(h2.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 
     auto r3 = Ray(Point(4.25, 7.75, 1.0), -vecZ);
+    assert(p.quickRayIntersection(r3));
     HitRecord h3 = p.rayIntersection(r3).get;
     assert(h3.surfacePoint.uvIsClose(Vec2d(0.25, 0.75)));
 }
@@ -537,6 +700,7 @@ class AABox : Shape
         )
     {
         super(t, m);
+        aabb = AABB(Point(0.0, 0.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -568,21 +732,7 @@ class AABox : Shape
 
         transf = transl * rotation * scale;
         material = m;
-    }
-
-    /**
-    * Find and record the intersections with the box
-    * passing by each dimension x,y,z
-    * Params: 
-    *   r = (Ray)
-    * Return: float[2]
-    */
-    pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
-    {
-        immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
-        immutable float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
-        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
-        return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
+        aabb = AABB(Point(0.0, 0.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -635,6 +785,27 @@ class AABox : Shape
     }
 
     /**
+    * Find and record the intersections with the box
+    * passing by each dimension x,y,z
+    * Params: 
+    *   r = (Ray)
+    * Return: float[2]
+    */
+    pure nothrow @nogc @safe float[2] boxIntersections(in Ray r) const
+    {
+        immutable float[2] tX = oneDimIntersections(r.origin.x, r.dir.x);
+        immutable float[2] tY = oneDimIntersections(r.origin.y, r.dir.y);
+        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        return [max(tX[0], tY[0], tZ[0]), min(tX[1], tY[1], tZ[1])];
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = boxIntersections(transf.inverse * r);
+        return t[0] > t[1] ? [] : t.dup;
+    }
+
+    /**
     * Check and record an intersection between a Ray and an AABOX
     * Params:
     *   r = (Ray)
@@ -645,7 +816,6 @@ class AABox : Shape
         )
     {
         Nullable!HitRecord hit;
-
         immutable Ray invR = transf.inverse * r;
         immutable float[2] t = boxIntersections(invR);
 
@@ -677,8 +847,16 @@ class AABox : Shape
     {
         immutable Ray invR = transf.inverse * r;
         immutable float[2] t = boxIntersections(invR);
+
         if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
         return t[0] > invR.tMin || t[1] < invR.tMax;
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return p.x > 0.0 && p.x < 1.0 &&
+               p.y > 0.0 && p.y < 1.0 &&
+               p.z > 0.0 && p.z < 1.0;
     }
 }
 
@@ -687,6 +865,10 @@ unittest
 {
     auto p1 = Point(1.0, 2.0, 4.0), p2 = Point(-1.0, 5.0, 5.0);
     auto box = new AABox(p1, p2, 0.0, 330.0, 0.0);
+
+    auto minPoint = Point(0.5 - sqrt(3.0), 2.0, 3.0);
+    auto maxPoint = Point(1.0, 5.0, 4.0 + sqrt(3.0) / 2.0);
+    assert(box.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto scale = scaling(Vec(-2.0, 3.0, 1.0));
     auto rotY = rotationY(-30.0);
@@ -700,6 +882,8 @@ unittest
     import geometry : vecX, vecY;
 
     auto box = new AABox();
+
+    assert(box.transformAABB.isClose(box.aabb));
 
     auto r1 = Ray(Point(-2.0, 0.5, 0.0), -vecX);
     assert(!box.quickRayIntersection(r1));
@@ -741,15 +925,20 @@ unittest
     auto transl = translation(Vec(-1.0, 2.0, 4.0));
 
     auto box = new AABox(transl * rotY * scale);
-    float z = 4.0 - sqrt(3.0) / 3.0;
+
+    auto minPoint = Point(-1.0, 2.0, 4.0 - 0.4 * sqrt(3.0));
+    auto maxPoint = Point(-0.6 + sqrt(3.0), 5.0, 5.0);
+    assert(box.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto p1 = Point(-1.0, 2.0, 4.0), p2 = Point(1.0, 5.0, 3.2);
     auto pointsConstructorBox = new AABox(p1, p2, 0.0, -30.0, 0.0);
 
     assert(pointsConstructorBox.transf.transfIsClose(box.transf));
+    assert(pointsConstructorBox.transformAABB.isClose(box.transformAABB));
+
+    float z = 4.0 - sqrt(3.0) / 3.0;
 
     auto r1 = Ray(Point(-1.0, 8.0, z), -vecY);
-
     assert(!box.quickRayIntersection(r1));
     Nullable!HitRecord h1 = box.rayIntersection(r1);
     assert(h1.isNull);
@@ -850,6 +1039,7 @@ class CylinderShell : Shape
         )
     {
         super(t, m);
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -887,6 +1077,7 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -905,6 +1096,7 @@ class CylinderShell : Shape
     {
         transf = translation(transl) * scaling(Vec(r, r, h));
         material = m;
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -940,34 +1132,7 @@ class CylinderShell : Shape
 
         transf = transl * rotation * scale;
         material = m;
-    }
-
-    /**
-    * Find and record the intersections with the CylinderShell
-    * passing by each dimension x,y,z
-    * Params: 
-    *    r = (Ray)
-    * Return: float[2]
-    */
-    pure nothrow @nogc @safe float[2] cylShellIntersections(in Ray r) const
-    {
-        immutable float c = r.origin.x * r.origin.x +
-                            r.origin.y * r.origin.y -
-                            1.0;
-        if (areClose(r.dir.x, 0.0) && areClose(r.dir.y, 0.0))
-        // Cylindershell will result not hit by a vertical ray (<= this is useful only for cylinders)
-            return (c <= 0.0) ?
-                [-float.infinity, float.infinity] :
-                [float.infinity, -float.infinity];
-
-        immutable float halfB = r.origin.x * r.dir.x + r.origin.y * r.dir.y;
-        immutable float a = r.dir.x * r.dir.x + r.dir.y * r.dir.y;
-        immutable float reducedDelta = halfB * halfB - a * c;
-        if (reducedDelta < 0.0) return [float.infinity, -float.infinity];
-
-        immutable float t1 = (-halfB - sqrt(reducedDelta)) / a;
-        immutable float t2 = (-halfB + sqrt(reducedDelta)) / a;
-        return [t1, t2];
+        aabb = AABB(Point(-1.0, -1.0, 0.0), Point(1.0, 1.0, 1.0));
     }
 
     /**
@@ -998,6 +1163,51 @@ class CylinderShell : Shape
     }
 
     /**
+    * Find and record the intersections with the infinite shell
+    * passing by each dimension x, y, z
+    * Params: 
+    *    r = (Ray)
+    * Return: float[2]
+    */
+    pure nothrow @nogc @safe float[2] shellIntersections(
+        in Ray r
+        ) const
+    {
+        immutable float c = r.origin.x * r.origin.x +
+                            r.origin.y * r.origin.y -
+                            1.0;
+        if (areClose(r.dir.x, 0.0) && areClose(r.dir.y, 0.0))
+        // Cylindershell will not be hit by a vertical ray:
+        // this differentiation is useful only for Cylinder.
+            return c <= 0.0 ? [-float.infinity, float.infinity] :
+                              [float.infinity, -float.infinity];
+
+        immutable float halfB = r.origin.x * r.dir.x + r.origin.y * r.dir.y;
+        immutable float a = r.dir.x * r.dir.x + r.dir.y * r.dir.y;
+        immutable float reducedDelta = halfB * halfB - a * c;
+
+        if (reducedDelta < 0.0) return [float.infinity, -float.infinity];
+        return [(-halfB - sqrt(reducedDelta)) / a,
+                (-halfB + sqrt(reducedDelta)) / a];
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        immutable float[2] tShell = shellIntersections(invR);
+        immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
+
+        if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return [];
+        if (tShell[0] < tZ[0])
+        {
+            if (tShell[1] > tZ[1]) return [];
+            return [tShell[1]];
+        }
+        if (tShell[1] > tZ[1]) return [tShell[0]];
+        return tShell.dup;
+    }
+
+    /**
     * Check and record an intersection between a Ray and a CylinderShell
     * Params:
     *   r = (Ray) 
@@ -1010,7 +1220,7 @@ class CylinderShell : Shape
         Nullable!HitRecord hit;
         immutable Ray invR = transf.inverse * r;
 
-        immutable float[2] tShell = cylShellIntersections(invR);
+        immutable float[2] tShell = shellIntersections(invR);
         if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return hit;
 
         immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
@@ -1044,13 +1254,19 @@ class CylinderShell : Shape
     {
         immutable Ray invR = transf.inverse * r;
 
-        immutable float[2] tShell = cylShellIntersections(invR);
+        immutable float[2] tShell = shellIntersections(invR);
         if(tShell[0] >= invR.tMax || tShell[1] <= invR.tMin) return false;
+
         immutable float[2] tZ = oneDimIntersections(invR.origin.z, invR.dir.z);
         if (tShell[0] > tZ[1] || tShell[1] < tZ[0]) return false;
 
         return (tShell[0] >= tZ[0] && tShell[0] > invR.tMin)
             || (tShell[1] <= tZ[1] && tShell[1] < invR.tMax);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return false;
     }
 }
 
@@ -1062,6 +1278,10 @@ unittest
     auto shell = new CylinderShell(
         translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
+
+    auto minPoint = Point(0.0, 0.0, 0.0);
+    auto maxPoint = Point(2.0, 2.0, 2.0);
+    assert(shell.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
     assert(shell.quickRayIntersection(r1));
@@ -1122,9 +1342,15 @@ unittest
 
     auto shell1 = new CylinderShell(shellTransf);
 
+    auto minPoint = Point(-1.0, -sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0);
+    auto maxPoint = Point(1.0, 1.0 + sqrt(2.0) / 2.0, 1.0 + sqrt(2.0) / 2.0);
+    assert(shell1.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     auto shell2 = new CylinderShell(
         1.0, Point(0.0, 1.0, 0.0), Point(0.0, 0.0, 1.0)
         );
+
+    assert(shell2.transformAABB.isClose(shell1.transformAABB));
 
     auto ray1 = Ray(Point(0.0, 3.0, 0.0), -vecY);
 
@@ -1233,13 +1459,6 @@ class Cylinder : CylinderShell
         super(r, h, transl, xDegreesAngle, yDegreesAngle, zDegreesAngle, m);
     }
 
-    pure nothrow @nogc @safe float[2] cylinderIntersections(in Ray r) const
-    {
-        immutable float[2] tShell = cylShellIntersections(r);
-        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
-        return [max(tShell[0], tZ[0]), min(tShell[1], tZ[1])];
-    }
-
     /**
     * Convert a 3D point (x, y, z) on the Cylinder 
     * in a 2D point (u, v) on the screen/Image
@@ -1271,6 +1490,19 @@ class Cylinder : CylinderShell
             return super.normal(p, v);
         immutable n = Normal(0.0, 0.0, 1.0);
         return v.z < 0.0 ? n : -n;
+    }
+
+    pure nothrow @nogc @safe float[2] cylinderIntersections(in Ray r) const
+    {
+        immutable float[2] tShell = shellIntersections(r);
+        immutable float[2] tZ = oneDimIntersections(r.origin.z, r.dir.z);
+        return [max(tShell[0], tZ[0]), min(tShell[1], tZ[1])];
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable float[2] t = cylinderIntersections(transf.inverse * r);
+        return t[0] > t[1] ? [] : t.dup;
     }
 
     /**
@@ -1315,8 +1547,15 @@ class Cylinder : CylinderShell
     {
         immutable Ray invR = transf.inverse * r;
         immutable float[2] t = cylinderIntersections(invR);
+
         if (t[0] > t[1] || t[0] >= invR.tMax || t[1] <= invR.tMin) return false;
         return (t[0] > invR.tMin) || (t[1] < invR.tMax);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        immutable radius = p.x * p.x + p.y * p.y;
+        return p.z > 0.0 && p.z < 1.0 && radius > 0.0 && radius < 1.0;
     }
 }
 
@@ -1328,6 +1567,10 @@ unittest
     auto cyl = new Cylinder(
         translation(Vec(1.0, 1.0, 0.0)) * scaling(Vec(1.0, 1.0, 2.0)),
         );
+
+    auto minPoint = Point(0.0, 0.0, 0.0);
+    auto maxPoint = Point(2.0, 2.0, 2.0);
+    assert(cyl.transformAABB.isClose(AABB(minPoint, maxPoint)));
 
     auto r1 = Ray(Point(-1.0, 1.0, 1.2), vecX);
     assert(cyl.quickRayIntersection(r1));
@@ -1397,12 +1640,18 @@ unittest
     auto cylTransf = translation(vecY) * rotationX(45.0);
     auto cyl1 = new Cylinder(cylTransf);
 
+    auto minPoint = Point(-1.0, 1.0 - sqrt(2.0), -sqrt(2.0) / 2.0);
+    auto maxPoint = Point(1.0, 1.0 + sqrt(2.0) / 2.0, sqrt(2.0));
+    assert(cyl1.transformAABB.isClose(AABB(minPoint, maxPoint)));
+
     immutable cos45 = sqrt(2.0) / 2.0;
     auto cyl2 = new Cylinder(
         1.0,
         Point(0.0, 1.0, 0.0),
         Point(0.0, 1.0 - cos45, cos45)
         );
+
+    assert(cyl2.transformAABB.isClose(cyl1.transformAABB));
 
     auto ray1 = Ray(Point(0.0, 3.0, 0.01), -vecY);
 
@@ -1488,6 +1737,102 @@ unittest
         ).recordIsClose(upHit2));
 }
 
+class Union : Shape
+{
+    Shape s1, s2;
+    bool hitShape1 = true;
+
+    /**
+    * Build the object resulting from the union of two shapes
+    * Params: 
+    *   t = (Tranformation)
+    *   m = (Material)
+    */
+    pure nothrow @nogc @safe this(
+        Shape firstShape,
+        Shape secondShape,
+        in Transformation t = Transformation(),
+        Material m = Material()
+        )
+    {
+        s1 = firstShape;
+        s2 = secondShape;
+        super(t, m);
+        aabb = firstShape.transformAABB.unionWith(secondShape.transformAABB);
+    }
+
+    /**
+    * Convert a 3D point (x, y, z) on the composed object 
+    * in a 2D point (u, v) on the screen/Image
+    * Params:
+    *   p = (Point)
+    * Ŗeturns: Vec2d
+    */
+    override pure nothrow @nogc @safe Vec2d uv(in Point p) const
+    {
+        return hitShape1 ? s1.uv(p) : s2.uv(p);
+    }
+
+    /**
+    * Create a Normal to a Vector in a Point of the composed object surface
+    * Params:
+    *   p = (Point)
+    *   v = (Vec)
+    * Return: Normal
+    */
+    override pure nothrow @nogc @safe Normal normal(in Point p, in Vec v) const
+    {
+        return hitShape1 ? s1.normal(p, v) : s2.normal(p, v);
+    }
+
+    override pure nothrow @safe float[] allIntersections(in Ray r) const
+    {
+        immutable Ray invR = transf.inverse * r;
+        return s1.allIntersections(invR) ~ s2.allIntersections(invR);
+    }
+
+    /**
+    * Check and record an intersection between a Ray and the union of two shapes
+    * Params:
+    *   r = (Ray)
+    * Return: Nullable!HitRecord
+    */
+    override pure nothrow @safe Nullable!HitRecord rayIntersection(
+        in Ray r
+        )
+    {
+        immutable Ray invR = transf.inverse * r;
+        Nullable!HitRecord hit1 = s1.rayIntersection(invR);
+        Nullable!HitRecord hit2 = s2.rayIntersection(invR);
+
+        if (hit1.isNull)
+        {
+            if (hit2.isNull) return hit1;
+            return hit2;
+        }
+        if (hit2.isNull) return hit1;
+
+        if (hit1.get.t < hit2.get.t) return hit1;
+        return hit2;
+    }
+
+    /**
+    * Look up quickly for intersection between a Ray and the union of two shapes
+    * Params:
+    *   r = (Ray)
+    * Return: true or false (bool)
+    */
+    override pure nothrow @safe bool quickRayIntersection(in Ray r) const
+    {
+        return s1.quickRayIntersection(r) || s2.quickRayIntersection(r);
+    }
+
+    override pure nothrow @nogc @safe bool isInside(in Point p) const
+    {
+        return s1.isInside(p) || s2.isInside(p);
+    }
+}
+
 // ************************* World *************************
 /**
 * Struct for a 3D World where to put all the shapes of the image
@@ -1523,7 +1868,7 @@ struct World
     *   ray = (Ray)
     * Return: Nullable!HitRecord
     */
-    pure nothrow @nogc @safe Nullable!HitRecord rayIntersection(in Ray ray)
+    pure nothrow @safe Nullable!HitRecord rayIntersection(in Ray ray)
     {
         Nullable!HitRecord closest;
         Nullable!HitRecord intersection;
@@ -1546,7 +1891,7 @@ struct World
     *   obsPos = (Point)
     * Return: true or false (bool)
     */
-    pure nothrow @nogc @safe bool isPointVisible(
+    pure nothrow @safe bool isPointVisible(
         in Point point,
         in Point obsPos
         ) const
